@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black Trivia</title>
+</head>
+<body>
+    <h1>Welcome to Black Trivia</h1>
+
+    <!-- Login Buttons for Player 1 and Player 2 -->
+    <button id="login-as-player1">Login as Player 1</button>
+    <button id="login-as-player2">Login as Player 2</button>
+    <br><br>
+
+    <!-- Start and Join Match Buttons -->
+    <button id="start-match" disabled>Start a Match</button>
+    <button id="join-match" disabled>Join Match</button>
+    <br><br>
+
+    <!-- Match Progress (only visible if match is in progress) -->
+    <div id="match-in-progress" style="display:none;">
+        <h2>Match in Progress</h2>
+        <p id="current-question"></p>
+        <button id="buzz-button">Buzz</button>
+        <button id="answer-button">Answer</button>
+    </div>
+
+    <br><br>
+    <!-- Leaderboard Section -->
+    <h3>Leaderboard</h3>
+    <ul id="leaderboard">
+        <li>testuser: 0 points</li>
+        <li>player1: 0 points</li>
+        <li>player2: 0 points</li>
+    </ul>
+
+    <script>
+        let player1Token = null;
+        let player2Token = null;
+        let currentMatchId = null;
+
+        // Dynamic leaderboard update
+        function updateLeaderboard() {
+            fetch('/api/leaderboard/', {
+                method: 'GET',
+                headers: {
+                    "Authorization": `Bearer ${player1Token}`,
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const leaderboard = document.getElementById("leaderboard");
+                leaderboard.innerHTML = ""; // Clear existing entries
+                data.forEach(player => {
+                    const li = document.createElement("li");
+                    li.textContent = `${player.user}: ${player.points} points`;
+                    leaderboard.appendChild(li);
+                });
+            });
+        }
+
+        // Fetch a random question
+        function fetchRandomQuestion() {
+            fetch('/api/questions/random/', {
+                method: 'GET',
+                headers: {
+                    "Authorization": `Bearer ${player1Token || player2Token}`,
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const questionElement = document.getElementById("current-question");
+                questionElement.textContent = `Question: ${data.question_text} (Choices: ${data.answer_choices.join(", ")})`;
+            });
+        }
+
+        // Player 1 Login
+        document.getElementById("login-as-player1").addEventListener("click", () => {
+            const username = prompt("Player 1 Username:");
+            const password = prompt("Player 1 Password:");
+            fetch('/api/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                player1Token = data.access;
+                alert("Player 1 logged in!");
+                checkMatchStatus();
+            });
+        });
+
+        // Player 2 Login
+        document.getElementById("login-as-player2").addEventListener("click", () => {
+            const username = prompt("Player 2 Username:");
+            const password = prompt("Player 2 Password:");
+            fetch('/api/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                player2Token = data.access;
+                alert("Player 2 logged in!");
+                checkMatchStatus();
+            });
+        });
+
+        // Check match status and enable buttons
+        function checkMatchStatus() {
+            if (player1Token && player2Token) {
+                document.getElementById("start-match").disabled = false;
+                document.getElementById("join-match").disabled = false;
+            }
+        }
+
+        // Start Match
+        document.getElementById("start-match").addEventListener("click", () => {
+            fetch('/api/matches/', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${player1Token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                currentMatchId = data.id;
+                alert(`Match started with ID: ${currentMatchId}`);
+                document.getElementById("match-in-progress").style.display = 'block';
+                updateLeaderboard(); // Refresh leaderboard
+                fetchRandomQuestion(); // Fetch the first question
+            });
+        });
+
+        // Join Match
+        document.getElementById("join-match").addEventListener("click", () => {
+            fetch(`/api/matches/${currentMatchId}/join/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${player2Token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`Player 2 joined Match ID: ${currentMatchId}`);
+                document.getElementById("match-in-progress").style.display = 'block';
+            });
+        });
+
+        // Buzz
+        document.getElementById("buzz-button").addEventListener("click", () => {
+            fetch(`/api/matches/${currentMatchId}/buzz/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${player1Token || player2Token}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message || "Failed to buzz."));
+        });
+
+        // Answer
+        document.getElementById("answer-button").addEventListener("click", () => {
+            const questionId = prompt("Enter Question ID:");
+            const answer = prompt("Enter your answer:");
+            fetch(`/api/matches/${currentMatchId}/answer/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${player1Token || player2Token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question_id: questionId, answer }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || "Failed to submit answer.");
+                fetchRandomQuestion(); // Fetch the next question
+            });
+        });
+
+        // Initial leaderboard fetch
+        updateLeaderboard();
+    </script>
+</body>
+</html>
