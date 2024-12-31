@@ -39,6 +39,7 @@
         let player1Token = null;
         let player2Token = null;
         let currentMatchId = null;
+        let currentQuestionId = null;
 
         // Dynamic leaderboard update
         function updateLeaderboard() {
@@ -73,6 +74,7 @@
             .then(data => {
                 const questionElement = document.getElementById("current-question");
                 questionElement.textContent = `Question: ${data.question_text} (Choices: ${data.answer_choices.join(", ")})`;
+                currentQuestionId = data.id; // Save question ID for answering
             });
         }
 
@@ -172,7 +174,6 @@
 
         // Answer
         document.getElementById("answer-button").addEventListener("click", () => {
-            const questionId = prompt("Enter Question ID:");
             const answer = prompt("Enter your answer:");
             fetch(`/api/matches/${currentMatchId}/answer/`, {
                 method: 'POST',
@@ -180,7 +181,7 @@
                     'Authorization': `Bearer ${player1Token || player2Token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ question_id: questionId, answer }),
+                body: JSON.stringify({ question_id: currentQuestionId, answer }),
             })
             .then(response => response.json())
             .then(data => {
