@@ -2,7 +2,6 @@
 
 import django.contrib.auth.models
 import django.contrib.auth.validators
-import django.contrib.postgres.fields
 import django.db.models.deletion
 import django.utils.timezone
 from django.conf import settings
@@ -24,7 +23,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('category', models.CharField(choices=[('history', 'History'), ('culture', 'Culture')], max_length=50)),
                 ('question_text', models.TextField()),
-                ('answer_choices', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=255), size=None)),
+                ('answer_choices', models.JSONField()),
                 ('correct_answer', models.CharField(max_length=255)),
             ],
         ),
