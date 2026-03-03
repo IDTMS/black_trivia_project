@@ -72,12 +72,8 @@ ASGI_APPLICATION = 'backend.asgi.application'  # For Channels
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',  # Replace with your DB name
-        'USER': 'postgres',           # Replace with your DB user
-        'PASSWORD': 'Surcr@m02',   # Replace with your DB password
-        'HOST': '34.132.0.177',              # Replace if using a different host
-        'PORT': '5432',                   # Default PostgreSQL port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
