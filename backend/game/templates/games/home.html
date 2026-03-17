@@ -305,6 +305,37 @@
             margin-top: 14px;
         }
 
+        .auth-divider {
+            margin: 16px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-soft);
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: "";
+            height: 1px;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .google-wrap {
+            margin-top: 10px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .google-wrap p {
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
         .field {
             display: grid;
             gap: 6px;
@@ -633,6 +664,24 @@
             </label>
             <button class="primary-button" type="submit">Create Account</button>
         </form>
+
+        <form class="hidden" id="googleUsernameForm">
+            <label class="field">
+                <span>Google Email</span>
+                <input id="googleEmail" type="email" autocomplete="email" disabled>
+            </label>
+            <label class="field">
+                <span>Pick Your Username</span>
+                <input id="googleUsername" type="text" placeholder="Choose your Black Card username" autocomplete="username">
+            </label>
+            <button class="primary-button" type="submit">Finish With Google</button>
+        </form>
+
+        <div class="google-wrap hidden" id="googleAuthWrap">
+            <div class="auth-divider">or</div>
+            <p>Use Google to verify the account, then choose your Black Card username the first time you sign in.</p>
+            <div id="googleButton"></div>
+        </div>
     </section>
 
     <section class="card hidden" id="profileCard">
@@ -744,6 +793,8 @@
 </main>
 
 <script>
+    const googleClientId = "{{ google_client_id|escapejs }}";
+
     const state = {
         accessToken: localStorage.getItem('blackCardAccessToken') || '',
         refreshToken: localStorage.getItem('blackCardRefreshToken') || '',
@@ -752,6 +803,8 @@
         activeMatch: null,
         authMode: 'login',
         pollHandle: null,
+        pendingGoogleCredential: '',
+        pendingGoogleEmail: '',
     };
 
     const elements = {
@@ -772,6 +825,11 @@
         registerTab: document.getElementById('registerTab'),
         loginForm: document.getElementById('loginForm'),
         registerForm: document.getElementById('registerForm'),
+        googleUsernameForm: document.getElementById('googleUsernameForm'),
+        googleEmail: document.getElementById('googleEmail'),
+        googleUsername: document.getElementById('googleUsername'),
+        googleAuthWrap: document.getElementById('googleAuthWrap'),
+        googleButton: document.getElementById('googleButton'),
         logoutButton: document.getElementById('logoutButton'),
         createMatchButton: document.getElementById('createMatchButton'),
         joinForm: document.getElementById('joinForm'),
@@ -909,6 +967,14 @@
         elements.statusBanner.className = `status-banner ${tone} is-visible`;
     }
 
+    function resetGoogleSignupState() {
+        state.pendingGoogleCredential = '';
+        state.pendingGoogleEmail = '';
+        elements.googleEmail.value = '';
+        elements.googleUsername.value = '';
+        elements.googleUsernameForm.classList.add('hidden');
+    }
+
     function setAuthMode(mode) {
         state.authMode = mode;
         const isLogin = mode === 'login';
@@ -917,6 +983,10 @@
         elements.registerTab.classList.toggle('active', !isLogin);
         elements.loginForm.classList.toggle('hidden', !isLogin);
         elements.registerForm.classList.toggle('hidden', isLogin);
+        elements.googleAuthWrap.classList.toggle('hidden', !googleClientId);
+        if (!state.pendingGoogleCredential) {
+            elements.googleUsernameForm.classList.add('hidden');
+        }
     }
 
     function startPolling() {
@@ -1194,6 +1264,94 @@
         }
     }
 
+    async function completeGoogleSignIn(credential, username = '') {
+        const payload = await request('/api/auth/google/', {
+            method: 'POST',
+            body: JSON.stringify({
+                credential,
+                username,
+            }),
+        });
+
+        if (payload.needs_username) {
+            state.pendingGoogleCredential = credential;
+            state.pendingGoogleEmail = payload.email || '';
+            elements.googleEmail.value = payload.email || '';
+            elements.googleUsername.value = payload.suggested_username || '';
+            setAuthMode('register');
+            elements.googleUsernameForm.classList.remove('hidden');
+            showStatus(extractMessage(payload, 'Choose your username to finish Google sign-in.'), 'info');
+            return;
+        }
+
+        resetGoogleSignupState();
+        setStoredTokens(payload.access, payload.refresh);
+        state.currentUser = payload.user;
+        await fetchCurrentUser();
+        showStatus(`Welcome in, ${payload.user.username}.`, 'success');
+    }
+
+    async function handleGoogleUsername(event) {
+        event.preventDefault();
+        if (!state.pendingGoogleCredential) {
+            showStatus('Start with the Google button first.', 'error');
+            return;
+        }
+
+        const username = elements.googleUsername.value.trim();
+        if (!username) {
+            showStatus('Pick a username first.', 'error');
+            return;
+        }
+
+        try {
+            await completeGoogleSignIn(state.pendingGoogleCredential, username);
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
+
+    async function handleGoogleCredentialResponse(response) {
+        try {
+            await completeGoogleSignIn(response.credential);
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
+
+    function initializeGoogleSignIn() {
+        if (!googleClientId || !window.google || !window.google.accounts || !window.google.accounts.id) {
+            return;
+        }
+
+        elements.googleAuthWrap.classList.remove('hidden');
+        window.handleGoogleCredentialResponse = handleGoogleCredentialResponse;
+        google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleCredentialResponse,
+        });
+        google.accounts.id.renderButton(elements.googleButton, {
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: Math.min(window.innerWidth - 72, 390),
+        });
+    }
+
+    function loadGoogleScript() {
+        if (!googleClientId) {
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = initializeGoogleSignIn;
+        document.head.appendChild(script);
+    }
+
     async function createMatch() {
         try {
             const payload = await request('/api/matches/', {method: 'POST'});
@@ -1307,6 +1465,7 @@
         stopPolling();
         state.currentUser = null;
         state.activeMatch = null;
+        resetGoogleSignupState();
         setStoredTokens('', '');
         setActiveMatchId('');
         renderVisibility();
@@ -1319,6 +1478,7 @@
     elements.registerTab.addEventListener('click', () => setAuthMode('register'));
     elements.loginForm.addEventListener('submit', handleLogin);
     elements.registerForm.addEventListener('submit', handleRegister);
+    elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
     elements.logoutButton.addEventListener('click', logout);
     elements.createMatchButton.addEventListener('click', createMatch);
     elements.joinForm.addEventListener('submit', joinByCode);
@@ -1327,7 +1487,9 @@
     elements.copyCodeButton.addEventListener('click', copyInviteCode);
 
     renderVisibility();
+    setAuthMode('login');
     renderMatch();
+    loadGoogleScript();
     refreshLeaderboard().catch(() => {
         showStatus('Leaderboard is unavailable right now.', 'error');
     });
