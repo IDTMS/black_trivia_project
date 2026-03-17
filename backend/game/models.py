@@ -5,6 +5,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     black_card_active = models.BooleanField(default=True)
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     # Additional fields can be added here
 
     def __str__(self):

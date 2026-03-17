@@ -25,6 +25,7 @@ DJANGO_DEBUG=false
 DJANGO_ALLOWED_HOSTS=blackcard.joinhavn.io
 CORS_ALLOWED_ORIGINS=https://blackcard.joinhavn.io
 CSRF_TRUSTED_ORIGINS=https://blackcard.joinhavn.io
+GOOGLE_CLIENT_ID=your-google-oauth-web-client-id.apps.googleusercontent.com
 FORCE_HTTPS=true
 SECURE_HSTS_SECONDS=31536000
 DATABASE_URL=postgresql://username:password@hostname:5432/black_trivia
@@ -44,6 +45,7 @@ If your Neon integration gives you `PGHOST`, `PGHOST_UNPOOLED`, `PGUSER`, `PGDAT
 - Vercel config: [vercel.json](/Users/marcuslit/Documents/source-code/black_trivia_project/vercel.json)
 - The Vercel build runs migrations and seeds bundled questions during deploy via the Python build hook, and will prefer `DATABASE_URL_UNPOOLED` or `PGHOST_UNPOOLED` if provided.
 - The mobile app can point to this backend by setting `EXPO_PUBLIC_API_BASE_URL=https://blackcard.joinhavn.io/api`
+- Google sign-in on the web UI needs a Google OAuth Web client ID in `GOOGLE_CLIENT_ID`, with `https://blackcard.joinhavn.io` and `http://127.0.0.1:8000` added as authorized JavaScript origins.
 
 ## Vercel
 

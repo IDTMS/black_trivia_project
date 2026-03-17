@@ -1,8 +1,10 @@
+import os
 import random
 import secrets
 import string
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -10,6 +12,7 @@ from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Leaderboard, Match, Question
 from .serializers import (
@@ -25,7 +28,9 @@ User = get_user_model()
 
 
 def home(request):
-    return render(request, 'games/home.html')
+    return render(request, 'games/home.html', {
+        'google_client_id': os.getenv('GOOGLE_CLIENT_ID', ''),
+    })
 
 
 def health(request):
@@ -61,6 +66,50 @@ def serialize_match(request, match, status_code=status.HTTP_200_OK, **extra):
     payload = MatchStateSerializer(match, context={'request': request}).data
     payload.update(extra)
     return Response(payload, status=status_code)
+
+
+def build_unique_username(base_username):
+    clean_base = ''.join(char for char in base_username.lower() if char.isalnum() or char == '_').strip('_')
+    if not clean_base:
+        clean_base = 'player'
+
+    candidate = clean_base[:150]
+    suffix = 1
+    while User.objects.filter(username=candidate).exists():
+        suffix += 1
+        trimmed_base = clean_base[: max(1, 150 - len(str(suffix)) - 1)]
+        candidate = f'{trimmed_base}_{suffix}'
+    return candidate
+
+
+def issue_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+def validate_requested_username(username):
+    cleaned_username = (username or '').strip()
+    if not cleaned_username:
+        raise ValidationError('Username is required.')
+
+    username_field = User._meta.get_field('username')
+    for validator in username_field.validators:
+        validator(cleaned_username)
+
+    if User.objects.filter(username__iexact=cleaned_username).exists():
+        raise ValidationError('That username is already taken.')
+
+    return cleaned_username
+
+
+def verify_google_token(credential, client_id):
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
+
+    return id_token.verify_oauth2_token(credential, google_requests.Request(), client_id)
 
 
 def get_match_for_user(pk, user):
@@ -120,6 +169,88 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = UserSerializer
+
+
+class GoogleAuthView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        client_id = os.getenv('GOOGLE_CLIENT_ID')
+        if not client_id:
+            return Response({"error": "Google sign-in is not configured."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        credential = request.data.get('credential')
+        if not credential:
+            return Response({"error": "Google credential is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = verify_google_token(credential, client_id)
+        except Exception:
+            return Response({"error": "Google token verification failed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if payload.get('iss') not in {'accounts.google.com', 'https://accounts.google.com'}:
+            return Response({"error": "Invalid Google issuer."}, status=status.HTTP_400_BAD_REQUEST)
+
+        google_sub = payload.get('sub')
+        email = (payload.get('email') or '').strip().lower()
+        if not google_sub or not email or not payload.get('email_verified'):
+            return Response({"error": "Google account email is unavailable or unverified."}, status=status.HTTP_400_BAD_REQUEST)
+
+        requested_username = request.data.get('username')
+        user = User.objects.filter(google_sub=google_sub).first()
+        if not user:
+            user = User.objects.filter(email__iexact=email).first()
+
+        if user:
+            updated_fields = []
+            if user.google_sub != google_sub:
+                user.google_sub = google_sub
+                updated_fields.append('google_sub')
+            if not user.email:
+                user.email = email
+                updated_fields.append('email')
+            if payload.get('given_name') and not user.first_name:
+                user.first_name = payload.get('given_name')
+                updated_fields.append('first_name')
+            if payload.get('family_name') and not user.last_name:
+                user.last_name = payload.get('family_name')
+                updated_fields.append('last_name')
+            if updated_fields:
+                user.save(update_fields=updated_fields)
+        else:
+            suggested_username = build_unique_username(email.split('@', 1)[0] if email else payload.get('name', 'player'))
+            if not requested_username:
+                return Response({
+                    'needs_username': True,
+                    'email': email,
+                    'suggested_username': suggested_username,
+                    'message': 'Choose a username to finish Google sign-in.',
+                }, status=status.HTTP_200_OK)
+
+            try:
+                username = validate_requested_username(requested_username)
+            except ValidationError as exc:
+                return Response({
+                    'error': exc.messages[0],
+                    'needs_username': True,
+                    'email': email,
+                    'suggested_username': suggested_username,
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=None,
+            )
+            user.google_sub = google_sub
+            user.first_name = payload.get('given_name', '')
+            user.last_name = payload.get('family_name', '')
+            user.save(update_fields=['google_sub', 'first_name', 'last_name'])
+            Leaderboard.objects.create(user=user)
+
+        response_payload = issue_tokens_for_user(user)
+        response_payload['user'] = CurrentUserSerializer(user).data
+        return Response(response_payload, status=status.HTTP_200_OK)
 
 
 class CurrentUserView(APIView):

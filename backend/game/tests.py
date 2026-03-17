@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -119,3 +122,58 @@ class MatchFlowTests(APITestCase):
 
         leaderboard = Leaderboard.objects.get(user=self.player2)
         self.assertEqual(leaderboard.points, 10)
+
+
+class GoogleAuthTests(APITestCase):
+    @patch.dict(os.environ, {'GOOGLE_CLIENT_ID': 'test-google-client-id'})
+    @patch('game.views.verify_google_token')
+    def test_google_auth_requires_username_for_new_user(self, mock_verify_google_token):
+        mock_verify_google_token.return_value = {
+            'iss': 'https://accounts.google.com',
+            'sub': 'google-sub-123',
+            'email': 'googleuser@example.com',
+            'email_verified': True,
+            'given_name': 'Google',
+            'family_name': 'User',
+        }
+
+        response = self.client.post(
+            '/api/auth/google/',
+            {'credential': 'fake-google-token'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['needs_username'])
+        self.assertEqual(response.data['email'], 'googleuser@example.com')
+        self.assertFalse(User.objects.filter(email='googleuser@example.com').exists())
+
+    @patch.dict(os.environ, {'GOOGLE_CLIENT_ID': 'test-google-client-id'})
+    @patch('game.views.verify_google_token')
+    def test_google_auth_creates_user_after_username_selected(self, mock_verify_google_token):
+        mock_verify_google_token.return_value = {
+            'iss': 'https://accounts.google.com',
+            'sub': 'google-sub-456',
+            'email': 'googleplayer@example.com',
+            'email_verified': True,
+            'given_name': 'Google',
+            'family_name': 'Player',
+        }
+
+        response = self.client.post(
+            '/api/auth/google/',
+            {
+                'credential': 'fake-google-token',
+                'username': 'google_player',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', response.data)
+        self.assertIn('refresh', response.data)
+        self.assertEqual(response.data['user']['username'], 'google_player')
+
+        user = User.objects.get(username='google_player')
+        self.assertEqual(user.google_sub, 'google-sub-456')
+        self.assertTrue(Leaderboard.objects.filter(user=user).exists())
