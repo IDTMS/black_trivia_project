@@ -213,6 +213,21 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
         return instance
 
 
+class MatchHistorySerializer(serializers.ModelSerializer):
+    player1 = UserSummarySerializer(read_only=True)
+    player2 = UserSummarySerializer(read_only=True)
+    winner = UserSummarySerializer(read_only=True)
+    loser = UserSummarySerializer(read_only=True)
+
+    class Meta:
+        model = Match
+        fields = (
+            'id', 'player1', 'player2', 'player1_score', 'player2_score',
+            'winner', 'loser', 'card_saved', 'timestamp',
+        )
+        read_only_fields = fields
+
+
 class LeaderboardSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
 
