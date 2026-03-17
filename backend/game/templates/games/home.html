@@ -7,20 +7,21 @@
     <title>Black Card</title>
     <style>
         :root {
-            --bg: #050505;
-            --bg-soft: #101010;
-            --panel: rgba(16, 16, 16, 0.94);
-            --panel-border: rgba(240, 179, 35, 0.18);
-            --gold: #f0b323;
-            --gold-deep: #b8820f;
-            --red: #c1121f;
-            --red-bright: #ef233c;
-            --text: #f7f0e6;
-            --text-soft: #cabd9f;
+            --bg: #030303;
+            --bg-soft: #0b0b0d;
+            --panel: rgba(10, 10, 11, 0.96);
+            --panel-border: rgba(214, 175, 87, 0.18);
+            --gold: #d4af5a;
+            --gold-bright: #f5dd9b;
+            --gold-deep: #8e681b;
+            --red: #6f0f1d;
+            --red-bright: #a51b2f;
+            --text: #f4efe5;
+            --text-soft: #b9ac93;
             --success: #78c091;
             --danger: #ef476f;
-            --shadow: 0 28px 90px rgba(0, 0, 0, 0.52);
-            --radius: 26px;
+            --shadow: 0 34px 100px rgba(0, 0, 0, 0.62);
+            --radius: 28px;
             --radius-sm: 18px;
             --transition: 180ms ease;
         }
@@ -35,33 +36,34 @@
             font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--text);
             background:
-                radial-gradient(circle at top, rgba(193, 18, 31, 0.34), transparent 32%),
-                radial-gradient(circle at 84% 16%, rgba(240, 179, 35, 0.18), transparent 22%),
-                linear-gradient(180deg, #160607 0%, #090909 42%, #040404 100%);
+                radial-gradient(circle at 14% 10%, rgba(126, 15, 33, 0.18), transparent 24%),
+                radial-gradient(circle at 86% 12%, rgba(212, 175, 90, 0.1), transparent 18%),
+                radial-gradient(circle at 50% 120%, rgba(212, 175, 90, 0.06), transparent 32%),
+                linear-gradient(180deg, #09090a 0%, #040405 48%, #020202 100%);
         }
 
         body::before,
         body::after {
             content: "";
             position: fixed;
-            width: 280px;
-            height: 280px;
+            width: 320px;
+            height: 320px;
             border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.28;
+            filter: blur(110px);
+            opacity: 0.18;
             pointer-events: none;
         }
 
         body::before {
-            top: -90px;
-            left: -110px;
-            background: rgba(193, 18, 31, 0.58);
+            top: -120px;
+            left: -120px;
+            background: rgba(124, 18, 35, 0.5);
         }
 
         body::after {
             right: -110px;
-            bottom: 12%;
-            background: rgba(240, 179, 35, 0.18);
+            bottom: 8%;
+            background: rgba(212, 175, 90, 0.18);
         }
 
         main {
@@ -99,26 +101,48 @@
             overflow: hidden;
             border-radius: var(--radius);
             border: 1px solid var(--panel-border);
-            background: linear-gradient(180deg, rgba(19, 19, 19, 0.97), rgba(10, 10, 10, 0.98));
-            box-shadow: var(--shadow);
+            background:
+                linear-gradient(180deg, rgba(15, 15, 16, 0.98), rgba(7, 7, 8, 0.99)),
+                linear-gradient(140deg, rgba(212, 175, 90, 0.02), transparent 38%);
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 0 0 1px rgba(212, 175, 90, 0.04);
         }
 
         .hero {
-            padding: 22px;
+            padding: 24px 22px 22px;
             background:
-                linear-gradient(160deg, rgba(193, 18, 31, 0.92), rgba(20, 20, 20, 0.97) 54%, rgba(5, 5, 5, 1)),
-                linear-gradient(180deg, rgba(19, 19, 19, 0.97), rgba(10, 10, 10, 0.98));
+                radial-gradient(circle at 12% 16%, rgba(122, 17, 35, 0.16), transparent 24%),
+                radial-gradient(circle at 90% 14%, rgba(212, 175, 90, 0.12), transparent 18%),
+                radial-gradient(circle at 84% 88%, rgba(122, 17, 35, 0.1), transparent 24%),
+                linear-gradient(160deg, rgba(15, 15, 17, 0.98), rgba(5, 5, 6, 0.99) 74%);
         }
 
+        .hero::before,
         .hero::after {
             content: "";
             position: absolute;
-            right: -80px;
-            top: -40px;
-            width: 190px;
-            height: 190px;
-            background: radial-gradient(circle, rgba(240, 179, 35, 0.55), transparent 68%);
             pointer-events: none;
+        }
+
+        .hero::before {
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px, transparent 1px, transparent 22px),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 36px),
+                linear-gradient(180deg, transparent 0%, rgba(212, 175, 90, 0.04) 52%, transparent 100%);
+            opacity: 0.22;
+        }
+
+        .hero::after {
+            right: -72px;
+            top: -58px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(212, 175, 90, 0.16), transparent 70%);
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
         }
 
         .card {
@@ -141,7 +165,7 @@
         .label,
         .tiny {
             font-size: 11px;
-            letter-spacing: 0.18em;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
         }
 
@@ -158,80 +182,107 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 7px 12px;
+            padding: 6px 12px;
             border-radius: 999px;
-            font-size: 11px;
-            letter-spacing: 0.16em;
+            font-size: 10px;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
             white-space: nowrap;
         }
 
         .badge {
-            color: var(--text);
-            background: rgba(8, 8, 8, 0.42);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(244, 239, 229, 0.84);
+            background: rgba(6, 6, 7, 0.52);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
         .badge-live,
         .pill,
         .tag {
             color: var(--gold);
-            background: rgba(240, 179, 35, 0.12);
-            border: 1px solid rgba(240, 179, 35, 0.28);
+            background: rgba(212, 175, 90, 0.09);
+            border: 1px solid rgba(212, 175, 90, 0.24);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
         .hero h1 {
             display: grid;
-            gap: 4px;
-            margin-top: 10px;
-            line-height: 0.92;
+            gap: 2px;
+            margin-top: 12px;
+            line-height: 0.9;
         }
 
         .brand-line {
-            font-size: clamp(40px, 12vw, 56px);
+            font-size: clamp(42px, 12vw, 58px);
             font-weight: 900;
-            letter-spacing: 0.18em;
+            letter-spacing: 0.16em;
+            color: #f6f1e8;
+            text-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
         }
 
         .brand-accent {
-            color: var(--gold);
-            text-shadow: 0 0 24px rgba(240, 179, 35, 0.28);
+            color: transparent;
+            background: linear-gradient(180deg, #f9e7b4 0%, #d4af5a 58%, #8f6a1f 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: 0 0 28px rgba(212, 175, 90, 0.16);
         }
 
         .hero-copy {
-            margin-top: 16px;
-            max-width: 28rem;
-            line-height: 1.5;
-            color: rgba(247, 240, 230, 0.92);
+            margin-top: 14px;
+            max-width: 25rem;
+            line-height: 1.48;
+            font-size: 14px;
+            color: rgba(244, 239, 229, 0.78);
         }
 
         .hero-stats {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
+            gap: 8px;
             margin-top: 18px;
         }
 
         .hero-stat {
-            padding: 12px 14px;
+            position: relative;
+            overflow: hidden;
+            padding: 11px 13px 12px;
             border-radius: 18px;
-            background: rgba(5, 5, 5, 0.44);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background:
+                linear-gradient(180deg, rgba(17, 17, 19, 0.92), rgba(8, 8, 9, 0.96)),
+                linear-gradient(140deg, rgba(212, 175, 90, 0.03), transparent 50%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -20px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        .hero-stat::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(212, 175, 90, 0.08), transparent 32%);
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         .hero-stat strong {
             display: block;
-            font-size: 22px;
-            color: var(--gold);
+            position: relative;
+            z-index: 1;
+            font-size: clamp(22px, 6vw, 28px);
+            color: #f4d791;
+            letter-spacing: 0.03em;
         }
 
         .hero-stat span {
             display: block;
+            position: relative;
+            z-index: 1;
             margin-top: 3px;
-            font-size: 12px;
-            color: rgba(247, 240, 230, 0.78);
+            font-size: 10px;
+            color: rgba(244, 239, 229, 0.58);
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.16em;
         }
 
         .section-head {
@@ -461,30 +512,304 @@
 
         .vault-panel {
             margin-top: 14px;
-            padding: 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
             display: grid;
-            gap: 12px;
+            gap: 14px;
+        }
+
+        .wallet-shell,
+        .wallet-vault-block {
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            border: 1px solid rgba(212, 175, 90, 0.18);
+            background:
+                radial-gradient(circle at 12% 18%, rgba(124, 18, 35, 0.12), transparent 24%),
+                radial-gradient(circle at 88% 16%, rgba(212, 175, 90, 0.1), transparent 20%),
+                linear-gradient(160deg, rgba(14, 14, 15, 0.98), rgba(5, 5, 6, 0.99) 74%);
+            box-shadow: 0 26px 68px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 0 0 1px rgba(212, 175, 90, 0.04);
+        }
+
+        .wallet-shell {
+            padding: 18px;
+        }
+
+        .wallet-shell.is-captured {
+            background:
+                radial-gradient(circle at 12% 18%, rgba(138, 18, 40, 0.18), transparent 24%),
+                radial-gradient(circle at 88% 16%, rgba(212, 175, 90, 0.08), transparent 20%),
+                linear-gradient(160deg, rgba(18, 12, 14, 0.98), rgba(6, 5, 6, 0.99) 74%);
+        }
+
+        .wallet-shell::before,
+        .wallet-vault-block::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0, rgba(255, 255, 255, 0.018) 1px, transparent 1px, transparent 34px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.01) 0, rgba(255, 255, 255, 0.01) 1px, transparent 1px, transparent 24px);
+            opacity: 0.16;
+            pointer-events: none;
+        }
+
+        .wallet-shell > *,
+        .wallet-vault-block > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .wallet-topline,
+        .wallet-vault-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .wallet-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 90, 0.22);
+            background: rgba(212, 175, 90, 0.08);
+            color: var(--gold);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .wallet-pill.is-alert {
+            border-color: rgba(165, 27, 47, 0.28);
+            background: rgba(111, 15, 29, 0.22);
+            color: #f0c2ca;
+        }
+
+        .wallet-eyebrow {
+            display: inline-block;
+            margin-top: 14px;
+            color: rgba(244, 239, 229, 0.62);
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .wallet-title {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            align-items: baseline;
+            margin-top: 10px;
+            line-height: 0.92;
+        }
+
+        .wallet-title-main,
+        .wallet-title-accent {
+            font-size: clamp(32px, 9vw, 48px);
+            font-weight: 900;
+            letter-spacing: 0.16em;
+        }
+
+        .wallet-title-main {
+            color: #f5f0e8;
+        }
+
+        .wallet-title-accent {
+            color: transparent;
+            background: linear-gradient(180deg, #f7e6b6 0%, #d4af5a 60%, #8e681b 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: 0 0 24px rgba(212, 175, 90, 0.12);
+        }
+
+        .wallet-copy {
+            max-width: 24rem;
+            margin-top: 12px;
+            color: rgba(244, 239, 229, 0.76);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .wallet-stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 18px;
+        }
+
+        .wallet-stat {
+            padding: 11px 12px;
+            min-height: 76px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background:
+                linear-gradient(180deg, rgba(18, 18, 20, 0.9), rgba(7, 7, 8, 0.94)),
+                linear-gradient(140deg, rgba(212, 175, 90, 0.03), transparent 48%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .wallet-stat span {
+            display: block;
+            color: rgba(244, 239, 229, 0.54);
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .wallet-stat strong {
+            display: block;
+            margin-top: 7px;
+            font-size: clamp(18px, 5vw, 24px);
+            line-height: 1.05;
+            color: #f4d791;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wallet-card-stage {
+            margin-top: 18px;
+        }
+
+        .wallet-card-frame {
+            position: relative;
+            overflow: hidden;
+            padding: 12px;
+            border-radius: 28px;
+            border: 1px solid rgba(212, 175, 90, 0.2);
+            background:
+                radial-gradient(circle at 12% 16%, rgba(111, 15, 29, 0.16), transparent 24%),
+                radial-gradient(circle at 86% 18%, rgba(212, 175, 90, 0.1), transparent 22%),
+                linear-gradient(180deg, rgba(11, 11, 12, 0.98), rgba(4, 4, 5, 0.99));
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .wallet-card-frame::before {
+            content: "";
+            position: absolute;
+            inset: -30% -20%;
+            background: linear-gradient(108deg, transparent 36%, rgba(255, 238, 175, 0.02) 45%, rgba(255, 244, 198, 0.34) 49%, rgba(255, 238, 175, 0.04) 53%, transparent 64%);
+            transform: translateX(-68%) rotate(8deg);
+            pointer-events: none;
+        }
+
+        .wallet-card-frame.is-secured::before {
+            animation: goldSweep 4.6s linear infinite;
+        }
+
+        .wallet-card-frame.is-captured::before {
+            background: linear-gradient(108deg, transparent 38%, rgba(186, 44, 67, 0.06) 49%, rgba(255, 214, 170, 0.14) 52%, transparent 64%);
+            animation: none;
+        }
+
+        .wallet-card-chip {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            z-index: 3;
+            padding: 7px 11px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 90, 0.22);
+            background: rgba(6, 6, 7, 0.64);
+            color: var(--gold);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            backdrop-filter: blur(12px);
+        }
+
+        .wallet-card-chip.is-alert {
+            border-color: rgba(165, 27, 47, 0.26);
+            color: #f0c2ca;
+        }
+
+        .wallet-card-image {
+            position: relative;
+            z-index: 1;
+            display: block;
+            width: 100%;
+            border-radius: 22px;
+            filter: brightness(0.88) contrast(1.08) saturate(0.92);
+        }
+
+        .wallet-card-glow {
+            position: absolute;
+            inset: 12px;
+            z-index: 2;
+            border-radius: 22px;
+            background:
+                radial-gradient(circle at 18% 18%, rgba(255, 241, 196, 0.12), transparent 18%),
+                radial-gradient(circle at 82% 78%, rgba(165, 27, 47, 0.14), transparent 20%);
+            pointer-events: none;
+        }
+
+        .wallet-card-owner {
+            position: absolute;
+            right: 12%;
+            bottom: 18.4%;
+            z-index: 3;
+            width: 29%;
+            text-align: center;
+            font-family: Georgia, serif;
+            font-weight: 700;
+            font-size: clamp(14px, 3vw, 22px);
+            letter-spacing: 0.06em;
+            color: #f0c970;
+            text-transform: uppercase;
+            text-shadow: 0 2px 14px rgba(0, 0, 0, 0.72);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wallet-vault-block {
+            padding: 16px;
+        }
+
+        .wallet-vault-block .section-copy {
+            margin-top: 8px;
+            max-width: 28rem;
         }
 
         .vault-list {
             display: grid;
-            gap: 8px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .vault-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            border: 1px solid rgba(240, 179, 35, 0.14);
-            background: rgba(240, 179, 35, 0.06);
+            display: grid;
+            gap: 4px;
+            min-height: 72px;
+            padding: 12px 13px;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 90, 0.14);
+            background:
+                linear-gradient(180deg, rgba(16, 16, 17, 0.9), rgba(7, 7, 8, 0.95)),
+                linear-gradient(120deg, rgba(212, 175, 90, 0.03), transparent 50%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
             color: var(--text);
             font-size: 13px;
             line-height: 1.4;
+        }
+
+        .vault-chip strong {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            color: #f2e1ae;
+        }
+
+        .vault-chip span {
+            color: rgba(244, 239, 229, 0.56);
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
 
         .identity-card strong,
@@ -572,10 +897,11 @@
             margin-top: 14px;
             padding: 18px;
             border-radius: 24px;
-            border: 1px solid rgba(240, 179, 35, 0.22);
+            border: 1px solid rgba(212, 175, 90, 0.22);
             background:
-                radial-gradient(circle at top, rgba(255, 214, 94, 0.18), transparent 42%),
-                linear-gradient(180deg, rgba(29, 20, 5, 0.96), rgba(10, 8, 4, 0.98));
+                radial-gradient(circle at top, rgba(212, 175, 90, 0.12), transparent 42%),
+                radial-gradient(circle at 12% 14%, rgba(111, 15, 29, 0.12), transparent 22%),
+                linear-gradient(180deg, rgba(15, 14, 12, 0.98), rgba(7, 7, 7, 0.99));
             box-shadow: 0 26px 60px rgba(0, 0, 0, 0.4);
             overflow: hidden;
             position: relative;
@@ -746,7 +1072,8 @@
                 padding-inline: 14px;
             }
 
-            .hero-stats {
+            .hero-stats,
+            .wallet-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
@@ -758,6 +1085,18 @@
             .social-actions {
                 grid-template-columns: 1fr;
             }
+
+            .wallet-topline,
+            .wallet-vault-head {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .wallet-card-owner {
+                width: 33%;
+                right: 10%;
+                font-size: clamp(12px, 3.6vw, 18px);
+            }
         }
     </style>
 </head>
@@ -765,7 +1104,7 @@
 <main>
     <section class="hero">
         <div class="topline">
-            <span class="badge">Black Trivia Live</span>
+            <span class="badge">Private Entry</span>
             <span class="badge badge-live">Two Phone Mode</span>
         </div>
         <span class="eyebrow">Culture. History. Speed.</span>
@@ -774,21 +1113,21 @@
             <span class="brand-line brand-accent">CARD</span>
         </h1>
         <p class="hero-copy">
-            One account per phone. One player creates the room. One player joins with the code.
-            Buzz first, lock the answer, and race to the lead.
+            One phone. One login. One name on the line.
+            Create the room, share the code, and play fast enough to keep your card.
         </p>
         <div class="hero-stats">
             <div class="hero-stat">
                 <strong id="heroQuestionCount">219</strong>
-                <span>Questions Loaded</span>
+                <span>Questions</span>
             </div>
             <div class="hero-stat">
                 <strong>2</strong>
-                <span>Phones Ready</span>
+                <span>Phones</span>
             </div>
             <div class="hero-stat">
                 <strong id="heroLeaderboardCount">0</strong>
-                <span>Leaderboard Entries</span>
+                <span>On Board</span>
             </div>
         </div>
     </section>
@@ -886,13 +1225,56 @@
             <button class="secondary-button" id="logoutButton" type="button">Logout</button>
         </div>
         <div class="vault-panel">
-            <div>
-                <span class="label">Card Status</span>
-                <p class="section-copy" id="walletStatus">Your black card is in your wallet.</p>
+            <div class="wallet-shell" id="walletShell">
+                <div class="wallet-topline">
+                    <span class="wallet-pill">Member Vault</span>
+                    <span class="wallet-pill" id="walletStatePill">Secured</span>
+                </div>
+                <div>
+                    <span class="wallet-eyebrow">Culture. History. Speed.</span>
+                    <h3 class="wallet-title">
+                        <span class="wallet-title-main">BLACK</span>
+                        <span class="wallet-title-accent">CARD</span>
+                    </h3>
+                    <p class="wallet-copy" id="walletHeroCopy">
+                        Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.
+                    </p>
+                </div>
+                <div class="wallet-stats">
+                    <div class="wallet-stat">
+                        <span>Status</span>
+                        <strong id="walletStatStatus">Secured</strong>
+                    </div>
+                    <div class="wallet-stat">
+                        <span>Vault</span>
+                        <strong id="walletStatCount">00</strong>
+                    </div>
+                    <div class="wallet-stat">
+                        <span>Holder</span>
+                        <strong id="walletStatHolder">You</strong>
+                    </div>
+                </div>
+                <div class="wallet-card-stage">
+                    <div class="wallet-card-frame is-secured" id="walletCardFrame">
+                        <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
+                        <img class="wallet-card-image" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
+                        <div class="wallet-card-glow" aria-hidden="true"></div>
+                        <span class="wallet-card-owner" id="walletCardOwner">PLAYER NAME</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <span class="label">Wallet</span>
-                <div class="vault-list" id="walletList"></div>
+            <div class="wallet-vault-block">
+                <div class="wallet-vault-head">
+                    <div>
+                        <span class="label">Card Status</span>
+                        <p class="section-copy" id="walletStatus">Your black card is in your wallet.</p>
+                    </div>
+                    <span class="tag" id="walletVaultChip">Vault</span>
+                </div>
+                <div>
+                    <span class="label">Wallet</span>
+                    <div class="vault-list" id="walletList"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -1060,7 +1442,17 @@
         heroLeaderboardCount: document.getElementById('heroLeaderboardCount'),
         currentUsername: document.getElementById('currentUsername'),
         currentEmail: document.getElementById('currentEmail'),
+        walletShell: document.getElementById('walletShell'),
+        walletStatePill: document.getElementById('walletStatePill'),
+        walletHeroCopy: document.getElementById('walletHeroCopy'),
+        walletStatStatus: document.getElementById('walletStatStatus'),
+        walletStatCount: document.getElementById('walletStatCount'),
+        walletStatHolder: document.getElementById('walletStatHolder'),
+        walletCardFrame: document.getElementById('walletCardFrame'),
+        walletCardChip: document.getElementById('walletCardChip'),
+        walletCardOwner: document.getElementById('walletCardOwner'),
         walletStatus: document.getElementById('walletStatus'),
+        walletVaultChip: document.getElementById('walletVaultChip'),
         walletList: document.getElementById('walletList'),
         loginTab: document.getElementById('loginTab'),
         registerTab: document.getElementById('registerTab'),
@@ -1509,13 +1901,46 @@
             elements.currentUsername.textContent = '-';
             elements.currentEmail.textContent = '-';
             elements.playerRoleChip.textContent = 'Ready';
+            elements.walletShell.classList.remove('is-captured');
+            elements.walletStatePill.textContent = 'Secured';
+            elements.walletStatePill.classList.remove('is-alert');
+            elements.walletHeroCopy.textContent = 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
+            elements.walletStatStatus.textContent = 'Secured';
+            elements.walletStatCount.textContent = '00';
+            elements.walletStatHolder.textContent = 'You';
+            elements.walletCardFrame.classList.add('is-secured');
+            elements.walletCardFrame.classList.remove('is-captured');
+            elements.walletCardChip.textContent = 'In Wallet';
+            elements.walletCardChip.classList.remove('is-alert');
+            elements.walletCardOwner.textContent = 'PLAYER NAME';
             elements.walletStatus.textContent = 'Your black card is in your wallet.';
+            elements.walletVaultChip.textContent = 'Vault';
             elements.walletList.innerHTML = '';
             return;
         }
 
+        const capturedCount = Array.isArray(state.currentUser.wallet_cards) ? state.currentUser.wallet_cards.length : 0;
+        const isCaptured = Boolean(state.currentUser.card_holder);
+        const holderLabel = isCaptured ? state.currentUser.card_holder : 'You';
+
         elements.currentUsername.textContent = state.currentUser.username;
         elements.currentEmail.textContent = state.currentUser.email || 'No email on file';
+        elements.walletCardOwner.textContent = state.currentUser.username.toUpperCase();
+        elements.walletShell.classList.toggle('is-captured', isCaptured);
+        elements.walletStatePill.textContent = isCaptured ? 'Captured' : 'Secured';
+        elements.walletStatePill.classList.toggle('is-alert', isCaptured);
+        elements.walletHeroCopy.textContent = isCaptured
+            ? `${state.currentUser.card_holder} is holding your name right now. Beat them before the reset and take the card back.`
+            : 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
+        elements.walletStatStatus.textContent = isCaptured ? 'Claimed' : 'Secured';
+        elements.walletStatCount.textContent = String(capturedCount).padStart(2, '0');
+        elements.walletStatHolder.textContent = holderLabel;
+        elements.walletCardFrame.classList.toggle('is-secured', !isCaptured);
+        elements.walletCardFrame.classList.toggle('is-captured', isCaptured);
+        elements.walletCardChip.textContent = isCaptured ? 'Card Out' : 'In Wallet';
+        elements.walletCardChip.classList.toggle('is-alert', isCaptured);
+        elements.walletVaultChip.textContent = capturedCount ? `Vault ${capturedCount}` : 'Vault';
+
         if (state.currentUser.card_holder) {
             elements.walletStatus.textContent = `${state.currentUser.card_holder} currently holds your black card. Beat them before the reset if you want it back today.`;
         } else {
@@ -1523,17 +1948,23 @@
         }
 
         elements.walletList.innerHTML = '';
-        if (Array.isArray(state.currentUser.wallet_cards) && state.currentUser.wallet_cards.length) {
+        if (capturedCount) {
             state.currentUser.wallet_cards.forEach((card) => {
                 const chip = document.createElement('div');
                 chip.className = 'vault-chip';
-                chip.textContent = `${card.owner}'s black card`;
+                chip.innerHTML = `
+                    <strong>${card.owner}</strong>
+                    <span>Black Card In Vault</span>
+                `;
                 elements.walletList.appendChild(chip);
             });
         } else {
             const chip = document.createElement('div');
             chip.className = 'vault-chip';
-            chip.textContent = 'No captured black cards yet.';
+            chip.innerHTML = `
+                <strong>Vault Open</strong>
+                <span>No captured cards yet</span>
+            `;
             elements.walletList.appendChild(chip);
         }
 
