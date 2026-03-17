@@ -3,17 +3,78 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from urllib.parse import unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'your-secret-key'  # Replace with your actual secret key
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # Set to False in production
 
-ALLOWED_HOSTS = ['*']  # Update with your domain or IP in production
+def env_list(name, default=''):
+    raw_value = os.getenv(name, default)
+    return [item.strip() for item in raw_value.split(',') if item.strip()]
+
+
+def database_config():
+    database_url = os.getenv('DATABASE_URL')
+    if env_bool('VERCEL', False) and not database_url:
+        raise RuntimeError('DATABASE_URL must be set for Vercel deployments.')
+
+    if not database_url:
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+
+    parsed = urlparse(database_url)
+    scheme = parsed.scheme.split('+', 1)[0]
+
+    if scheme in {'postgres', 'postgresql'}:
+        config = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': unquote(parsed.username or ''),
+            'PASSWORD': unquote(parsed.password or ''),
+            'HOST': parsed.hostname or '',
+            'PORT': str(parsed.port or ''),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+        }
+        ssl_mode = os.getenv('DB_SSLMODE')
+        if ssl_mode:
+            config['OPTIONS'] = {'sslmode': ssl_mode}
+        return config
+
+    if scheme == 'sqlite':
+        db_path = unquote(parsed.path or '')
+        if not db_path or db_path == '/:memory:':
+            db_name = ':memory:'
+        else:
+            db_name = Path(db_path) if db_path.startswith('/') else BASE_DIR / db_path
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': db_name,
+        }
+
+    raise ValueError(f'Unsupported DATABASE_URL scheme: {scheme}')
+
+
+DEFAULT_DEBUG = not env_bool('VERCEL', False)
+DEBUG = env_bool('DJANGO_DEBUG', DEFAULT_DEBUG)
+
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-secret-key-change-me')
+if not DEBUG and SECRET_KEY == 'dev-secret-key-change-me':
+    raise RuntimeError('DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false.')
+
+default_allowed_hosts = {'localhost', '127.0.0.1', 'testserver', '.vercel.app'}
+vercel_url = os.getenv('VERCEL_URL')
+if vercel_url:
+    default_allowed_hosts.add(vercel_url)
+ALLOWED_HOSTS = sorted(default_allowed_hosts.union(env_list('DJANGO_ALLOWED_HOSTS')))
 
 # Application definition
 
@@ -29,7 +90,6 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
-    'channels',
 
     # Your apps
     'game.apps.GameConfig',  # Use the AppConfig class for the 'game' app
@@ -65,26 +125,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
-ASGI_APPLICATION = 'backend.asgi.application'  # For Channels
+ASGI_APPLICATION = 'backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# Channels
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],  # Ensure Redis is running on this host and port
-        },
-    },
+    'default': database_config(),
 }
 
 # Password validation
@@ -115,6 +162,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Custom User Model
 AUTH_USER_MODEL = 'game.User'
@@ -129,8 +177,10 @@ REST_FRAMEWORK = {
     ),
 }
 
-# CORS - allow mobile app to connect
-CORS_ALLOW_ALL_ORIGINS = True  # Lock this down in production
+cors_allowed_origins = env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOW_ALL_ORIGINS = DEBUG and not cors_allowed_origins
+CORS_ALLOWED_ORIGINS = cors_allowed_origins
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS')
 
 # Simple JWT Configuration
 SIMPLE_JWT = {
@@ -138,3 +188,14 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     # Add more configurations as needed
 }
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+FORCE_HTTPS = env_bool('FORCE_HTTPS', False)
+SECURE_SSL_REDIRECT = FORCE_HTTPS
+SESSION_COOKIE_SECURE = FORCE_HTTPS
+CSRF_COOKIE_SECURE = FORCE_HTTPS
+SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0')) if FORCE_HTTPS else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', FORCE_HTTPS)
+SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', FORCE_HTTPS)

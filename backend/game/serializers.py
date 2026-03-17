@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.db.models import F
 from .models import Question, Match, Leaderboard
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone

@@ -1,14 +1,9 @@
-import os
-import django
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
-django.setup()
-
-from game.models import Question
 from game.data.questions_data import questions
 
 
 def load_questions():
+    from game.models import Question
+
     added = 0
     skipped = 0
     for q in questions:
@@ -28,4 +23,9 @@ def load_questions():
 
 
 if __name__ == "__main__":
+    import os
+    import django
+
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+    django.setup()
     load_questions()
