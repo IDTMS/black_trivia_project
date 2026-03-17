@@ -40,8 +40,9 @@ If your Neon integration gives you `PGHOST`, `PGHOST_UNPOOLED`, `PGUSER`, `PGDAT
 - Health check: `/health/`
 - API base path: `/api/`
 - Vercel entrypoint: [api/index.py](/Users/marcuslit/Documents/source-code/black_trivia_project/api/index.py)
+- Vercel Python build hook: [pyproject.toml](/Users/marcuslit/Documents/source-code/black_trivia_project/pyproject.toml) -> [build.py](/Users/marcuslit/Documents/source-code/black_trivia_project/build.py)
 - Vercel config: [vercel.json](/Users/marcuslit/Documents/source-code/black_trivia_project/vercel.json)
-- The Vercel build runs migrations and seeds bundled questions during deploy, and will prefer `DATABASE_URL_UNPOOLED` or `PGHOST_UNPOOLED` if provided.
+- The Vercel build runs migrations and seeds bundled questions during deploy via the Python build hook, and will prefer `DATABASE_URL_UNPOOLED` or `PGHOST_UNPOOLED` if provided.
 - The mobile app can point to this backend by setting `EXPO_PUBLIC_API_BASE_URL=https://blackcard.joinhavn.io/api`
 
 ## Vercel
