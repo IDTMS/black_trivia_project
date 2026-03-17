@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.env.*
+venv
+node_modules
+frontend
+mobile
+response.json
+backend/db.sqlite3
+backend/staticfiles
