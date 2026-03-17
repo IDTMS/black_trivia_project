@@ -655,44 +655,6 @@
             line-height: 1.5;
         }
 
-        .wallet-stats {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 8px;
-            margin-top: 18px;
-        }
-
-        .wallet-stat {
-            padding: 11px 12px;
-            min-height: 76px;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background:
-                linear-gradient(180deg, rgba(18, 18, 20, 0.9), rgba(7, 7, 8, 0.94)),
-                linear-gradient(140deg, rgba(212, 175, 90, 0.03), transparent 48%);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-        }
-
-        .wallet-stat span {
-            display: block;
-            color: rgba(244, 239, 229, 0.54);
-            font-size: 10px;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-        }
-
-        .wallet-stat strong {
-            display: block;
-            margin-top: 7px;
-            font-size: clamp(18px, 5vw, 24px);
-            line-height: 1.05;
-            color: #f4d791;
-            letter-spacing: 0.04em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
         .wallet-card-stage {
             margin-top: 18px;
         }
@@ -770,11 +732,12 @@
 
         .wallet-card-owner {
             position: absolute;
-            right: 10%;
-            bottom: 12%;
+            left: 50%;
+            bottom: 5.5%;
+            transform: translateX(-50%);
             z-index: 3;
-            width: 30%;
-            height: 6%;
+            width: 40%;
+            height: 7%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -787,8 +750,7 @@
             text-transform: uppercase;
             text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: visible;
             pointer-events: none;
         }
 
@@ -1118,8 +1080,7 @@
             }
 
             .wallet-card-owner {
-                width: 30%;
-                right: 10%;
+                width: 40%;
                 font-size: clamp(9px, 2.8vw, 14px);
             }
         }
@@ -1230,20 +1191,6 @@
                 <p class="wallet-copy" id="walletHeroCopy">
                     Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.
                 </p>
-                <div class="wallet-stats">
-                    <div class="wallet-stat">
-                        <span>Status</span>
-                        <strong id="walletStatStatus">Secured</strong>
-                    </div>
-                    <div class="wallet-stat">
-                        <span>Vault</span>
-                        <strong id="walletStatCount">00</strong>
-                    </div>
-                    <div class="wallet-stat">
-                        <span>Holder</span>
-                        <strong id="walletStatHolder">You</strong>
-                    </div>
-                </div>
                 <div class="wallet-card-stage">
                     <div class="wallet-card-frame is-secured" id="walletCardFrame">
                         <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
@@ -1446,9 +1393,6 @@
         walletShell: document.getElementById('walletShell'),
         walletStatePill: document.getElementById('walletStatePill'),
         walletHeroCopy: document.getElementById('walletHeroCopy'),
-        walletStatStatus: document.getElementById('walletStatStatus'),
-        walletStatCount: document.getElementById('walletStatCount'),
-        walletStatHolder: document.getElementById('walletStatHolder'),
         walletCardFrame: document.getElementById('walletCardFrame'),
         walletCardChip: document.getElementById('walletCardChip'),
         walletCardOwner: document.getElementById('walletCardOwner'),
@@ -1925,9 +1869,6 @@
             elements.walletStatePill.textContent = 'Secured';
             elements.walletStatePill.classList.remove('is-alert');
             elements.walletHeroCopy.textContent = 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
-            elements.walletStatStatus.textContent = 'Secured';
-            elements.walletStatCount.textContent = '00';
-            elements.walletStatHolder.textContent = 'You';
             elements.walletCardFrame.classList.add('is-secured');
             elements.walletCardFrame.classList.remove('is-captured');
             elements.walletCardChip.textContent = 'In Wallet';
@@ -1953,9 +1894,6 @@
         elements.walletHeroCopy.textContent = isCaptured
             ? `${state.currentUser.card_holder} is holding your name right now. Beat them before the reset and take the card back.`
             : 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
-        elements.walletStatStatus.textContent = isCaptured ? 'Claimed' : 'Secured';
-        elements.walletStatCount.textContent = String(capturedCount).padStart(2, '0');
-        elements.walletStatHolder.textContent = holderLabel;
         elements.walletCardFrame.classList.toggle('is-secured', !isCaptured);
         elements.walletCardFrame.classList.toggle('is-captured', isCaptured);
         elements.walletCardChip.textContent = isCaptured ? 'Card Out' : 'In Wallet';
