@@ -41,11 +41,20 @@ class Question(models.Model):
 
 
 class Match(models.Model):
+    invite_code = models.CharField(max_length=6, unique=True, null=True, blank=True)
     player1 = models.ForeignKey(User, related_name='matches_as_player1', on_delete=models.CASCADE)
-    player2 = models.ForeignKey(User, related_name='matches_as_player2', on_delete=models.CASCADE)
+    player2 = models.ForeignKey(
+        User,
+        related_name='matches_as_player2',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     winner = models.ForeignKey(User, related_name='wins', on_delete=models.SET_NULL, null=True, blank=True)
     loser = models.ForeignKey(User, related_name='losses', on_delete=models.SET_NULL, null=True, blank=True)
     current_buzzer = models.ForeignKey(User, related_name='current_buzzer', on_delete=models.SET_NULL, null=True, blank=True)
+    player1_score = models.IntegerField(default=0)
+    player2_score = models.IntegerField(default=0)
     current_question = models.ForeignKey(
         'Question',
         related_name='current_question',
@@ -56,7 +65,8 @@ class Match(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.player1} vs {self.player2} on {self.timestamp}"
+        opponent = self.player2.username if self.player2 else "Open Seat"
+        return f"{self.player1} vs {opponent} on {self.timestamp}"
 
 
 class Leaderboard(models.Model):

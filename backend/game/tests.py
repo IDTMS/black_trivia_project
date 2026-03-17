@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Leaderboard
+from .models import Leaderboard, Match, Question
 
 User = get_user_model()
 
@@ -36,3 +36,86 @@ class AuthAndLeaderboardTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data[0]['user'], 'leaderboard_user')
+
+
+class MatchFlowTests(APITestCase):
+    def setUp(self):
+        self.player1 = User.objects.create_user(
+            username='player_one',
+            email='player1@example.com',
+            password='StrongPass123!',
+        )
+        self.player2 = User.objects.create_user(
+            username='player_two',
+            email='player2@example.com',
+            password='StrongPass123!',
+        )
+        Leaderboard.objects.create(user=self.player1)
+        Leaderboard.objects.create(user=self.player2)
+
+        Question.objects.create(
+            category='history',
+            difficulty='easy',
+            question_text='What year did Juneteenth mark the arrival of emancipation news in Texas?',
+            answer_choices=['1863', '1865', '1870', '1876'],
+            correct_answer='1865',
+        )
+        Question.objects.create(
+            category='sports',
+            difficulty='easy',
+            question_text='Which boxer was known as The Greatest?',
+            answer_choices=['Joe Frazier', 'Muhammad Ali', 'George Foreman', 'Sugar Ray Leonard'],
+            correct_answer='Muhammad Ali',
+        )
+
+    def test_create_match_returns_waiting_state_and_code(self):
+        self.client.force_authenticate(user=self.player1)
+
+        response = self.client.post('/api/matches/', {}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'waiting')
+        self.assertEqual(response.data['user_role'], 'player1')
+        self.assertEqual(len(response.data['invite_code']), 6)
+        self.assertEqual(Match.objects.count(), 1)
+
+    def test_join_by_code_and_answer_updates_match_score(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        join_response = self.client.post(
+            '/api/matches/join/',
+            {'invite_code': invite_code},
+            format='json',
+        )
+
+        self.assertEqual(join_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(join_response.data['status'], 'live')
+        self.assertEqual(join_response.data['user_role'], 'player2')
+        self.assertIsNotNone(join_response.data['current_question'])
+
+        question = Question.objects.get(id=join_response.data['current_question']['id'])
+
+        buzz_response = self.client.post(f'/api/matches/{match_id}/buzz/', {}, format='json')
+        self.assertEqual(buzz_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(buzz_response.data['current_buzzer']['username'], 'player_two')
+
+        answer_response = self.client.post(
+            f'/api/matches/{match_id}/answer/',
+            {'answer': question.correct_answer},
+            format='json',
+        )
+
+        self.assertEqual(answer_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(answer_response.data['result'], 'correct')
+
+        match = Match.objects.get(id=match_id)
+        self.assertEqual(match.player2_id, self.player2.id)
+        self.assertEqual(match.player2_score, 10)
+        self.assertIsNone(match.current_buzzer)
+
+        leaderboard = Leaderboard.objects.get(user=self.player2)
+        self.assertEqual(leaderboard.points, 10)

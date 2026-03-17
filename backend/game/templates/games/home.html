@@ -7,22 +7,22 @@
     <title>Black Card</title>
     <style>
         :root {
-            --bg: #060606;
-            --bg-soft: #111111;
-            --panel: rgba(15, 15, 15, 0.92);
-            --panel-strong: rgba(21, 21, 21, 0.98);
-            --panel-border: rgba(255, 202, 76, 0.18);
-            --text: #f8f2e8;
-            --text-soft: #c9bb9f;
+            --bg: #050505;
+            --bg-soft: #101010;
+            --panel: rgba(16, 16, 16, 0.94);
+            --panel-border: rgba(240, 179, 35, 0.18);
             --gold: #f0b323;
             --gold-deep: #b8820f;
             --red: #c1121f;
             --red-bright: #ef233c;
-            --black: #050505;
-            --shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            --text: #f7f0e6;
+            --text-soft: #cabd9f;
+            --success: #78c091;
+            --danger: #ef476f;
+            --shadow: 0 28px 90px rgba(0, 0, 0, 0.52);
             --radius: 26px;
             --radius-sm: 18px;
-            --transition: 160ms ease;
+            --transition: 180ms ease;
         }
 
         * {
@@ -35,109 +35,131 @@
             font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--text);
             background:
-                radial-gradient(circle at top, rgba(193, 18, 31, 0.35), transparent 34%),
-                radial-gradient(circle at 85% 16%, rgba(240, 179, 35, 0.18), transparent 24%),
-                linear-gradient(180deg, #140506 0%, #080808 40%, #050505 100%);
+                radial-gradient(circle at top, rgba(193, 18, 31, 0.34), transparent 32%),
+                radial-gradient(circle at 84% 16%, rgba(240, 179, 35, 0.18), transparent 22%),
+                linear-gradient(180deg, #160607 0%, #090909 42%, #040404 100%);
         }
 
         body::before,
         body::after {
             content: "";
             position: fixed;
-            inset: auto;
             width: 280px;
             height: 280px;
             border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.32;
+            filter: blur(90px);
+            opacity: 0.28;
             pointer-events: none;
         }
 
         body::before {
-            top: -80px;
-            left: -90px;
-            background: rgba(193, 18, 31, 0.55);
+            top: -90px;
+            left: -110px;
+            background: rgba(193, 18, 31, 0.58);
         }
 
         body::after {
-            right: -100px;
-            bottom: 10%;
-            background: rgba(240, 179, 35, 0.2);
+            right: -110px;
+            bottom: 12%;
+            background: rgba(240, 179, 35, 0.18);
         }
 
         main {
-            width: min(100%, 460px);
+            width: min(100%, 470px);
             min-height: 100vh;
             margin: 0 auto;
-            padding: 22px 18px 44px;
+            padding: 22px 18px 42px;
             display: grid;
             gap: 16px;
-            position: relative;
         }
 
-        h1,
-        h2,
-        h3,
-        p {
+        h1, h2, h3, p {
             margin: 0;
         }
 
-        .hero-card,
-        .panel {
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+            cursor: pointer;
+            transition: transform var(--transition), opacity var(--transition), border-color var(--transition), background var(--transition);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .card,
+        .hero {
             position: relative;
             overflow: hidden;
             border-radius: var(--radius);
             border: 1px solid var(--panel-border);
-            background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.95));
+            background: linear-gradient(180deg, rgba(19, 19, 19, 0.97), rgba(10, 10, 10, 0.98));
             box-shadow: var(--shadow);
         }
 
-        .hero-card {
+        .hero {
             padding: 22px;
             background:
-                linear-gradient(165deg, rgba(193, 18, 31, 0.92), rgba(18, 18, 18, 0.98) 55%, rgba(5, 5, 5, 1)),
-                linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.95));
+                linear-gradient(160deg, rgba(193, 18, 31, 0.92), rgba(20, 20, 20, 0.97) 54%, rgba(5, 5, 5, 1)),
+                linear-gradient(180deg, rgba(19, 19, 19, 0.97), rgba(10, 10, 10, 0.98));
         }
 
-        .hero-card::after {
+        .hero::after {
             content: "";
             position: absolute;
             right: -80px;
             top: -40px;
-            width: 180px;
-            height: 180px;
-            background: radial-gradient(circle, rgba(240, 179, 35, 0.6), transparent 65%);
+            width: 190px;
+            height: 190px;
+            background: radial-gradient(circle, rgba(240, 179, 35, 0.55), transparent 68%);
             pointer-events: none;
         }
 
-        .topline,
-        .section-head,
-        .meta-row,
-        .presence-row,
-        .controls-grid,
-        .hero-stats {
-            display: flex;
+        .card {
+            padding: 18px;
         }
 
         .topline,
         .section-head,
-        .meta-row,
-        .presence-row {
-            justify-content: space-between;
+        .chip-row,
+        .score-row,
+        .action-row,
+        .identity-row {
+            display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 10px;
         }
 
-        .topline {
-            margin-bottom: 18px;
+        .eyebrow,
+        .label,
+        .tiny {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow,
+        .label,
+        .section-copy,
+        .subtle {
+            color: var(--text-soft);
         }
 
         .badge,
-        .section-chip,
-        .meta-pill,
-        .leaderboard-tag {
-            border-radius: 999px;
+        .pill,
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             padding: 7px 12px;
+            border-radius: 999px;
             font-size: 11px;
             letter-spacing: 0.16em;
             text-transform: uppercase;
@@ -146,69 +168,55 @@
 
         .badge {
             color: var(--text);
-            background: rgba(8, 8, 8, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(8, 8, 8, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
-        .badge-live {
-            background: rgba(240, 179, 35, 0.18);
-            border-color: rgba(240, 179, 35, 0.45);
+        .badge-live,
+        .pill,
+        .tag {
             color: var(--gold);
+            background: rgba(240, 179, 35, 0.12);
+            border: 1px solid rgba(240, 179, 35, 0.28);
         }
 
-        .eyebrow,
-        .section-kicker,
-        .question-eyebrow {
-            color: var(--text-soft);
-            font-size: 11px;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-        }
-
-        .brand {
-            margin-bottom: 14px;
-        }
-
-        .brand h1 {
-            margin-top: 8px;
+        .hero h1 {
             display: grid;
-            gap: 2px;
+            gap: 4px;
+            margin-top: 10px;
             line-height: 0.92;
         }
 
-        .brand-main {
-            font-size: clamp(42px, 12vw, 56px);
+        .brand-line {
+            font-size: clamp(40px, 12vw, 56px);
             font-weight: 900;
             letter-spacing: 0.18em;
         }
 
         .brand-accent {
-            font-size: clamp(42px, 12vw, 56px);
-            font-weight: 900;
-            letter-spacing: 0.18em;
             color: var(--gold);
-            text-shadow: 0 0 24px rgba(240, 179, 35, 0.25);
+            text-shadow: 0 0 24px rgba(240, 179, 35, 0.28);
         }
 
         .hero-copy {
+            margin-top: 16px;
             max-width: 28rem;
-            color: rgba(248, 242, 232, 0.9);
             line-height: 1.5;
+            color: rgba(247, 240, 230, 0.92);
         }
 
         .hero-stats {
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 10px;
             margin-top: 18px;
         }
 
         .hero-stat {
-            flex: 1 1 110px;
-            min-width: 0;
             padding: 12px 14px;
             border-radius: 18px;
-            background: rgba(5, 5, 5, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(5, 5, 5, 0.44);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .hero-stat strong {
@@ -219,20 +227,15 @@
 
         .hero-stat span {
             display: block;
-            margin-top: 2px;
+            margin-top: 3px;
             font-size: 12px;
-            color: rgba(248, 242, 232, 0.78);
+            color: rgba(247, 240, 230, 0.78);
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
 
-        .panel {
-            padding: 18px;
-            background: linear-gradient(180deg, rgba(19, 19, 19, 0.96), rgba(9, 9, 9, 0.98));
-        }
-
         .section-head {
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
         .section-head h2 {
@@ -241,64 +244,59 @@
         }
 
         .section-copy {
-            margin-top: 10px;
-            color: var(--text-soft);
             line-height: 1.5;
             font-size: 14px;
         }
 
-        .section-chip,
-        .leaderboard-tag {
-            color: var(--gold);
-            background: rgba(240, 179, 35, 0.12);
-            border: 1px solid rgba(240, 179, 35, 0.28);
-        }
-
-        .presence-row {
-            gap: 10px;
-        }
-
-        .presence-chip {
-            flex: 1;
-            padding: 14px 16px;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-soft);
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-        }
-
-        .presence-chip.active {
-            color: var(--text);
-            border-color: rgba(240, 179, 35, 0.42);
-            background: linear-gradient(180deg, rgba(240, 179, 35, 0.16), rgba(193, 18, 31, 0.12));
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-        }
-
-        .auth-stack {
+        .tab-row,
+        .split-grid,
+        .choice-grid,
+        .leaderboard-list {
             display: grid;
+        }
+
+        .tab-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .split-grid {
             gap: 14px;
         }
 
-        .form-card {
-            background: linear-gradient(180deg, rgba(22, 22, 22, 0.98), rgba(12, 12, 12, 0.98));
+        .choice-grid {
+            gap: 10px;
+            margin-top: 14px;
         }
 
-        .card-label {
-            margin-bottom: 4px;
-            color: var(--gold);
-            font-size: 11px;
-            letter-spacing: 0.18em;
+        .leaderboard-list {
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .tab-button,
+        .ghost-button,
+        .secondary-button,
+        .answer-button {
+            min-height: 52px;
+            border-radius: 18px;
+            padding: 0 16px;
+            font-weight: 800;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
         }
 
-        .card-copy {
-            margin-top: 8px;
+        .tab-button {
             color: var(--text-soft);
-            font-size: 14px;
-            line-height: 1.45;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-button.active {
+            color: #0b0b0b;
+            background: linear-gradient(180deg, #ffd15a, var(--gold));
+            box-shadow: 0 18px 36px rgba(240, 179, 35, 0.18);
         }
 
         form {
@@ -319,843 +317,1016 @@
             letter-spacing: 0.16em;
         }
 
-        input {
-            width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text);
-            padding: 14px 15px;
-            font-size: 15px;
-            transition: border-color var(--transition), transform var(--transition), background var(--transition);
-        }
-
-        input::placeholder {
-            color: rgba(201, 187, 159, 0.58);
-        }
-
-        input:focus {
-            outline: none;
-            border-color: rgba(240, 179, 35, 0.55);
-            background: rgba(255, 255, 255, 0.05);
-            transform: translateY(-1px);
-        }
-
-        button {
-            border: 0;
+        .field input {
+            min-height: 62px;
+            padding: 0 18px;
             border-radius: 18px;
-            padding: 15px 16px;
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            transition: transform var(--transition), opacity var(--transition), box-shadow var(--transition), background var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            outline: none;
         }
 
-        button:hover:not(:disabled) {
+        .field input:focus {
+            border-color: rgba(240, 179, 35, 0.45);
+            box-shadow: 0 0 0 3px rgba(240, 179, 35, 0.1);
+        }
+
+        .primary-button,
+        .accent-button {
+            min-height: 58px;
+            border-radius: 20px;
+            padding: 0 18px;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .primary-button,
+        .accent-button:hover,
+        .answer-button:hover,
+        .ghost-button:hover,
+        .secondary-button:hover,
+        .tab-button:hover {
             transform: translateY(-1px);
         }
 
-        button:disabled {
-            opacity: 0.38;
-            cursor: not-allowed;
-            transform: none;
+        .primary-button,
+        .answer-button.is-active {
+            color: #090909;
+            background: linear-gradient(180deg, #ffd259, var(--gold));
+            box-shadow: 0 20px 38px rgba(240, 179, 35, 0.18);
         }
 
-        .btn-gold {
-            color: var(--black);
-            background: linear-gradient(180deg, #f7c948, #d99a06);
-            box-shadow: 0 16px 30px rgba(240, 179, 35, 0.18);
-        }
-
-        .btn-red {
+        .secondary-button {
             color: var(--text);
-            background: linear-gradient(180deg, #d62839, #941b27);
-            box-shadow: 0 16px 30px rgba(193, 18, 31, 0.2);
-        }
-
-        .btn-dark {
-            color: var(--text);
-            background: linear-gradient(180deg, #1d1d1d, #0d0d0d);
-            border: 1px solid rgba(240, 179, 35, 0.18);
-        }
-
-        .btn-outline {
-            color: var(--gold);
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(240, 179, 35, 0.32);
-        }
-
-        .status {
-            min-height: 18px;
-            margin-top: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .status.neutral {
-            color: var(--text-soft);
-        }
-
-        .status.error {
-            color: #ff7b86;
-        }
-
-        .status.success {
-            color: var(--gold);
-        }
-
-        .actor-switch {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .actor-toggle {
-            padding: 12px 14px;
-            border-radius: 16px;
-            color: var(--text-soft);
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            font-size: 12px;
-            letter-spacing: 0.08em;
+            border: 1px solid rgba(240, 179, 35, 0.16);
         }
 
-        .actor-toggle.ready {
-            border-color: rgba(240, 179, 35, 0.22);
-        }
-
-        .actor-toggle.active {
-            color: var(--black);
-            background: linear-gradient(180deg, #f7c948, #d99a06);
-            border-color: transparent;
-        }
-
-        .meta-row {
-            flex-wrap: wrap;
-            margin-bottom: 14px;
-        }
-
-        .meta-pill {
-            color: var(--text-soft);
+        .ghost-button,
+        .answer-button {
+            color: var(--text);
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: left;
         }
 
-        .meta-pill.active {
+        .accent-button {
+            color: var(--text);
+            background: linear-gradient(180deg, rgba(239, 35, 60, 0.96), rgba(193, 18, 31, 0.92));
+            box-shadow: 0 18px 34px rgba(193, 18, 31, 0.18);
+        }
+
+        .status-banner {
+            display: none;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .status-banner.is-visible {
+            display: block;
+        }
+
+        .status-banner.info {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .status-banner.success {
+            color: #def7e6;
+            background: rgba(120, 192, 145, 0.12);
+            border-color: rgba(120, 192, 145, 0.22);
+        }
+
+        .status-banner.error {
+            color: #ffd9df;
+            background: rgba(239, 71, 111, 0.12);
+            border-color: rgba(239, 71, 111, 0.24);
+        }
+
+        .identity-row {
+            margin-top: 12px;
+        }
+
+        .identity-card,
+        .score-card,
+        .leaderboard-item,
+        .code-card,
+        .question-card {
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .identity-card {
+            flex: 1;
+        }
+
+        .identity-card strong,
+        .score-card strong,
+        .leaderboard-item strong,
+        .code-value {
+            display: block;
+            font-size: 20px;
+            letter-spacing: 0.04em;
+        }
+
+        .code-card {
+            background:
+                linear-gradient(180deg, rgba(240, 179, 35, 0.16), rgba(240, 179, 35, 0.06)),
+                rgba(255, 255, 255, 0.02);
+            border-color: rgba(240, 179, 35, 0.24);
+        }
+
+        .code-value {
+            margin-top: 6px;
+            font-size: 34px;
+            font-weight: 900;
             color: var(--gold);
-            border-color: rgba(240, 179, 35, 0.3);
-            background: rgba(240, 179, 35, 0.12);
+            letter-spacing: 0.18em;
         }
 
-        .controls-grid {
-            flex-wrap: wrap;
-            gap: 10px;
+        .score-row {
+            margin-top: 14px;
+            align-items: stretch;
         }
 
-        .controls-grid button {
-            flex: 1 1 calc(50% - 10px);
-            min-width: 0;
+        .score-card {
+            flex: 1;
+        }
+
+        .score-card.is-leading {
+            border-color: rgba(240, 179, 35, 0.36);
+            background: linear-gradient(180deg, rgba(240, 179, 35, 0.14), rgba(255, 255, 255, 0.03));
+        }
+
+        .score-card span,
+        .leaderboard-item span {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            color: var(--text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
         .question-card {
             margin-top: 14px;
-            padding: 16px;
-            border-radius: 22px;
-            background:
-                linear-gradient(180deg, rgba(193, 18, 31, 0.18), rgba(10, 10, 10, 0.98) 55%),
-                linear-gradient(180deg, rgba(16, 16, 16, 0.98), rgba(9, 9, 9, 0.98));
-            border: 1px solid rgba(240, 179, 35, 0.18);
         }
 
-        .question-card.empty {
-            opacity: 0.88;
+        .question-card h3 {
+            margin-top: 8px;
+            font-size: 22px;
+            line-height: 1.3;
         }
 
-        .question-text {
-            margin-top: 10px;
-            font-size: 18px;
-            font-weight: 800;
-            line-height: 1.45;
-        }
-
-        .choice-preview {
-            margin-top: 14px;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .question-meta {
+            margin-top: 12px;
+            display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
-        .choice-chip {
-            display: inline-flex;
+        .action-row {
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .action-row button {
+            flex: 1 1 160px;
+        }
+
+        .leaderboard-item {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            min-height: 46px;
-            padding: 10px 12px;
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text);
-            text-align: center;
-            font-size: 13px;
-            line-height: 1.35;
-            font-weight: 700;
+            justify-content: space-between;
+            gap: 14px;
         }
 
-        .choice-chip.placeholder {
-            color: var(--text-soft);
-            font-weight: 600;
-        }
-
-        .leaderboard {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: grid;
-            gap: 10px;
-        }
-
-        .leaderboard-row {
-            display: grid;
-            grid-template-columns: 50px 1fr auto;
-            gap: 12px;
-            align-items: center;
-            padding: 12px 14px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .rank-badge {
+        .leaderboard-rank {
             width: 42px;
             height: 42px;
-            border-radius: 50%;
+            border-radius: 14px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-soft);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 12px;
-            font-weight: 800;
-            letter-spacing: 0.08em;
+            color: #090909;
+            background: linear-gradient(180deg, #ffd15a, var(--gold));
+            font-weight: 900;
         }
 
-        .rank-badge.top {
-            color: var(--black);
-            background: linear-gradient(180deg, #f7c948, #d99a06);
-            border-color: transparent;
-        }
-
-        .leader-name {
-            display: block;
-            font-size: 15px;
-            font-weight: 800;
-            color: var(--text);
-        }
-
-        .leader-meta {
-            display: block;
-            margin-top: 2px;
-            font-size: 12px;
-            color: var(--text-soft);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .leader-points {
+        .leaderboard-points {
             text-align: right;
         }
 
-        .leader-points strong {
-            display: block;
-            color: var(--gold);
-            font-size: 18px;
+        .hidden {
+            display: none !important;
         }
 
-        .leader-points span {
-            display: block;
-            color: var(--text-soft);
-            font-size: 11px;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        .leaderboard-empty {
-            padding: 14px;
-            border-radius: 18px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--text-soft);
-            text-align: center;
-        }
-
-        #match-in-progress {
-            display: none;
-        }
-
-        @media (min-width: 768px) {
+        @media (max-width: 420px) {
             main {
-                padding-top: 34px;
-                padding-bottom: 60px;
+                padding-inline: 14px;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .score-row,
+            .identity-row {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-    <main>
-        <section class="hero-card">
-            <div class="topline">
-                <span class="badge">blackcard.joinhavn.io</span>
-                <span class="badge badge-live">alpha build</span>
+<main>
+    <section class="hero">
+        <div class="topline">
+            <span class="badge">Black Trivia Live</span>
+            <span class="badge badge-live">Two Phone Mode</span>
+        </div>
+        <span class="eyebrow">Culture. History. Speed.</span>
+        <h1>
+            <span class="brand-line">BLACK</span>
+            <span class="brand-line brand-accent">CARD</span>
+        </h1>
+        <p class="hero-copy">
+            One account per phone. One player creates the room. One player joins with the code.
+            Buzz first, lock the answer, and race to the lead.
+        </p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <strong id="heroQuestionCount">219</strong>
+                <span>Questions Loaded</span>
             </div>
-
-            <div class="brand">
-                <p class="eyebrow">culture trivia game</p>
-                <h1>
-                    <span class="brand-main">BLACK</span>
-                    <span class="brand-accent">CARD</span>
-                </h1>
+            <div class="hero-stat">
+                <strong>2</strong>
+                <span>Phones Ready</span>
             </div>
+            <div class="hero-stat">
+                <strong id="heroLeaderboardCount">0</strong>
+                <span>Leaderboard Entries</span>
+            </div>
+        </div>
+    </section>
 
-            <p class="hero-copy">
-                A mobile-style game shell in red, black, and gold. Create both players, sign in, choose who is acting,
-                and run a live head-to-head round from one screen.
+    <section class="card" id="statusCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Live Status</span>
+                <h2>Game Feed</h2>
+            </div>
+            <span class="pill" id="statusMode">Lobby</span>
+        </div>
+        <div class="status-banner info is-visible" id="statusBanner">
+            Sign in on this phone, then create a match or join one with a code.
+        </div>
+    </section>
+
+    <section class="card" id="authCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Access</span>
+                <h2>Enter The Game</h2>
+            </div>
+            <span class="pill" id="authModeChip">Login</span>
+        </div>
+        <p class="section-copy">
+            Each player uses their own phone and their own account. No more double login on one screen.
+        </p>
+        <div class="tab-row">
+            <button class="tab-button active" id="loginTab" type="button">Login</button>
+            <button class="tab-button" id="registerTab" type="button">Register</button>
+        </div>
+
+        <form id="loginForm">
+            <label class="field">
+                <span>Username</span>
+                <input id="loginUsername" type="text" placeholder="Your username" autocomplete="username" required>
+            </label>
+            <label class="field">
+                <span>Password</span>
+                <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" required>
+            </label>
+            <button class="primary-button" type="submit">Login</button>
+        </form>
+
+        <form class="hidden" id="registerForm">
+            <label class="field">
+                <span>Username</span>
+                <input id="registerUsername" type="text" placeholder="Pick a username" autocomplete="username" required>
+            </label>
+            <label class="field">
+                <span>Email</span>
+                <input id="registerEmail" type="email" placeholder="you@example.com" autocomplete="email" required>
+            </label>
+            <label class="field">
+                <span>Password</span>
+                <input id="registerPassword" type="password" placeholder="Choose a strong password" autocomplete="new-password" required>
+            </label>
+            <button class="primary-button" type="submit">Create Account</button>
+        </form>
+    </section>
+
+    <section class="card hidden" id="profileCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Your Phone</span>
+                <h2>Player Session</h2>
+            </div>
+            <span class="pill" id="playerRoleChip">Ready</span>
+        </div>
+        <div class="identity-row">
+            <div class="identity-card">
+                <span class="label">Logged In As</span>
+                <strong id="currentUsername">-</strong>
+                <p class="subtle" id="currentEmail">-</p>
+            </div>
+            <button class="secondary-button" id="logoutButton" type="button">Logout</button>
+        </div>
+    </section>
+
+    <section class="card hidden" id="lobbyCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Lobby</span>
+                <h2>Create Or Join</h2>
+            </div>
+            <span class="tag" id="lobbyStateChip">No Active Match</span>
+        </div>
+        <p class="section-copy">
+            Host a room and share the six-character code, or enter a code from another player to jump into their match.
+        </p>
+        <div class="split-grid">
+            <div class="card" style="padding:16px;">
+                <span class="label">Host Match</span>
+                <p class="section-copy" style="margin-top:8px;">Create a room on this phone and send the code to your opponent.</p>
+                <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
+            </div>
+            <div class="card" style="padding:16px;">
+                <span class="label">Join With Code</span>
+                <form id="joinForm" style="margin-top:10px;">
+                    <label class="field">
+                        <span>Invite Code</span>
+                        <input id="inviteCodeInput" type="text" maxlength="6" placeholder="ABC123" autocomplete="off" required>
+                    </label>
+                    <button class="secondary-button" type="submit">Join Match</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="card hidden" id="matchCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Active Match</span>
+                <h2 id="matchTitle">Waiting For Match</h2>
+            </div>
+            <span class="pill" id="matchStatusChip">Waiting</span>
+        </div>
+
+        <div class="code-card" id="codeCard">
+            <span class="label">Invite Code</span>
+            <strong class="code-value" id="inviteCodeDisplay">------</strong>
+            <div class="action-row">
+                <button class="secondary-button" id="copyCodeButton" type="button">Copy Code</button>
+            </div>
+        </div>
+
+        <div class="score-row">
+            <div class="score-card" id="player1ScoreCard">
+                <span class="label">Player 1</span>
+                <strong id="player1Name">Waiting...</strong>
+                <span id="player1Score">0 pts</span>
+            </div>
+            <div class="score-card" id="player2ScoreCard">
+                <span class="label">Player 2</span>
+                <strong id="player2Name">Open Seat</strong>
+                <span id="player2Score">0 pts</span>
+            </div>
+        </div>
+
+        <div class="question-card" id="questionCard">
+            <span class="label">Question</span>
+            <div class="question-meta">
+                <span class="badge" id="questionCategory">Category</span>
+                <span class="badge" id="questionDifficulty">Difficulty</span>
+            </div>
+            <h3 id="questionText">Create or join a match to load the first question.</h3>
+            <p class="section-copy" id="turnMessage" style="margin-top:10px;">
+                Buzz in from your phone when the room is live.
             </p>
-
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <strong>219</strong>
-                    <span>questions ready</span>
-                </div>
-                <div class="hero-stat">
-                    <strong>1v1</strong>
-                    <span>local control deck</span>
-                </div>
-                <div class="hero-stat">
-                    <strong>Live</strong>
-                    <span>public leaderboard</span>
-                </div>
+            <div class="action-row">
+                <button class="accent-button" id="buzzButton" type="button">Buzz In</button>
+                <button class="secondary-button" id="finishMatchButton" type="button">Finish Match</button>
             </div>
-        </section>
+            <div class="choice-grid" id="answerChoices"></div>
+        </div>
+    </section>
 
-        <section class="panel">
-            <div class="section-head">
-                <div>
-                    <p class="section-kicker">ready room</p>
-                    <h2>Player deck</h2>
-                </div>
-                <span class="section-chip">2 slots</span>
+    <section class="card" id="leaderboardCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Top Players</span>
+                <h2>Leaderboard</h2>
             </div>
+            <span class="tag">Public</span>
+        </div>
+        <div class="leaderboard-list" id="leaderboardList"></div>
+    </section>
+</main>
 
-            <div class="presence-row">
-                <div id="player1-chip" class="presence-chip">Player 1 offline</div>
-                <div id="player2-chip" class="presence-chip">Player 2 offline</div>
-            </div>
+<script>
+    const state = {
+        accessToken: localStorage.getItem('blackCardAccessToken') || '',
+        refreshToken: localStorage.getItem('blackCardRefreshToken') || '',
+        currentUser: null,
+        activeMatchId: localStorage.getItem('blackCardMatchId') || '',
+        activeMatch: null,
+        authMode: 'login',
+        pollHandle: null,
+    };
 
-            <p class="section-copy">Register a fresh account or log both sides in here before you open the match.</p>
-        </section>
+    const elements = {
+        authCard: document.getElementById('authCard'),
+        profileCard: document.getElementById('profileCard'),
+        lobbyCard: document.getElementById('lobbyCard'),
+        matchCard: document.getElementById('matchCard'),
+        statusBanner: document.getElementById('statusBanner'),
+        statusMode: document.getElementById('statusMode'),
+        authModeChip: document.getElementById('authModeChip'),
+        playerRoleChip: document.getElementById('playerRoleChip'),
+        lobbyStateChip: document.getElementById('lobbyStateChip'),
+        matchStatusChip: document.getElementById('matchStatusChip'),
+        heroLeaderboardCount: document.getElementById('heroLeaderboardCount'),
+        currentUsername: document.getElementById('currentUsername'),
+        currentEmail: document.getElementById('currentEmail'),
+        loginTab: document.getElementById('loginTab'),
+        registerTab: document.getElementById('registerTab'),
+        loginForm: document.getElementById('loginForm'),
+        registerForm: document.getElementById('registerForm'),
+        logoutButton: document.getElementById('logoutButton'),
+        createMatchButton: document.getElementById('createMatchButton'),
+        joinForm: document.getElementById('joinForm'),
+        inviteCodeInput: document.getElementById('inviteCodeInput'),
+        matchTitle: document.getElementById('matchTitle'),
+        inviteCodeDisplay: document.getElementById('inviteCodeDisplay'),
+        codeCard: document.getElementById('codeCard'),
+        copyCodeButton: document.getElementById('copyCodeButton'),
+        player1Name: document.getElementById('player1Name'),
+        player2Name: document.getElementById('player2Name'),
+        player1Score: document.getElementById('player1Score'),
+        player2Score: document.getElementById('player2Score'),
+        player1ScoreCard: document.getElementById('player1ScoreCard'),
+        player2ScoreCard: document.getElementById('player2ScoreCard'),
+        questionCategory: document.getElementById('questionCategory'),
+        questionDifficulty: document.getElementById('questionDifficulty'),
+        questionText: document.getElementById('questionText'),
+        turnMessage: document.getElementById('turnMessage'),
+        buzzButton: document.getElementById('buzzButton'),
+        finishMatchButton: document.getElementById('finishMatchButton'),
+        answerChoices: document.getElementById('answerChoices'),
+        leaderboardList: document.getElementById('leaderboardList'),
+    };
 
-        <section class="auth-stack">
-            <section class="panel form-card">
-                <p class="card-label">new player</p>
-                <h2>Create account</h2>
-                <p class="card-copy">Spin up a new player profile and drop those credentials straight into Player 1.</p>
-                <form id="register-form">
-                    <label class="field">
-                        <span>Username</span>
-                        <input id="register-username" type="text" placeholder="Enter username" required>
-                    </label>
-                    <label class="field">
-                        <span>Email</span>
-                        <input id="register-email" type="email" placeholder="Email address">
-                    </label>
-                    <label class="field">
-                        <span>Password</span>
-                        <input id="register-password" type="password" placeholder="Create password" required>
-                    </label>
-                    <button class="btn-red" type="submit">Register player</button>
-                </form>
-                <p id="account-message" class="status neutral"></p>
-            </section>
+    function setStoredTokens(accessToken, refreshToken) {
+        state.accessToken = accessToken || '';
+        state.refreshToken = refreshToken || '';
+        if (state.accessToken) {
+            localStorage.setItem('blackCardAccessToken', state.accessToken);
+        } else {
+            localStorage.removeItem('blackCardAccessToken');
+        }
+        if (state.refreshToken) {
+            localStorage.setItem('blackCardRefreshToken', state.refreshToken);
+        } else {
+            localStorage.removeItem('blackCardRefreshToken');
+        }
+    }
 
-            <section class="panel form-card">
-                <p class="card-label">slot one</p>
-                <h2>Player 1 login</h2>
-                <p class="card-copy">Player 1 opens the match and can start the first round.</p>
-                <form id="player1-login-form">
-                    <label class="field">
-                        <span>Username</span>
-                        <input id="player1-username" type="text" placeholder="Player 1 username" required>
-                    </label>
-                    <label class="field">
-                        <span>Password</span>
-                        <input id="player1-password" type="password" placeholder="Player 1 password" required>
-                    </label>
-                    <button class="btn-gold" type="submit">Login Player 1</button>
-                </form>
-                <p id="player1-status" class="status neutral"></p>
-            </section>
+    function setActiveMatchId(matchId) {
+        state.activeMatchId = matchId ? String(matchId) : '';
+        if (state.activeMatchId) {
+            localStorage.setItem('blackCardMatchId', state.activeMatchId);
+        } else {
+            localStorage.removeItem('blackCardMatchId');
+        }
+    }
 
-            <section class="panel form-card">
-                <p class="card-label">slot two</p>
-                <h2>Player 2 login</h2>
-                <p class="card-copy">Player 2 joins the created match and can take actions when selected below.</p>
-                <form id="player2-login-form">
-                    <label class="field">
-                        <span>Username</span>
-                        <input id="player2-username" type="text" placeholder="Player 2 username" required>
-                    </label>
-                    <label class="field">
-                        <span>Password</span>
-                        <input id="player2-password" type="password" placeholder="Player 2 password" required>
-                    </label>
-                    <button class="btn-dark" type="submit">Login Player 2</button>
-                </form>
-                <p id="player2-status" class="status neutral"></p>
-            </section>
-        </section>
+    function extractMessage(payload, fallbackMessage) {
+        if (!payload) {
+            return fallbackMessage;
+        }
+        if (typeof payload === 'string') {
+            return payload;
+        }
+        if (payload.message) {
+            return payload.message;
+        }
+        if (payload.error) {
+            return payload.error;
+        }
+        if (payload.detail) {
+            return payload.detail;
+        }
+        const firstKey = Object.keys(payload)[0];
+        if (!firstKey) {
+            return fallbackMessage;
+        }
+        const value = payload[firstKey];
+        if (Array.isArray(value)) {
+            return value[0];
+        }
+        return value || fallbackMessage;
+    }
 
-        <section class="panel">
-            <div class="section-head">
-                <div>
-                    <p class="section-kicker">game deck</p>
-                    <h2>Match control</h2>
-                </div>
-                <span class="section-chip">single screen</span>
-            </div>
-
-            <div class="meta-row">
-                <span id="match-id-pill" class="meta-pill">No match</span>
-                <span id="question-pill" class="meta-pill">No question</span>
-            </div>
-
-            <div class="actor-switch">
-                <button type="button" class="actor-toggle active" data-player="player1">Act as Player 1</button>
-                <button type="button" class="actor-toggle" data-player="player2">Act as Player 2</button>
-            </div>
-
-            <div class="controls-grid">
-                <button id="start-match" class="btn-gold" disabled>Start match</button>
-                <button id="join-match" class="btn-red" disabled>Join match</button>
-                <button id="buzz-button" class="btn-outline" disabled>Buzz</button>
-                <button id="answer-button" class="btn-dark" disabled>Answer</button>
-            </div>
-
-            <p id="match-status" class="status neutral">Log in Player 1 to open a match. Switch the active player before buzzing or answering.</p>
-
-            <div id="match-in-progress" class="question-card empty">
-                <p id="question-eyebrow" class="question-eyebrow">Question queue</p>
-                <p id="current-question" class="question-text">No question loaded yet.</p>
-                <div id="choice-preview" class="choice-preview">
-                    <span class="choice-chip placeholder">Choices appear here</span>
-                </div>
-            </div>
-        </section>
-
-        <section class="panel">
-            <div class="section-head">
-                <div>
-                    <p class="section-kicker">public board</p>
-                    <h2>Leaderboard</h2>
-                </div>
-                <span class="leaderboard-tag">live</span>
-            </div>
-
-            <ul id="leaderboard" class="leaderboard">
-                <li class="leaderboard-empty">Loading leaderboard...</li>
-            </ul>
-        </section>
-    </main>
-
-    <script>
-        let player1Token = null;
-        let player2Token = null;
-        let player1Name = '';
-        let player2Name = '';
-        let currentMatchId = null;
-        let currentQuestionId = null;
-        let activePlayerSlot = 'player1';
-
-        function setStatus(elementId, message, isError = false) {
-            const element = document.getElementById(elementId);
-            element.textContent = message;
-            element.className = `status ${message ? (isError ? 'error' : 'success') : 'neutral'}`;
+    async function refreshAccessToken() {
+        if (!state.refreshToken) {
+            return false;
         }
 
-        function getHeaders(token = null) {
-            const headers = {
-                'Content-Type': 'application/json',
-            };
-            if (token) {
-                headers.Authorization = `Bearer ${token}`;
-            }
-            return headers;
+        const response = await fetch('/api/token/refresh/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({refresh: state.refreshToken}),
+        });
+
+        if (!response.ok) {
+            setStoredTokens('', '');
+            return false;
         }
 
-        function getPlayerToken(slot) {
-            return slot === 'player1' ? player1Token : player2Token;
+        const payload = await response.json();
+        setStoredTokens(payload.access, state.refreshToken);
+        return true;
+    }
+
+    async function request(path, options = {}, retrying = false) {
+        const headers = new Headers(options.headers || {});
+        if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
+            headers.set('Content-Type', 'application/json');
+        }
+        if (state.accessToken) {
+            headers.set('Authorization', `Bearer ${state.accessToken}`);
         }
 
-        function getPlayerName(slot) {
-            return slot === 'player1' ? player1Name : player2Name;
-        }
-
-        function getActivePlayerToken() {
-            return getPlayerToken(activePlayerSlot);
-        }
-
-        function getAnyLoggedInToken() {
-            return getActivePlayerToken() || player1Token || player2Token;
-        }
-
-        async function readJson(response) {
-            try {
-                return await response.json();
-            } catch (error) {
-                return {};
+        const response = await fetch(path, {...options, headers});
+        if (response.status === 401 && !retrying && state.refreshToken) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                return request(path, options, true);
             }
         }
 
-        function firstErrorMessage(data, fallback) {
-            if (data.detail) {
-                return data.detail;
-            }
-
-            for (const value of Object.values(data)) {
-                if (Array.isArray(value) && value.length > 0) {
-                    return value[0];
-                }
-
-                if (typeof value === 'string' && value) {
-                    return value;
-                }
-            }
-
-            return fallback;
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
         }
 
-        function updatePresence() {
-            const player1Chip = document.getElementById('player1-chip');
-            const player2Chip = document.getElementById('player2-chip');
-
-            player1Chip.textContent = player1Name ? `${player1Name} ready` : 'Player 1 offline';
-            player1Chip.className = `presence-chip ${player1Token ? 'active' : ''}`;
-
-            player2Chip.textContent = player2Name ? `${player2Name} ready` : 'Player 2 offline';
-            player2Chip.className = `presence-chip ${player2Token ? 'active' : ''}`;
+        if (!response.ok) {
+            throw new Error(extractMessage(payload, 'Request failed.'));
         }
 
-        function updateActorSwitch() {
-            document.querySelectorAll('.actor-toggle').forEach((button) => {
-                const slot = button.dataset.player;
-                const name = getPlayerName(slot);
-                const isReady = Boolean(getPlayerToken(slot));
-                const label = name ? `Act as ${name}` : `Act as ${slot === 'player1' ? 'Player 1' : 'Player 2'}`;
+        return payload;
+    }
 
-                button.textContent = label;
-                button.classList.toggle('active', slot === activePlayerSlot);
-                button.classList.toggle('ready', isReady);
-                button.setAttribute('aria-pressed', slot === activePlayerSlot ? 'true' : 'false');
+    function showStatus(message, tone = 'info') {
+        elements.statusBanner.textContent = message;
+        elements.statusBanner.className = `status-banner ${tone} is-visible`;
+    }
+
+    function setAuthMode(mode) {
+        state.authMode = mode;
+        const isLogin = mode === 'login';
+        elements.authModeChip.textContent = isLogin ? 'Login' : 'Register';
+        elements.loginTab.classList.toggle('active', isLogin);
+        elements.registerTab.classList.toggle('active', !isLogin);
+        elements.loginForm.classList.toggle('hidden', !isLogin);
+        elements.registerForm.classList.toggle('hidden', isLogin);
+    }
+
+    function startPolling() {
+        stopPolling();
+        if (!state.activeMatchId) {
+            return;
+        }
+        state.pollHandle = window.setInterval(() => {
+            loadMatch(state.activeMatchId, false);
+        }, 4000);
+    }
+
+    function stopPolling() {
+        if (state.pollHandle) {
+            window.clearInterval(state.pollHandle);
+            state.pollHandle = null;
+        }
+    }
+
+    function isCurrentUserPlayer(match, key) {
+        return Boolean(state.currentUser && match && match[key] && match[key].id === state.currentUser.id);
+    }
+
+    function renderVisibility() {
+        const isAuthed = Boolean(state.currentUser);
+        elements.authCard.classList.toggle('hidden', isAuthed);
+        elements.profileCard.classList.toggle('hidden', !isAuthed);
+        elements.lobbyCard.classList.toggle('hidden', !isAuthed);
+        elements.matchCard.classList.toggle('hidden', !isAuthed);
+        elements.statusMode.textContent = state.activeMatch ? 'Match Live' : (isAuthed ? 'Signed In' : 'Lobby');
+    }
+
+    function renderProfile() {
+        if (!state.currentUser) {
+            elements.currentUsername.textContent = '-';
+            elements.currentEmail.textContent = '-';
+            elements.playerRoleChip.textContent = 'Ready';
+            return;
+        }
+
+        elements.currentUsername.textContent = state.currentUser.username;
+        elements.currentEmail.textContent = state.currentUser.email || 'No email on file';
+
+        if (!state.activeMatch) {
+            elements.playerRoleChip.textContent = 'Ready';
+            return;
+        }
+
+        const role = state.activeMatch.user_role === 'player1'
+            ? 'Host'
+            : state.activeMatch.user_role === 'player2'
+                ? 'Challenger'
+                : 'Spectator';
+        elements.playerRoleChip.textContent = role;
+    }
+
+    function renderLeaderboard(entries) {
+        elements.heroLeaderboardCount.textContent = entries.length;
+        elements.leaderboardList.innerHTML = '';
+
+        if (!entries.length) {
+            const empty = document.createElement('div');
+            empty.className = 'leaderboard-item';
+            empty.innerHTML = '<div><strong>No scores yet</strong><span>Play the first match to set the board.</span></div>';
+            elements.leaderboardList.appendChild(empty);
+            return;
+        }
+
+        entries.slice(0, 8).forEach((entry, index) => {
+            const item = document.createElement('div');
+            item.className = 'leaderboard-item';
+            item.innerHTML = `
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="leaderboard-rank">${index + 1}</span>
+                    <div>
+                        <strong>${entry.user}</strong>
+                        <span>${entry.wins} wins</span>
+                    </div>
+                </div>
+                <div class="leaderboard-points">
+                    <strong>${entry.points}</strong>
+                    <span>points</span>
+                </div>
+            `;
+            elements.leaderboardList.appendChild(item);
+        });
+    }
+
+    function renderMatch() {
+        const match = state.activeMatch;
+
+        if (!match) {
+            elements.lobbyStateChip.textContent = 'No Active Match';
+            elements.matchTitle.textContent = 'Create or Join a Match';
+            elements.matchStatusChip.textContent = 'Lobby';
+            elements.inviteCodeDisplay.textContent = '------';
+            elements.player1Name.textContent = 'Waiting...';
+            elements.player2Name.textContent = 'Open Seat';
+            elements.player1Score.textContent = '0 pts';
+            elements.player2Score.textContent = '0 pts';
+            elements.questionCategory.textContent = 'Category';
+            elements.questionDifficulty.textContent = 'Difficulty';
+            elements.questionText.textContent = 'Create or join a match to load the first question.';
+            elements.turnMessage.textContent = 'Buzz in from your phone when the room is live.';
+            elements.answerChoices.innerHTML = '';
+            elements.buzzButton.disabled = true;
+            elements.finishMatchButton.disabled = true;
+            elements.codeCard.classList.remove('hidden');
+            elements.player1ScoreCard.classList.remove('is-leading');
+            elements.player2ScoreCard.classList.remove('is-leading');
+            renderProfile();
+            return;
+        }
+
+        elements.lobbyStateChip.textContent = match.status === 'waiting' ? 'Waiting For Opponent' : `Match ${match.status}`;
+        elements.matchTitle.textContent = match.status === 'waiting'
+            ? 'Share This Code'
+            : match.status === 'completed'
+                ? 'Match Complete'
+                : 'Question Is Live';
+        elements.matchStatusChip.textContent = match.status;
+        elements.inviteCodeDisplay.textContent = match.invite_code || '------';
+        elements.player1Name.textContent = match.player1 ? match.player1.username : 'Host';
+        elements.player2Name.textContent = match.player2 ? match.player2.username : 'Open Seat';
+        elements.player1Score.textContent = `${match.player1_score} pts`;
+        elements.player2Score.textContent = `${match.player2_score} pts`;
+
+        const leader = match.player1_score === match.player2_score
+            ? null
+            : match.player1_score > match.player2_score
+                ? 'player1'
+                : 'player2';
+        elements.player1ScoreCard.classList.toggle('is-leading', leader === 'player1');
+        elements.player2ScoreCard.classList.toggle('is-leading', leader === 'player2');
+
+        if (match.current_question) {
+            elements.questionCategory.textContent = match.current_question.category.replace('_', ' ');
+            elements.questionDifficulty.textContent = match.current_question.difficulty;
+            elements.questionText.textContent = match.current_question.text;
+        } else {
+            elements.questionCategory.textContent = 'Waiting';
+            elements.questionDifficulty.textContent = 'Pending';
+            elements.questionText.textContent = 'The room will load a question once both players are in.';
+        }
+
+        const isPlayer1 = isCurrentUserPlayer(match, 'player1');
+        const isPlayer2 = isCurrentUserPlayer(match, 'player2');
+        const isParticipant = isPlayer1 || isPlayer2;
+        const buzzLocked = Boolean(match.current_buzzer);
+        const isCurrentBuzzer = Boolean(match.current_buzzer && state.currentUser && match.current_buzzer.id === state.currentUser.id);
+        const canBuzz = match.status === 'live' && isParticipant && !buzzLocked;
+        const canFinish = match.status === 'live' && isParticipant && match.player1_score !== match.player2_score;
+
+        if (match.status === 'waiting') {
+            elements.turnMessage.textContent = isPlayer1
+                ? 'Your room is open. Send the invite code to the second player.'
+                : 'Waiting for the host to bring in another player.';
+        } else if (match.status === 'completed') {
+            const winnerName = match.winner ? match.winner.username : 'Winner';
+            elements.turnMessage.textContent = `${winnerName} took the match. Start another room for the next round.`;
+        } else if (match.current_buzzer) {
+            elements.turnMessage.textContent = isCurrentBuzzer
+                ? 'You locked the buzzer. Pick the answer from your phone now.'
+                : `${match.current_buzzer.username} buzzed first. Waiting on their answer.`;
+        } else {
+            elements.turnMessage.textContent = 'The question is live. First buzz wins the answer.';
+        }
+
+        elements.buzzButton.disabled = !canBuzz;
+        elements.finishMatchButton.disabled = !canFinish;
+        elements.codeCard.classList.toggle('hidden', match.status !== 'waiting');
+
+        elements.answerChoices.innerHTML = '';
+        if (match.current_question && Array.isArray(match.current_question.choices)) {
+            match.current_question.choices.forEach((choice) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `answer-button ${isCurrentBuzzer ? 'is-active' : ''}`;
+                button.textContent = choice;
+                button.disabled = !isCurrentBuzzer || match.status !== 'live';
+                button.addEventListener('click', () => submitAnswer(choice));
+                elements.answerChoices.appendChild(button);
             });
         }
 
-        function updateMatchMeta() {
-            const matchPill = document.getElementById('match-id-pill');
-            const questionPill = document.getElementById('question-pill');
+        renderProfile();
+    }
 
-            matchPill.textContent = currentMatchId ? `Match #${currentMatchId}` : 'No match';
-            matchPill.className = `meta-pill ${currentMatchId ? 'active' : ''}`;
+    async function refreshLeaderboard() {
+        const response = await fetch('/api/leaderboard/');
+        const data = await response.json();
+        renderLeaderboard(data);
+    }
 
-            questionPill.textContent = currentQuestionId ? 'Question live' : 'No question';
-            questionPill.className = `meta-pill ${currentQuestionId ? 'active' : ''}`;
-        }
-
-        function resetQuestionPreview() {
-            currentQuestionId = null;
-            document.getElementById('question-eyebrow').textContent = 'Question queue';
-            document.getElementById('current-question').textContent = 'No question loaded yet.';
-
-            const choicePreview = document.getElementById('choice-preview');
-            choicePreview.innerHTML = '';
-
-            const placeholder = document.createElement('span');
-            placeholder.className = 'choice-chip placeholder';
-            placeholder.textContent = 'Choices appear here';
-            choicePreview.appendChild(placeholder);
-
-            document.getElementById('match-in-progress').classList.add('empty');
-            updateMatchMeta();
-        }
-
-        function renderQuestion(question) {
-            document.getElementById('question-eyebrow').textContent = 'Live question';
-            document.getElementById('current-question').textContent = question.question_text;
-
-            const choicePreview = document.getElementById('choice-preview');
-            choicePreview.innerHTML = '';
-
-            question.answer_choices.forEach((choice, index) => {
-                const chip = document.createElement('span');
-                chip.className = 'choice-chip';
-                chip.textContent = `${String.fromCharCode(65 + index)}. ${choice}`;
-                choicePreview.appendChild(chip);
-            });
-
-            currentQuestionId = question.id;
-            document.getElementById('match-in-progress').style.display = 'block';
-            document.getElementById('match-in-progress').classList.remove('empty');
-            updateMatchMeta();
-        }
-
-        function checkMatchStatus() {
-            const activeToken = getActivePlayerToken();
-
-            document.getElementById('start-match').disabled = !player1Token;
-            document.getElementById('join-match').disabled = !(player2Token && currentMatchId);
-            document.getElementById('buzz-button').disabled = !(activeToken && currentMatchId);
-            document.getElementById('answer-button').disabled = !(activeToken && currentMatchId && currentQuestionId);
-
-            updatePresence();
-            updateActorSwitch();
-            updateMatchMeta();
-        }
-
-        async function updateLeaderboard() {
-            const leaderboard = document.getElementById('leaderboard');
-            const response = await fetch('/api/leaderboard/', {
-                method: 'GET',
-                headers: getHeaders(),
-            });
-            const data = await readJson(response);
-
-            if (!response.ok) {
-                leaderboard.innerHTML = '<li class="leaderboard-empty">Unable to load leaderboard right now.</li>';
-                return;
+    async function fetchCurrentUser() {
+        try {
+            const user = await request('/api/me/');
+            state.currentUser = user;
+            renderVisibility();
+            renderProfile();
+            if (state.activeMatchId) {
+                await loadMatch(state.activeMatchId, false);
+                startPolling();
             }
+        } catch (error) {
+            state.currentUser = null;
+            state.activeMatch = null;
+            setStoredTokens('', '');
+            setActiveMatchId('');
+            stopPolling();
+            renderVisibility();
+            renderMatch();
+        }
+    }
 
-            if (!Array.isArray(data) || data.length === 0) {
-                leaderboard.innerHTML = '<li class="leaderboard-empty">No players on the leaderboard yet.</li>';
-                return;
-            }
-
-            leaderboard.innerHTML = '';
-            data.forEach((player, index) => {
-                const row = document.createElement('li');
-                row.className = 'leaderboard-row';
-
-                const rank = document.createElement('span');
-                rank.className = `rank-badge ${index < 3 ? 'top' : ''}`;
-                rank.textContent = String(index + 1).padStart(2, '0');
-
-                const info = document.createElement('div');
-                const name = document.createElement('span');
-                name.className = 'leader-name';
-                name.textContent = player.user;
-                const meta = document.createElement('span');
-                meta.className = 'leader-meta';
-                meta.textContent = `${player.wins} wins`;
-                info.appendChild(name);
-                info.appendChild(meta);
-
-                const points = document.createElement('div');
-                points.className = 'leader-points';
-                const score = document.createElement('strong');
-                score.textContent = player.points;
-                const unit = document.createElement('span');
-                unit.textContent = 'pts';
-                points.appendChild(score);
-                points.appendChild(unit);
-
-                row.appendChild(rank);
-                row.appendChild(info);
-                row.appendChild(points);
-                leaderboard.appendChild(row);
-            });
+    async function loadMatch(matchId, announce = true) {
+        if (!matchId) {
+            state.activeMatch = null;
+            renderMatch();
+            return;
         }
 
-        async function fetchRandomQuestion() {
-            const token = getAnyLoggedInToken();
-            if (!token) {
-                setStatus('match-status', 'Log in at least one player before loading a question.', true);
-                return;
+        try {
+            const payload = await request(`/api/matches/${matchId}/`);
+            state.activeMatch = payload;
+            setActiveMatchId(payload.id);
+            renderMatch();
+            if (announce) {
+                showStatus(extractMessage(payload, 'Match updated.'), 'success');
             }
-
-            const response = await fetch('/api/questions/random/', {
-                method: 'GET',
-                headers: getHeaders(token),
-            });
-            const data = await readJson(response);
-
-            if (!response.ok) {
-                setStatus('match-status', firstErrorMessage(data, 'Unable to load a question.'), true);
-                return;
-            }
-
-            renderQuestion(data);
-            checkMatchStatus();
+        } catch (error) {
+            state.activeMatch = null;
+            setActiveMatchId('');
+            renderMatch();
+            showStatus(error.message, 'error');
         }
+    }
 
-        async function loginPlayer(slot) {
-            const username = document.getElementById(`${slot}-username`).value.trim();
-            const password = document.getElementById(`${slot}-password`).value;
-            const statusId = `${slot}-status`;
+    async function handleLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value;
 
-            const response = await fetch('/api/login/', {
+        try {
+            const payload = await request('/api/login/', {
                 method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({username, password}),
             });
+            setStoredTokens(payload.access, payload.refresh);
+            await fetchCurrentUser();
+            showStatus(`Welcome back, ${username}.`, 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-            const data = await readJson(response);
-            if (!response.ok || !data.access) {
-                setStatus(statusId, firstErrorMessage(data, 'Login failed.'), true);
-                return;
-            }
+    async function handleRegister(event) {
+        event.preventDefault();
+        const username = document.getElementById('registerUsername').value.trim();
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value;
 
-            if (slot === 'player1') {
-                player1Token = data.access;
-                player1Name = username;
-            } else {
-                player2Token = data.access;
-                player2Name = username;
-            }
+        try {
+            await request('/api/register/', {
+                method: 'POST',
+                body: JSON.stringify({username, email, password}),
+            });
+            showStatus('Account created. Logging you in now.', 'success');
+            setAuthMode('login');
+            document.getElementById('loginUsername').value = username;
+            document.getElementById('loginPassword').value = password;
+            await handleLogin(new Event('submit'));
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-            activePlayerSlot = slot;
-            setStatus(statusId, `${username} logged in successfully.`);
-            checkMatchStatus();
+    async function createMatch() {
+        try {
+            const payload = await request('/api/matches/', {method: 'POST'});
+            state.activeMatch = payload;
+            setActiveMatchId(payload.id);
+            renderMatch();
+            renderProfile();
+            startPolling();
+            showStatus(extractMessage(payload, 'Match created.'), 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
+
+    async function joinByCode(event) {
+        event.preventDefault();
+        const inviteCode = elements.inviteCodeInput.value.trim().toUpperCase();
+        if (!inviteCode) {
+            showStatus('Enter an invite code first.', 'error');
+            return;
         }
 
-        document.querySelectorAll('.actor-toggle').forEach((button) => {
-            button.addEventListener('click', () => {
-                activePlayerSlot = button.dataset.player;
-                checkMatchStatus();
-            });
-        });
-
-        document.getElementById('register-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-
-            const username = document.getElementById('register-username').value.trim();
-            const email = document.getElementById('register-email').value.trim();
-            const password = document.getElementById('register-password').value;
-
-            const response = await fetch('/api/register/', {
+        try {
+            const payload = await request('/api/matches/join/', {
                 method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ username, email, password }),
+                body: JSON.stringify({invite_code: inviteCode}),
             });
-            const data = await readJson(response);
+            state.activeMatch = payload;
+            setActiveMatchId(payload.id);
+            elements.inviteCodeInput.value = '';
+            renderMatch();
+            renderProfile();
+            startPolling();
+            showStatus(extractMessage(payload, 'Joined the match.'), 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-            if (!response.ok) {
-                setStatus('account-message', firstErrorMessage(data, 'Registration failed.'), true);
-                return;
-            }
+    async function buzzIn() {
+        if (!state.activeMatchId) {
+            return;
+        }
 
-            document.getElementById('player1-username').value = username;
-            document.getElementById('player1-password').value = password;
-            document.getElementById('register-form').reset();
-            setStatus('account-message', 'Account created. Credentials copied into Player 1.');
-            updateLeaderboard();
-        });
+        try {
+            const payload = await request(`/api/matches/${state.activeMatchId}/buzz/`, {method: 'POST'});
+            state.activeMatch = payload;
+            renderMatch();
+            showStatus(extractMessage(payload, 'Buzz registered.'), 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-        document.getElementById('player1-login-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            await loginPlayer('player1');
-        });
+    async function submitAnswer(answer) {
+        if (!state.activeMatchId) {
+            return;
+        }
 
-        document.getElementById('player2-login-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            await loginPlayer('player2');
-        });
-
-        document.getElementById('start-match').addEventListener('click', async () => {
-            const response = await fetch('/api/matches/', {
+        try {
+            const payload = await request(`/api/matches/${state.activeMatchId}/answer/`, {
                 method: 'POST',
-                headers: getHeaders(player1Token),
+                body: JSON.stringify({answer}),
             });
-            const data = await readJson(response);
+            state.activeMatch = payload;
+            renderMatch();
+            await refreshLeaderboard();
+            showStatus(extractMessage(payload, 'Answer submitted.'), payload.result === 'correct' ? 'success' : 'info');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-            if (!response.ok) {
-                setStatus('match-status', firstErrorMessage(data, 'Unable to start the match.'), true);
-                return;
-            }
+    async function finishMatch() {
+        if (!state.activeMatch) {
+            return;
+        }
 
-            currentMatchId = data.id;
-            activePlayerSlot = 'player1';
-            resetQuestionPreview();
-            setStatus('match-status', `Match ${currentMatchId} created. Player 2 can join from this screen now.`);
-            checkMatchStatus();
-            await updateLeaderboard();
-            await fetchRandomQuestion();
-        });
+        const winnerId = state.activeMatch.player1_score > state.activeMatch.player2_score
+            ? state.activeMatch.player1.id
+            : state.activeMatch.player2.id;
 
-        document.getElementById('join-match').addEventListener('click', async () => {
-            const response = await fetch(`/api/matches/${currentMatchId}/join/`, {
-                method: 'POST',
-                headers: getHeaders(player2Token),
+        try {
+            const payload = await request(`/api/matches/${state.activeMatch.id}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({winner_id: winnerId}),
             });
-            const data = await readJson(response);
+            state.activeMatch = payload;
+            renderMatch();
+            await refreshLeaderboard();
+            showStatus(extractMessage(payload, 'Match finished.'), 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
 
-            if (!response.ok) {
-                setStatus('match-status', firstErrorMessage(data, 'Unable to join the match.'), true);
-                return;
-            }
+    async function copyInviteCode() {
+        if (!state.activeMatch || !state.activeMatch.invite_code) {
+            return;
+        }
 
-            activePlayerSlot = 'player2';
-            document.getElementById('match-in-progress').style.display = 'block';
-            setStatus('match-status', data.message || `Player 2 joined match ${currentMatchId}.`);
-            checkMatchStatus();
-        });
+        try {
+            await navigator.clipboard.writeText(state.activeMatch.invite_code);
+            showStatus(`Copied code ${state.activeMatch.invite_code}.`, 'success');
+        } catch (error) {
+            showStatus('Copy failed. Hold and copy the code manually.', 'error');
+        }
+    }
 
-        document.getElementById('buzz-button').addEventListener('click', async () => {
-            const activeToken = getActivePlayerToken();
+    function logout() {
+        stopPolling();
+        state.currentUser = null;
+        state.activeMatch = null;
+        setStoredTokens('', '');
+        setActiveMatchId('');
+        renderVisibility();
+        renderProfile();
+        renderMatch();
+        showStatus('Logged out on this phone.', 'info');
+    }
 
-            if (!activeToken) {
-                setStatus('match-status', 'Log in the selected player before buzzing.', true);
-                return;
-            }
+    elements.loginTab.addEventListener('click', () => setAuthMode('login'));
+    elements.registerTab.addEventListener('click', () => setAuthMode('register'));
+    elements.loginForm.addEventListener('submit', handleLogin);
+    elements.registerForm.addEventListener('submit', handleRegister);
+    elements.logoutButton.addEventListener('click', logout);
+    elements.createMatchButton.addEventListener('click', createMatch);
+    elements.joinForm.addEventListener('submit', joinByCode);
+    elements.buzzButton.addEventListener('click', buzzIn);
+    elements.finishMatchButton.addEventListener('click', finishMatch);
+    elements.copyCodeButton.addEventListener('click', copyInviteCode);
 
-            const response = await fetch(`/api/matches/${currentMatchId}/buzz/`, {
-                method: 'POST',
-                headers: getHeaders(activeToken),
-            });
-            const data = await readJson(response);
-            setStatus('match-status', data.message || firstErrorMessage(data, 'Failed to buzz.'), !response.ok);
-        });
-
-        document.getElementById('answer-button').addEventListener('click', async () => {
-            const activeToken = getActivePlayerToken();
-
-            if (!activeToken) {
-                setStatus('match-status', 'Log in the selected player before answering.', true);
-                return;
-            }
-
-            const answer = prompt('Enter your answer:');
-            if (!answer) {
-                return;
-            }
-
-            const response = await fetch(`/api/matches/${currentMatchId}/answer/`, {
-                method: 'POST',
-                headers: getHeaders(activeToken),
-                body: JSON.stringify({ question_id: currentQuestionId, answer }),
-            });
-            const data = await readJson(response);
-
-            setStatus('match-status', data.message || firstErrorMessage(data, 'Failed to submit answer.'), !response.ok);
-            if (response.ok) {
-                await updateLeaderboard();
-                await fetchRandomQuestion();
-            }
-        });
-
-        resetQuestionPreview();
-        updateLeaderboard();
-        checkMatchStatus();
-    </script>
+    renderVisibility();
+    renderMatch();
+    refreshLeaderboard();
+    if (state.accessToken) {
+        fetchCurrentUser();
+    }
+</script>
 </body>
 </html>
