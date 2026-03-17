@@ -690,13 +690,10 @@
         .wallet-card-frame {
             position: relative;
             overflow: hidden;
-            padding: 12px;
-            border-radius: 28px;
+            padding: 0;
+            border-radius: 22px;
             border: 1px solid rgba(212, 175, 90, 0.2);
-            background:
-                radial-gradient(circle at 12% 16%, rgba(111, 15, 29, 0.16), transparent 24%),
-                radial-gradient(circle at 86% 18%, rgba(212, 175, 90, 0.1), transparent 22%),
-                linear-gradient(180deg, rgba(11, 11, 12, 0.98), rgba(4, 4, 5, 0.99));
+            background: #050505;
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
@@ -720,8 +717,8 @@
 
         .wallet-card-chip {
             position: absolute;
-            top: 18px;
-            right: 18px;
+            top: 12px;
+            right: 12px;
             z-index: 3;
             padding: 7px 11px;
             border-radius: 999px;
@@ -744,13 +741,14 @@
             z-index: 1;
             display: block;
             width: 100%;
-            border-radius: 22px;
+            border-radius: 0;
             filter: brightness(0.88) contrast(1.08) saturate(0.92);
+            background: #050505;
         }
 
         .wallet-card-glow {
             position: absolute;
-            inset: 12px;
+            inset: 0;
             z-index: 2;
             border-radius: 22px;
             background:
@@ -761,22 +759,22 @@
 
         .wallet-card-owner {
             position: absolute;
-            right: 7.5%;
-            bottom: 7.8%;
+            right: 10%;
+            bottom: 12%;
             z-index: 3;
-            width: 32%;
-            height: 7.5%;
+            width: 30%;
+            height: 6%;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
             font-family: Georgia, "Times New Roman", serif;
             font-weight: 700;
-            font-size: clamp(11px, 2.6vw, 18px);
+            font-size: clamp(10px, 2.4vw, 17px);
             letter-spacing: 0.08em;
             color: #f0c970;
             text-transform: uppercase;
-            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1109,9 +1107,9 @@
             }
 
             .wallet-card-owner {
-                width: 32%;
-                right: 7.5%;
-                font-size: clamp(10px, 3.2vw, 16px);
+                width: 30%;
+                right: 10%;
+                font-size: clamp(9px, 2.8vw, 14px);
             }
         }
     </style>
@@ -1129,8 +1127,7 @@
             <span class="brand-line brand-accent">CARD</span>
         </h1>
         <p class="hero-copy">
-            Two players. One card. One name in gold.
-            Sign in, create a match, share the code, and play fast enough to keep your card.
+            Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
         <div class="hero-stats">
             <div class="hero-stat">
@@ -1203,8 +1200,8 @@
                 <span class="eyebrow">Your Phone</span>
                 <h2>Player Session</h2>
             </div>
-            <span class="pill" id="playerRoleChip">Ready</span>
         </div>
+        <span class="hidden" id="playerRoleChip"></span>
         <div class="identity-row">
             <div class="identity-card">
                 <span class="label">Logged In As</span>
@@ -1219,16 +1216,9 @@
                     <span class="wallet-pill">Member Vault</span>
                     <span class="wallet-pill" id="walletStatePill">Secured</span>
                 </div>
-                <div>
-                    <span class="wallet-eyebrow">Culture. History. Speed.</span>
-                    <h3 class="wallet-title">
-                        <span class="wallet-title-main">BLACK</span>
-                        <span class="wallet-title-accent">CARD</span>
-                    </h3>
-                    <p class="wallet-copy" id="walletHeroCopy">
-                        Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.
-                    </p>
-                </div>
+                <p class="wallet-copy" id="walletHeroCopy">
+                    Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.
+                </p>
                 <div class="wallet-stats">
                     <div class="wallet-stat">
                         <span>Status</span>
