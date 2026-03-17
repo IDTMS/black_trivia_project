@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "python -m pip install -r requirements.txt",
+  "buildCommand": "cd backend && python manage.py migrate --noinput && python manage.py seed_questions",
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{.git/**,.github/**,venv/**,node_modules/**,frontend/**,mobile/**,BlackCardShowdown/**,backend/staticfiles/**,backend/db.sqlite3,Dockerfile,.dockerignore,response.json}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}

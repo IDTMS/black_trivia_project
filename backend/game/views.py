@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.http import JsonResponse
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,6 +25,9 @@ User = get_user_model()
 
 def home(request):
     return render(request, 'games/home.html')
+
+def health(request):
+    return JsonResponse({"status": "ok"})
 
 def dashboard(request):
     return render(request, 'games/dashboard.html')
@@ -110,7 +114,10 @@ class BuzzView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        match = Match.objects.get(pk=pk)
+        try:
+            match = Match.objects.get(pk=pk)
+        except Match.DoesNotExist:
+            return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
         player = request.user
 
         if player not in [match.player1, match.player2]:
@@ -123,25 +130,16 @@ class BuzzView(APIView):
         match.save()
 
         return Response({"message": f"{player.username} buzzed first!"})
-    
-class RandomQuestionView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        count = Question.objects.count()
-        if count == 0:
-            return Response({"detail": "No questions available."}, status=status.HTTP_404_NOT_FOUND)
-        random_index = random.randint(0, count - 1)
-        question = Question.objects.all()[random_index]
-        serializer = QuestionSerializer(question)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AnswerQuestionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        match = Match.objects.get(pk=pk)
+        try:
+            match = Match.objects.get(pk=pk)
+        except Match.DoesNotExist:
+            return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
         player = request.user
 
         if match.current_buzzer != player:
@@ -156,7 +154,7 @@ class AnswerQuestionView(APIView):
             return Response({"error": "Invalid question ID."}, status=status.HTTP_400_BAD_REQUEST)
 
         if answer == question.correct_answer:
-            leaderboard = Leaderboard.objects.get(user=player)
+            leaderboard, _ = Leaderboard.objects.get_or_create(user=player)
             leaderboard.points += 10
             leaderboard.save()
             return Response({"message": "Correct answer!", "next_action": "Pick a category"})
@@ -167,7 +165,10 @@ class ChooseCategoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        match = Match.objects.get(pk=pk)
+        try:
+            match = Match.objects.get(pk=pk)
+        except Match.DoesNotExist:
+            return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
         player = request.user
 
         if player != match.current_buzzer:
@@ -223,12 +224,12 @@ class SubmitMatchResultView(generics.UpdateAPIView):
         match.timestamp = timezone.now()
         match.save()
 
-        leaderboard_winner = Leaderboard.objects.get(user=winner)
+        leaderboard_winner, _ = Leaderboard.objects.get_or_create(user=winner)
         leaderboard_winner.wins = F('wins') + 1
         leaderboard_winner.points = F('points') + 10
         leaderboard_winner.save()
 
-        leaderboard_loser = Leaderboard.objects.get(user=loser)
+        leaderboard_loser, _ = Leaderboard.objects.get_or_create(user=loser)
         leaderboard_loser.points = F('points') - 5
         leaderboard_loser.save()
 
@@ -241,7 +242,7 @@ class SubmitMatchResultView(generics.UpdateAPIView):
 class LeaderboardListView(generics.ListAPIView):
     queryset = Leaderboard.objects.all().order_by('-wins', '-points')
     serializer_class = LeaderboardSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 # -----------------------------
 # User Status

@@ -31,6 +31,7 @@ urlpatterns = [
 
     # Match Management
     path('matches/', StartMatchView.as_view(), name='start-match'),
+    path('matches/<int:pk>/', SubmitMatchResultView.as_view(), name='submit-match-result'),
     path('matches/<int:pk>/join/', JoinMatchView.as_view(), name='join-match'),
     path('matches/<int:pk>/buzz/', BuzzView.as_view(), name='buzz'),
     path('matches/<int:pk>/answer/', AnswerQuestionView.as_view(), name='answer-question'),

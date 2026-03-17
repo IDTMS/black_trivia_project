@@ -3,195 +3,1159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black Trivia</title>
+    <meta name="theme-color" content="#0b0b0b">
+    <title>Black Card</title>
+    <style>
+        :root {
+            --bg: #060606;
+            --bg-soft: #111111;
+            --panel: rgba(15, 15, 15, 0.92);
+            --panel-strong: rgba(21, 21, 21, 0.98);
+            --panel-border: rgba(255, 202, 76, 0.18);
+            --text: #f8f2e8;
+            --text-soft: #c9bb9f;
+            --gold: #f0b323;
+            --gold-deep: #b8820f;
+            --red: #c1121f;
+            --red-bright: #ef233c;
+            --black: #050505;
+            --shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+            --radius: 26px;
+            --radius-sm: 18px;
+            --transition: 160ms ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top, rgba(193, 18, 31, 0.35), transparent 34%),
+                radial-gradient(circle at 85% 16%, rgba(240, 179, 35, 0.18), transparent 24%),
+                linear-gradient(180deg, #140506 0%, #080808 40%, #050505 100%);
+        }
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            inset: auto;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.32;
+            pointer-events: none;
+        }
+
+        body::before {
+            top: -80px;
+            left: -90px;
+            background: rgba(193, 18, 31, 0.55);
+        }
+
+        body::after {
+            right: -100px;
+            bottom: 10%;
+            background: rgba(240, 179, 35, 0.2);
+        }
+
+        main {
+            width: min(100%, 460px);
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 22px 18px 44px;
+            display: grid;
+            gap: 16px;
+            position: relative;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .hero-card,
+        .panel {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius);
+            border: 1px solid var(--panel-border);
+            background: linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.95));
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            padding: 22px;
+            background:
+                linear-gradient(165deg, rgba(193, 18, 31, 0.92), rgba(18, 18, 18, 0.98) 55%, rgba(5, 5, 5, 1)),
+                linear-gradient(180deg, rgba(18, 18, 18, 0.98), rgba(10, 10, 10, 0.95));
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            right: -80px;
+            top: -40px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(240, 179, 35, 0.6), transparent 65%);
+            pointer-events: none;
+        }
+
+        .topline,
+        .section-head,
+        .meta-row,
+        .presence-row,
+        .controls-grid,
+        .hero-stats {
+            display: flex;
+        }
+
+        .topline,
+        .section-head,
+        .meta-row,
+        .presence-row {
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .topline {
+            margin-bottom: 18px;
+        }
+
+        .badge,
+        .section-chip,
+        .meta-pill,
+        .leaderboard-tag {
+            border-radius: 999px;
+            padding: 7px 12px;
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge {
+            color: var(--text);
+            background: rgba(8, 8, 8, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+
+        .badge-live {
+            background: rgba(240, 179, 35, 0.18);
+            border-color: rgba(240, 179, 35, 0.45);
+            color: var(--gold);
+        }
+
+        .eyebrow,
+        .section-kicker,
+        .question-eyebrow {
+            color: var(--text-soft);
+            font-size: 11px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+        }
+
+        .brand {
+            margin-bottom: 14px;
+        }
+
+        .brand h1 {
+            margin-top: 8px;
+            display: grid;
+            gap: 2px;
+            line-height: 0.92;
+        }
+
+        .brand-main {
+            font-size: clamp(42px, 12vw, 56px);
+            font-weight: 900;
+            letter-spacing: 0.18em;
+        }
+
+        .brand-accent {
+            font-size: clamp(42px, 12vw, 56px);
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            color: var(--gold);
+            text-shadow: 0 0 24px rgba(240, 179, 35, 0.25);
+        }
+
+        .hero-copy {
+            max-width: 28rem;
+            color: rgba(248, 242, 232, 0.9);
+            line-height: 1.5;
+        }
+
+        .hero-stats {
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .hero-stat {
+            flex: 1 1 110px;
+            min-width: 0;
+            padding: 12px 14px;
+            border-radius: 18px;
+            background: rgba(5, 5, 5, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-stat strong {
+            display: block;
+            font-size: 22px;
+            color: var(--gold);
+        }
+
+        .hero-stat span {
+            display: block;
+            margin-top: 2px;
+            font-size: 12px;
+            color: rgba(248, 242, 232, 0.78);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .panel {
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(19, 19, 19, 0.96), rgba(9, 9, 9, 0.98));
+        }
+
+        .section-head {
+            margin-bottom: 14px;
+        }
+
+        .section-head h2 {
+            font-size: 22px;
+            letter-spacing: 0.04em;
+        }
+
+        .section-copy {
+            margin-top: 10px;
+            color: var(--text-soft);
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .section-chip,
+        .leaderboard-tag {
+            color: var(--gold);
+            background: rgba(240, 179, 35, 0.12);
+            border: 1px solid rgba(240, 179, 35, 0.28);
+        }
+
+        .presence-row {
+            gap: 10px;
+        }
+
+        .presence-chip {
+            flex: 1;
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-soft);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .presence-chip.active {
+            color: var(--text);
+            border-color: rgba(240, 179, 35, 0.42);
+            background: linear-gradient(180deg, rgba(240, 179, 35, 0.16), rgba(193, 18, 31, 0.12));
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .auth-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .form-card {
+            background: linear-gradient(180deg, rgba(22, 22, 22, 0.98), rgba(12, 12, 12, 0.98));
+        }
+
+        .card-label {
+            margin-bottom: 4px;
+            color: var(--gold);
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .card-copy {
+            margin-top: 8px;
+            color: var(--text-soft);
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        form {
+            display: grid;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 6px;
+        }
+
+        .field span {
+            font-size: 11px;
+            color: var(--text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            padding: 14px 15px;
+            font-size: 15px;
+            transition: border-color var(--transition), transform var(--transition), background var(--transition);
+        }
+
+        input::placeholder {
+            color: rgba(201, 187, 159, 0.58);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: rgba(240, 179, 35, 0.55);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        button {
+            border: 0;
+            border-radius: 18px;
+            padding: 15px 16px;
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: transform var(--transition), opacity var(--transition), box-shadow var(--transition), background var(--transition);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-gold {
+            color: var(--black);
+            background: linear-gradient(180deg, #f7c948, #d99a06);
+            box-shadow: 0 16px 30px rgba(240, 179, 35, 0.18);
+        }
+
+        .btn-red {
+            color: var(--text);
+            background: linear-gradient(180deg, #d62839, #941b27);
+            box-shadow: 0 16px 30px rgba(193, 18, 31, 0.2);
+        }
+
+        .btn-dark {
+            color: var(--text);
+            background: linear-gradient(180deg, #1d1d1d, #0d0d0d);
+            border: 1px solid rgba(240, 179, 35, 0.18);
+        }
+
+        .btn-outline {
+            color: var(--gold);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(240, 179, 35, 0.32);
+        }
+
+        .status {
+            min-height: 18px;
+            margin-top: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .status.neutral {
+            color: var(--text-soft);
+        }
+
+        .status.error {
+            color: #ff7b86;
+        }
+
+        .status.success {
+            color: var(--gold);
+        }
+
+        .actor-switch {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .actor-toggle {
+            padding: 12px 14px;
+            border-radius: 16px;
+            color: var(--text-soft);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+        }
+
+        .actor-toggle.ready {
+            border-color: rgba(240, 179, 35, 0.22);
+        }
+
+        .actor-toggle.active {
+            color: var(--black);
+            background: linear-gradient(180deg, #f7c948, #d99a06);
+            border-color: transparent;
+        }
+
+        .meta-row {
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .meta-pill {
+            color: var(--text-soft);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .meta-pill.active {
+            color: var(--gold);
+            border-color: rgba(240, 179, 35, 0.3);
+            background: rgba(240, 179, 35, 0.12);
+        }
+
+        .controls-grid {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .controls-grid button {
+            flex: 1 1 calc(50% - 10px);
+            min-width: 0;
+        }
+
+        .question-card {
+            margin-top: 14px;
+            padding: 16px;
+            border-radius: 22px;
+            background:
+                linear-gradient(180deg, rgba(193, 18, 31, 0.18), rgba(10, 10, 10, 0.98) 55%),
+                linear-gradient(180deg, rgba(16, 16, 16, 0.98), rgba(9, 9, 9, 0.98));
+            border: 1px solid rgba(240, 179, 35, 0.18);
+        }
+
+        .question-card.empty {
+            opacity: 0.88;
+        }
+
+        .question-text {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.45;
+        }
+
+        .choice-preview {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .choice-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            padding: 10px 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.35;
+            font-weight: 700;
+        }
+
+        .choice-chip.placeholder {
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        .leaderboard {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 10px;
+        }
+
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 50px 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .rank-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-soft);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+        }
+
+        .rank-badge.top {
+            color: var(--black);
+            background: linear-gradient(180deg, #f7c948, #d99a06);
+            border-color: transparent;
+        }
+
+        .leader-name {
+            display: block;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .leader-meta {
+            display: block;
+            margin-top: 2px;
+            font-size: 12px;
+            color: var(--text-soft);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .leader-points {
+            text-align: right;
+        }
+
+        .leader-points strong {
+            display: block;
+            color: var(--gold);
+            font-size: 18px;
+        }
+
+        .leader-points span {
+            display: block;
+            color: var(--text-soft);
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .leaderboard-empty {
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-soft);
+            text-align: center;
+        }
+
+        #match-in-progress {
+            display: none;
+        }
+
+        @media (min-width: 768px) {
+            main {
+                padding-top: 34px;
+                padding-bottom: 60px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Black Trivia</h1>
+    <main>
+        <section class="hero-card">
+            <div class="topline">
+                <span class="badge">blackcard.joinhavn.io</span>
+                <span class="badge badge-live">alpha build</span>
+            </div>
 
-    <!-- Login Buttons for Player 1 and Player 2 -->
-    <button id="login-as-player1">Login as Player 1</button>
-    <button id="login-as-player2">Login as Player 2</button>
-    <br><br>
+            <div class="brand">
+                <p class="eyebrow">culture trivia game</p>
+                <h1>
+                    <span class="brand-main">BLACK</span>
+                    <span class="brand-accent">CARD</span>
+                </h1>
+            </div>
 
-    <!-- Start and Join Match Buttons -->
-    <button id="start-match" disabled>Start a Match</button>
-    <button id="join-match" disabled>Join Match</button>
-    <br><br>
+            <p class="hero-copy">
+                A mobile-style game shell in red, black, and gold. Create both players, sign in, choose who is acting,
+                and run a live head-to-head round from one screen.
+            </p>
 
-    <!-- Match Progress (only visible if match is in progress) -->
-    <div id="match-in-progress" style="display:none;">
-        <h2>Match in Progress</h2>
-        <p id="current-question"></p>
-        <button id="buzz-button">Buzz</button>
-        <button id="answer-button">Answer</button>
-    </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <strong>219</strong>
+                    <span>questions ready</span>
+                </div>
+                <div class="hero-stat">
+                    <strong>1v1</strong>
+                    <span>local control deck</span>
+                </div>
+                <div class="hero-stat">
+                    <strong>Live</strong>
+                    <span>public leaderboard</span>
+                </div>
+            </div>
+        </section>
 
-    <br><br>
-    <!-- Leaderboard Section -->
-    <h3>Leaderboard</h3>
-    <ul id="leaderboard">
-        <li>testuser: 0 points</li>
-        <li>player1: 0 points</li>
-        <li>player2: 0 points</li>
-    </ul>
+        <section class="panel">
+            <div class="section-head">
+                <div>
+                    <p class="section-kicker">ready room</p>
+                    <h2>Player deck</h2>
+                </div>
+                <span class="section-chip">2 slots</span>
+            </div>
+
+            <div class="presence-row">
+                <div id="player1-chip" class="presence-chip">Player 1 offline</div>
+                <div id="player2-chip" class="presence-chip">Player 2 offline</div>
+            </div>
+
+            <p class="section-copy">Register a fresh account or log both sides in here before you open the match.</p>
+        </section>
+
+        <section class="auth-stack">
+            <section class="panel form-card">
+                <p class="card-label">new player</p>
+                <h2>Create account</h2>
+                <p class="card-copy">Spin up a new player profile and drop those credentials straight into Player 1.</p>
+                <form id="register-form">
+                    <label class="field">
+                        <span>Username</span>
+                        <input id="register-username" type="text" placeholder="Enter username" required>
+                    </label>
+                    <label class="field">
+                        <span>Email</span>
+                        <input id="register-email" type="email" placeholder="Email address">
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="register-password" type="password" placeholder="Create password" required>
+                    </label>
+                    <button class="btn-red" type="submit">Register player</button>
+                </form>
+                <p id="account-message" class="status neutral"></p>
+            </section>
+
+            <section class="panel form-card">
+                <p class="card-label">slot one</p>
+                <h2>Player 1 login</h2>
+                <p class="card-copy">Player 1 opens the match and can start the first round.</p>
+                <form id="player1-login-form">
+                    <label class="field">
+                        <span>Username</span>
+                        <input id="player1-username" type="text" placeholder="Player 1 username" required>
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="player1-password" type="password" placeholder="Player 1 password" required>
+                    </label>
+                    <button class="btn-gold" type="submit">Login Player 1</button>
+                </form>
+                <p id="player1-status" class="status neutral"></p>
+            </section>
+
+            <section class="panel form-card">
+                <p class="card-label">slot two</p>
+                <h2>Player 2 login</h2>
+                <p class="card-copy">Player 2 joins the created match and can take actions when selected below.</p>
+                <form id="player2-login-form">
+                    <label class="field">
+                        <span>Username</span>
+                        <input id="player2-username" type="text" placeholder="Player 2 username" required>
+                    </label>
+                    <label class="field">
+                        <span>Password</span>
+                        <input id="player2-password" type="password" placeholder="Player 2 password" required>
+                    </label>
+                    <button class="btn-dark" type="submit">Login Player 2</button>
+                </form>
+                <p id="player2-status" class="status neutral"></p>
+            </section>
+        </section>
+
+        <section class="panel">
+            <div class="section-head">
+                <div>
+                    <p class="section-kicker">game deck</p>
+                    <h2>Match control</h2>
+                </div>
+                <span class="section-chip">single screen</span>
+            </div>
+
+            <div class="meta-row">
+                <span id="match-id-pill" class="meta-pill">No match</span>
+                <span id="question-pill" class="meta-pill">No question</span>
+            </div>
+
+            <div class="actor-switch">
+                <button type="button" class="actor-toggle active" data-player="player1">Act as Player 1</button>
+                <button type="button" class="actor-toggle" data-player="player2">Act as Player 2</button>
+            </div>
+
+            <div class="controls-grid">
+                <button id="start-match" class="btn-gold" disabled>Start match</button>
+                <button id="join-match" class="btn-red" disabled>Join match</button>
+                <button id="buzz-button" class="btn-outline" disabled>Buzz</button>
+                <button id="answer-button" class="btn-dark" disabled>Answer</button>
+            </div>
+
+            <p id="match-status" class="status neutral">Log in Player 1 to open a match. Switch the active player before buzzing or answering.</p>
+
+            <div id="match-in-progress" class="question-card empty">
+                <p id="question-eyebrow" class="question-eyebrow">Question queue</p>
+                <p id="current-question" class="question-text">No question loaded yet.</p>
+                <div id="choice-preview" class="choice-preview">
+                    <span class="choice-chip placeholder">Choices appear here</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="section-head">
+                <div>
+                    <p class="section-kicker">public board</p>
+                    <h2>Leaderboard</h2>
+                </div>
+                <span class="leaderboard-tag">live</span>
+            </div>
+
+            <ul id="leaderboard" class="leaderboard">
+                <li class="leaderboard-empty">Loading leaderboard...</li>
+            </ul>
+        </section>
+    </main>
 
     <script>
         let player1Token = null;
         let player2Token = null;
+        let player1Name = '';
+        let player2Name = '';
         let currentMatchId = null;
         let currentQuestionId = null;
+        let activePlayerSlot = 'player1';
 
-        // Dynamic leaderboard update
-        function updateLeaderboard() {
-            fetch('/api/leaderboard/', {
-                method: 'GET',
-                headers: {
-                    "Authorization": `Bearer ${player1Token}`,
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const leaderboard = document.getElementById("leaderboard");
-                leaderboard.innerHTML = ""; // Clear existing entries
-                data.forEach(player => {
-                    const li = document.createElement("li");
-                    li.textContent = `${player.user}: ${player.points} points`;
-                    leaderboard.appendChild(li);
-                });
-            });
+        function setStatus(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${message ? (isError ? 'error' : 'success') : 'neutral'}`;
         }
 
-        // Fetch a random question
-        function fetchRandomQuestion() {
-            fetch('/api/questions/random/', {
-                method: 'GET',
-                headers: {
-                    "Authorization": `Bearer ${player1Token || player2Token}`,
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const questionElement = document.getElementById("current-question");
-                questionElement.textContent = `Question: ${data.question_text} (Choices: ${data.answer_choices.join(", ")})`;
-                currentQuestionId = data.id; // Save question ID for answering
-            });
+        function getHeaders(token = null) {
+            const headers = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            return headers;
         }
 
-        // Player 1 Login
-        document.getElementById("login-as-player1").addEventListener("click", () => {
-            const username = prompt("Player 1 Username:");
-            const password = prompt("Player 1 Password:");
-            fetch('/api/login/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                player1Token = data.access;
-                alert("Player 1 logged in!");
-                checkMatchStatus();
-            });
-        });
+        function getPlayerToken(slot) {
+            return slot === 'player1' ? player1Token : player2Token;
+        }
 
-        // Player 2 Login
-        document.getElementById("login-as-player2").addEventListener("click", () => {
-            const username = prompt("Player 2 Username:");
-            const password = prompt("Player 2 Password:");
-            fetch('/api/login/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                player2Token = data.access;
-                alert("Player 2 logged in!");
-                checkMatchStatus();
-            });
-        });
+        function getPlayerName(slot) {
+            return slot === 'player1' ? player1Name : player2Name;
+        }
 
-        // Check match status and enable buttons
-        function checkMatchStatus() {
-            if (player1Token && player2Token) {
-                document.getElementById("start-match").disabled = false;
-                document.getElementById("join-match").disabled = false;
+        function getActivePlayerToken() {
+            return getPlayerToken(activePlayerSlot);
+        }
+
+        function getAnyLoggedInToken() {
+            return getActivePlayerToken() || player1Token || player2Token;
+        }
+
+        async function readJson(response) {
+            try {
+                return await response.json();
+            } catch (error) {
+                return {};
             }
         }
 
-        // Start Match
-        document.getElementById("start-match").addEventListener("click", () => {
-            fetch('/api/matches/', {
+        function firstErrorMessage(data, fallback) {
+            if (data.detail) {
+                return data.detail;
+            }
+
+            for (const value of Object.values(data)) {
+                if (Array.isArray(value) && value.length > 0) {
+                    return value[0];
+                }
+
+                if (typeof value === 'string' && value) {
+                    return value;
+                }
+            }
+
+            return fallback;
+        }
+
+        function updatePresence() {
+            const player1Chip = document.getElementById('player1-chip');
+            const player2Chip = document.getElementById('player2-chip');
+
+            player1Chip.textContent = player1Name ? `${player1Name} ready` : 'Player 1 offline';
+            player1Chip.className = `presence-chip ${player1Token ? 'active' : ''}`;
+
+            player2Chip.textContent = player2Name ? `${player2Name} ready` : 'Player 2 offline';
+            player2Chip.className = `presence-chip ${player2Token ? 'active' : ''}`;
+        }
+
+        function updateActorSwitch() {
+            document.querySelectorAll('.actor-toggle').forEach((button) => {
+                const slot = button.dataset.player;
+                const name = getPlayerName(slot);
+                const isReady = Boolean(getPlayerToken(slot));
+                const label = name ? `Act as ${name}` : `Act as ${slot === 'player1' ? 'Player 1' : 'Player 2'}`;
+
+                button.textContent = label;
+                button.classList.toggle('active', slot === activePlayerSlot);
+                button.classList.toggle('ready', isReady);
+                button.setAttribute('aria-pressed', slot === activePlayerSlot ? 'true' : 'false');
+            });
+        }
+
+        function updateMatchMeta() {
+            const matchPill = document.getElementById('match-id-pill');
+            const questionPill = document.getElementById('question-pill');
+
+            matchPill.textContent = currentMatchId ? `Match #${currentMatchId}` : 'No match';
+            matchPill.className = `meta-pill ${currentMatchId ? 'active' : ''}`;
+
+            questionPill.textContent = currentQuestionId ? 'Question live' : 'No question';
+            questionPill.className = `meta-pill ${currentQuestionId ? 'active' : ''}`;
+        }
+
+        function resetQuestionPreview() {
+            currentQuestionId = null;
+            document.getElementById('question-eyebrow').textContent = 'Question queue';
+            document.getElementById('current-question').textContent = 'No question loaded yet.';
+
+            const choicePreview = document.getElementById('choice-preview');
+            choicePreview.innerHTML = '';
+
+            const placeholder = document.createElement('span');
+            placeholder.className = 'choice-chip placeholder';
+            placeholder.textContent = 'Choices appear here';
+            choicePreview.appendChild(placeholder);
+
+            document.getElementById('match-in-progress').classList.add('empty');
+            updateMatchMeta();
+        }
+
+        function renderQuestion(question) {
+            document.getElementById('question-eyebrow').textContent = 'Live question';
+            document.getElementById('current-question').textContent = question.question_text;
+
+            const choicePreview = document.getElementById('choice-preview');
+            choicePreview.innerHTML = '';
+
+            question.answer_choices.forEach((choice, index) => {
+                const chip = document.createElement('span');
+                chip.className = 'choice-chip';
+                chip.textContent = `${String.fromCharCode(65 + index)}. ${choice}`;
+                choicePreview.appendChild(chip);
+            });
+
+            currentQuestionId = question.id;
+            document.getElementById('match-in-progress').style.display = 'block';
+            document.getElementById('match-in-progress').classList.remove('empty');
+            updateMatchMeta();
+        }
+
+        function checkMatchStatus() {
+            const activeToken = getActivePlayerToken();
+
+            document.getElementById('start-match').disabled = !player1Token;
+            document.getElementById('join-match').disabled = !(player2Token && currentMatchId);
+            document.getElementById('buzz-button').disabled = !(activeToken && currentMatchId);
+            document.getElementById('answer-button').disabled = !(activeToken && currentMatchId && currentQuestionId);
+
+            updatePresence();
+            updateActorSwitch();
+            updateMatchMeta();
+        }
+
+        async function updateLeaderboard() {
+            const leaderboard = document.getElementById('leaderboard');
+            const response = await fetch('/api/leaderboard/', {
+                method: 'GET',
+                headers: getHeaders(),
+            });
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                leaderboard.innerHTML = '<li class="leaderboard-empty">Unable to load leaderboard right now.</li>';
+                return;
+            }
+
+            if (!Array.isArray(data) || data.length === 0) {
+                leaderboard.innerHTML = '<li class="leaderboard-empty">No players on the leaderboard yet.</li>';
+                return;
+            }
+
+            leaderboard.innerHTML = '';
+            data.forEach((player, index) => {
+                const row = document.createElement('li');
+                row.className = 'leaderboard-row';
+
+                const rank = document.createElement('span');
+                rank.className = `rank-badge ${index < 3 ? 'top' : ''}`;
+                rank.textContent = String(index + 1).padStart(2, '0');
+
+                const info = document.createElement('div');
+                const name = document.createElement('span');
+                name.className = 'leader-name';
+                name.textContent = player.user;
+                const meta = document.createElement('span');
+                meta.className = 'leader-meta';
+                meta.textContent = `${player.wins} wins`;
+                info.appendChild(name);
+                info.appendChild(meta);
+
+                const points = document.createElement('div');
+                points.className = 'leader-points';
+                const score = document.createElement('strong');
+                score.textContent = player.points;
+                const unit = document.createElement('span');
+                unit.textContent = 'pts';
+                points.appendChild(score);
+                points.appendChild(unit);
+
+                row.appendChild(rank);
+                row.appendChild(info);
+                row.appendChild(points);
+                leaderboard.appendChild(row);
+            });
+        }
+
+        async function fetchRandomQuestion() {
+            const token = getAnyLoggedInToken();
+            if (!token) {
+                setStatus('match-status', 'Log in at least one player before loading a question.', true);
+                return;
+            }
+
+            const response = await fetch('/api/questions/random/', {
+                method: 'GET',
+                headers: getHeaders(token),
+            });
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                setStatus('match-status', firstErrorMessage(data, 'Unable to load a question.'), true);
+                return;
+            }
+
+            renderQuestion(data);
+            checkMatchStatus();
+        }
+
+        async function loginPlayer(slot) {
+            const username = document.getElementById(`${slot}-username`).value.trim();
+            const password = document.getElementById(`${slot}-password`).value;
+            const statusId = `${slot}-status`;
+
+            const response = await fetch('/api/login/', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${player1Token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                currentMatchId = data.id;
-                alert(`Match started with ID: ${currentMatchId}`);
-                document.getElementById("match-in-progress").style.display = 'block';
-                updateLeaderboard(); // Refresh leaderboard
-                fetchRandomQuestion(); // Fetch the first question
+                headers: getHeaders(),
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await readJson(response);
+            if (!response.ok || !data.access) {
+                setStatus(statusId, firstErrorMessage(data, 'Login failed.'), true);
+                return;
+            }
+
+            if (slot === 'player1') {
+                player1Token = data.access;
+                player1Name = username;
+            } else {
+                player2Token = data.access;
+                player2Name = username;
+            }
+
+            activePlayerSlot = slot;
+            setStatus(statusId, `${username} logged in successfully.`);
+            checkMatchStatus();
+        }
+
+        document.querySelectorAll('.actor-toggle').forEach((button) => {
+            button.addEventListener('click', () => {
+                activePlayerSlot = button.dataset.player;
+                checkMatchStatus();
             });
         });
 
-        // Join Match
-        document.getElementById("join-match").addEventListener("click", () => {
-            fetch(`/api/matches/${currentMatchId}/join/`, {
+        document.getElementById('register-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const username = document.getElementById('register-username').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+
+            const response = await fetch('/api/register/', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${player2Token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(`Player 2 joined Match ID: ${currentMatchId}`);
-                document.getElementById("match-in-progress").style.display = 'block';
+                headers: getHeaders(),
+                body: JSON.stringify({ username, email, password }),
             });
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                setStatus('account-message', firstErrorMessage(data, 'Registration failed.'), true);
+                return;
+            }
+
+            document.getElementById('player1-username').value = username;
+            document.getElementById('player1-password').value = password;
+            document.getElementById('register-form').reset();
+            setStatus('account-message', 'Account created. Credentials copied into Player 1.');
+            updateLeaderboard();
         });
 
-        // Buzz
-        document.getElementById("buzz-button").addEventListener("click", () => {
-            fetch(`/api/matches/${currentMatchId}/buzz/`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${player1Token || player2Token}`,
-                    'Content-Type': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message || "Failed to buzz."));
+        document.getElementById('player1-login-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await loginPlayer('player1');
         });
 
-        // Answer
-        document.getElementById("answer-button").addEventListener("click", () => {
-            const answer = prompt("Enter your answer:");
-            fetch(`/api/matches/${currentMatchId}/answer/`, {
+        document.getElementById('player2-login-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await loginPlayer('player2');
+        });
+
+        document.getElementById('start-match').addEventListener('click', async () => {
+            const response = await fetch('/api/matches/', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${player1Token || player2Token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: getHeaders(player1Token),
+            });
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                setStatus('match-status', firstErrorMessage(data, 'Unable to start the match.'), true);
+                return;
+            }
+
+            currentMatchId = data.id;
+            activePlayerSlot = 'player1';
+            resetQuestionPreview();
+            setStatus('match-status', `Match ${currentMatchId} created. Player 2 can join from this screen now.`);
+            checkMatchStatus();
+            await updateLeaderboard();
+            await fetchRandomQuestion();
+        });
+
+        document.getElementById('join-match').addEventListener('click', async () => {
+            const response = await fetch(`/api/matches/${currentMatchId}/join/`, {
+                method: 'POST',
+                headers: getHeaders(player2Token),
+            });
+            const data = await readJson(response);
+
+            if (!response.ok) {
+                setStatus('match-status', firstErrorMessage(data, 'Unable to join the match.'), true);
+                return;
+            }
+
+            activePlayerSlot = 'player2';
+            document.getElementById('match-in-progress').style.display = 'block';
+            setStatus('match-status', data.message || `Player 2 joined match ${currentMatchId}.`);
+            checkMatchStatus();
+        });
+
+        document.getElementById('buzz-button').addEventListener('click', async () => {
+            const activeToken = getActivePlayerToken();
+
+            if (!activeToken) {
+                setStatus('match-status', 'Log in the selected player before buzzing.', true);
+                return;
+            }
+
+            const response = await fetch(`/api/matches/${currentMatchId}/buzz/`, {
+                method: 'POST',
+                headers: getHeaders(activeToken),
+            });
+            const data = await readJson(response);
+            setStatus('match-status', data.message || firstErrorMessage(data, 'Failed to buzz.'), !response.ok);
+        });
+
+        document.getElementById('answer-button').addEventListener('click', async () => {
+            const activeToken = getActivePlayerToken();
+
+            if (!activeToken) {
+                setStatus('match-status', 'Log in the selected player before answering.', true);
+                return;
+            }
+
+            const answer = prompt('Enter your answer:');
+            if (!answer) {
+                return;
+            }
+
+            const response = await fetch(`/api/matches/${currentMatchId}/answer/`, {
+                method: 'POST',
+                headers: getHeaders(activeToken),
                 body: JSON.stringify({ question_id: currentQuestionId, answer }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message || "Failed to submit answer.");
-                fetchRandomQuestion(); // Fetch the next question
             });
+            const data = await readJson(response);
+
+            setStatus('match-status', data.message || firstErrorMessage(data, 'Failed to submit answer.'), !response.ok);
+            if (response.ok) {
+                await updateLeaderboard();
+                await fetchRandomQuestion();
+            }
         });
 
-        // Initial leaderboard fetch
+        resetQuestionPreview();
         updateLeaderboard();
+        checkMatchStatus();
     </script>
 </body>
 </html>

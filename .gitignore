@@ -5,6 +5,7 @@ db.sqlite3
 
 # Environment-related
 .env
+.env.local
 env/
 venv/
 
@@ -17,3 +18,8 @@ venv/
 
 # OS files
 .DS_Store
+
+# Build outputs
+staticfiles/
+frontend/build/
+frontend/node_modules/.cache/

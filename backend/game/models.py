@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
-from django.contrib.postgres.fields import ArrayField
 
 
 class User(AbstractUser):
@@ -16,12 +15,25 @@ class Question(models.Model):
     CATEGORY_CHOICES = [
         ('history', 'History'),
         ('black_culture', 'Black Culture'),
-        # Add more categories as needed
+        ('hip_hop', 'Hip-Hop & Music'),
+        ('sports', 'Sports'),
+        ('film_tv', 'Film & TV'),
+        ('science', 'Science & Innovation'),
+        ('food_culture', 'Food & Culture'),
+        ('literature', 'Literature & Art'),
+        ('current_events', 'Current Events'),
+    ]
+
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
     ]
 
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='medium')
     question_text = models.TextField(unique=True)
-    answer_choices = ArrayField(models.CharField(max_length=255))  # Requires PostgreSQL
+    answer_choices = models.JSONField()  # Works with both SQLite and PostgreSQL
     correct_answer = models.CharField(max_length=255)
 
     def __str__(self):

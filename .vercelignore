@@ -1,0 +1,12 @@
+.git
+.github
+venv
+node_modules
+frontend
+mobile
+BlackCardShowdown
+backend/db.sqlite3
+backend/staticfiles
+Dockerfile
+.dockerignore
+response.json
