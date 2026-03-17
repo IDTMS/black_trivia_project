@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     CurrentUserView,
     GoogleAuthView,
+    MatchHistoryView,
     RegisterView,
     QuestionListCreateView,
     QuestionRetrieveUpdateDestroyView,
@@ -43,8 +44,9 @@ urlpatterns = [
     path('matches/<int:pk>/answer/', AnswerQuestionView.as_view(), name='answer-question'),
     path('matches/<int:pk>/choose-category/', ChooseCategoryView.as_view(), name='choose-category'),
 
-    # Leaderboard and User Status
+    # Leaderboard, Match History, and User Status
     path('leaderboard/', LeaderboardListView.as_view(), name='leaderboard'),
+    path('matches/history/', MatchHistoryView.as_view(), name='match-history'),
     path('user/status/', UserStatusView.as_view(), name='user-status'),
 
     # Dashboard and Home Pages

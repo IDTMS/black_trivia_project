@@ -7,6 +7,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Black Card</title>
+    <meta name="description" content="Two Players. One Name on the Line. Prove your blackness or lose your card in this 1v1 culture trivia game.">
+    <meta property="og:title" content="Black Card — 1v1 Culture Trivia">
+    <meta property="og:description" content="Two Players. One Name on the Line. Prove your blackness or lose your card.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/assets/blackcard.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Black Card — 1v1 Culture Trivia">
+    <meta name="twitter:description" content="Two Players. One Name on the Line. Prove your blackness or lose your card.">
+    <meta name="twitter:image" content="/assets/blackcard.png">
+    <link rel="manifest" href="/manifest.json">
     <style>
         :root {
             --bg: #030303;
@@ -744,6 +754,7 @@
             border-radius: 0;
             filter: brightness(0.88) contrast(1.08) saturate(0.92);
             background: #050505;
+            mix-blend-mode: lighten;
         }
 
         .wallet-card-glow {
@@ -1131,7 +1142,7 @@
         </p>
         <div class="hero-stats">
             <div class="hero-stat">
-                <strong id="heroQuestionCount">219</strong>
+                <strong id="heroQuestionCount">{{ question_count }}</strong>
                 <span>Questions</span>
             </div>
             <div class="hero-stat">
@@ -1238,7 +1249,7 @@
                         <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
                         <img class="wallet-card-image" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
                         <div class="wallet-card-glow" aria-hidden="true"></div>
-                        <span class="wallet-card-owner" id="walletCardOwner">PLAYER NAME</span>
+                        <span class="wallet-card-owner" id="walletCardOwner"></span>
                     </div>
                 </div>
             </div>
@@ -1375,6 +1386,17 @@
         </div>
     </section>
 
+    <section class="card hidden" id="historyCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Past Matches</span>
+                <h2>Match History</h2>
+            </div>
+            <span class="tag" id="historyCountChip">0</span>
+        </div>
+        <div class="leaderboard-list" id="historyList"></div>
+    </section>
+
     <section class="card" id="leaderboardCard">
         <div class="section-head">
             <div>
@@ -1477,6 +1499,9 @@
         shareXButton: document.getElementById('shareXButton'),
         shareFacebookButton: document.getElementById('shareFacebookButton'),
         leaderboardList: document.getElementById('leaderboardList'),
+        historyCard: document.getElementById('historyCard'),
+        historyList: document.getElementById('historyList'),
+        historyCountChip: document.getElementById('historyCountChip'),
     };
 
     function setStoredTokens(accessToken, refreshToken) {
@@ -1886,6 +1911,7 @@
         elements.profileCard.classList.toggle('hidden', !isAuthed);
         elements.lobbyCard.classList.toggle('hidden', !isAuthed);
         elements.matchCard.classList.toggle('hidden', !isAuthed);
+        elements.historyCard.classList.toggle('hidden', !isAuthed);
         elements.victoryCard.classList.toggle('hidden', !isAuthed || !state.activeMatch || state.activeMatch.status !== 'completed');
         elements.statusMode.textContent = state.activeMatch ? 'Match Live' : (isAuthed ? 'Signed In' : 'Lobby');
     }
@@ -1906,7 +1932,7 @@
             elements.walletCardFrame.classList.remove('is-captured');
             elements.walletCardChip.textContent = 'In Wallet';
             elements.walletCardChip.classList.remove('is-alert');
-            elements.walletCardOwner.textContent = 'PLAYER NAME';
+            elements.walletCardOwner.textContent = '';
             elements.walletStatus.textContent = 'Your black card is in your wallet.';
             elements.walletVaultChip.textContent = 'Vault';
             elements.walletList.innerHTML = '';
@@ -2006,6 +2032,46 @@
             `;
             elements.leaderboardList.appendChild(item);
         });
+    }
+
+    function renderHistory(matches) {
+        elements.historyList.innerHTML = '';
+        elements.historyCountChip.textContent = matches.length;
+        if (!matches.length) {
+            const empty = document.createElement('div');
+            empty.className = 'leaderboard-item';
+            empty.innerHTML = '<div><strong>No matches yet</strong><span>Play your first match to see history here.</span></div>';
+            elements.historyList.appendChild(empty);
+            return;
+        }
+        matches.forEach(m => {
+            const won = state.currentUser && m.winner && m.winner.id === state.currentUser.id;
+            const opponent = state.currentUser && m.player1 && m.player1.id === state.currentUser.id ? m.player2 : m.player1;
+            const opponentName = opponent ? opponent.username : 'Unknown';
+            const score = `${m.player1_score} – ${m.player2_score}`;
+            const date = new Date(m.timestamp).toLocaleDateString();
+            const item = document.createElement('div');
+            item.className = 'leaderboard-item';
+            item.innerHTML = `
+                <div>
+                    <strong>${won ? 'W' : 'L'} vs ${opponentName}</strong>
+                    <span>${score}${m.card_saved ? ' · Card Saved' : ''}</span>
+                </div>
+                <div class="leaderboard-points">
+                    <strong style="color:${won ? 'var(--success)' : 'var(--danger)'}">${won ? 'Win' : 'Loss'}</strong>
+                    <span>${date}</span>
+                </div>
+            `;
+            elements.historyList.appendChild(item);
+        });
+    }
+
+    async function refreshHistory() {
+        try {
+            const matches = await request('/api/matches/history/');
+            renderHistory(matches);
+            elements.historyCard.classList.remove('hidden');
+        } catch { /* silently skip if not logged in */ }
     }
 
     function renderMatch() {
@@ -2139,6 +2205,7 @@
             state.currentUser = user;
             renderVisibility();
             renderProfile();
+            refreshHistory();
             if (state.activeMatchId) {
                 await loadMatch(state.activeMatchId, false);
                 startPolling();

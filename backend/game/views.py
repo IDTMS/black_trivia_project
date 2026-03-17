@@ -19,6 +19,7 @@ from .models import BlackCard, Leaderboard, Match, Question
 from .serializers import (
     CurrentUserSerializer,
     LeaderboardSerializer,
+    MatchHistorySerializer,
     MatchStateSerializer,
     QuestionSerializer,
     SubmitMatchResultSerializer,
@@ -34,11 +35,32 @@ def home(request):
     reset_expired_black_cards()
     return render(request, 'games/home.html', {
         'google_client_id': os.getenv('GOOGLE_CLIENT_ID', ''),
+        'question_count': Question.objects.count(),
     })
 
 
 def health(request):
     return JsonResponse({"status": "ok"})
+
+
+def manifest(request):
+    data = {
+        "name": "Black Card",
+        "short_name": "Black Card",
+        "description": "1v1 Culture Trivia — Prove your blackness or lose your card.",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#030303",
+        "theme_color": "#0b0b0b",
+        "icons": [
+            {
+                "src": "/assets/blackcard.png",
+                "sizes": "1008x1024",
+                "type": "image/png",
+            }
+        ],
+    }
+    return JsonResponse(data, content_type="application/manifest+json")
 
 
 def black_card_asset(request):
@@ -659,6 +681,17 @@ class LeaderboardListView(generics.ListAPIView):
     def get_queryset(self):
         reset_expired_black_cards()
         return super().get_queryset()
+
+
+class MatchHistoryView(generics.ListAPIView):
+    serializer_class = MatchHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Match.objects.filter(
+            models.Q(player1=self.request.user) | models.Q(player2=self.request.user),
+            winner__isnull=False,
+        ).select_related('player1', 'player2', 'winner', 'loser').order_by('-timestamp')[:20]
 
 
 class UserStatusView(APIView):
