@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,9 +44,16 @@ def database_config():
             'PORT': str(parsed.port or ''),
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
         }
+        query_options = {
+            key: values[-1]
+            for key, values in parse_qs(parsed.query).items()
+            if values
+        }
+        if query_options:
+            config['OPTIONS'] = query_options
         ssl_mode = os.getenv('DB_SSLMODE')
         if ssl_mode:
-            config['OPTIONS'] = {'sslmode': ssl_mode}
+            config.setdefault('OPTIONS', {})['sslmode'] = ssl_mode
         return config
 
     if scheme == 'sqlite':
