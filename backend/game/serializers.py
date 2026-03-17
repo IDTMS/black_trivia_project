@@ -2,10 +2,11 @@
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Leaderboard, Match, Question
+from .models import BlackCard, Leaderboard, Match, Question
 
 User = get_user_model()
 
@@ -30,14 +31,38 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
         )
         Leaderboard.objects.create(user=user)
+        BlackCard.objects.create(owner=user, current_holder=user)
         return user
 
 
+class WalletCardSerializer(serializers.ModelSerializer):
+    owner = serializers.StringRelatedField()
+    current_holder = serializers.StringRelatedField()
+
+    class Meta:
+        model = BlackCard
+        fields = ('owner', 'current_holder', 'captured_at')
+        read_only_fields = fields
+
+
 class CurrentUserSerializer(serializers.ModelSerializer):
+    card_holder = serializers.SerializerMethodField()
+    wallet_cards = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'black_card_active')
+        fields = ('id', 'username', 'email', 'black_card_active', 'card_holder', 'wallet_cards')
         read_only_fields = fields
+
+    def get_card_holder(self, obj):
+        black_card = getattr(obj, 'owned_black_card', None)
+        if not black_card or black_card.current_holder_id == obj.id:
+            return None
+        return black_card.current_holder.username
+
+    def get_wallet_cards(self, obj):
+        cards = obj.wallet_black_cards.exclude(owner=obj).order_by('owner__username')
+        return WalletCardSerializer(cards, many=True).data
 
 
 class UserSummarySerializer(serializers.ModelSerializer):
@@ -70,6 +95,9 @@ class MatchStateSerializer(serializers.ModelSerializer):
     winner = UserSummarySerializer(read_only=True)
     loser = UserSummarySerializer(read_only=True)
     current_buzzer = UserSummarySerializer(read_only=True)
+    locked_out_player = UserSummarySerializer(read_only=True)
+    final_question_player = UserSummarySerializer(read_only=True)
+    required_opponent = UserSummarySerializer(read_only=True)
     current_question = MatchQuestionSerializer(read_only=True)
     status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
@@ -88,6 +116,11 @@ class MatchStateSerializer(serializers.ModelSerializer):
             'winner',
             'loser',
             'current_buzzer',
+            'locked_out_player',
+            'final_question_player',
+            'required_opponent',
+            'final_question_active',
+            'card_saved',
             'current_question',
             'timestamp',
         )
@@ -96,6 +129,8 @@ class MatchStateSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         if obj.winner_id:
             return 'completed'
+        if obj.final_question_active:
+            return 'final_question'
         if obj.player2_id:
             return 'live'
         return 'waiting'
@@ -132,22 +167,48 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
         winner_id = validated_data.get('winner_id')
         winner = User.objects.get(id=winner_id)
         loser = instance.player1 if instance.player2 == winner else instance.player2
-        instance.winner = winner
-        instance.loser = loser
-        instance.timestamp = timezone.now()
-        instance.save(update_fields=['winner', 'loser', 'timestamp'])
+        with transaction.atomic():
+            instance.winner = winner
+            instance.loser = loser
+            instance.timestamp = timezone.now()
+            instance.final_question_active = False
+            instance.final_question_player = None
+            instance.current_buzzer = None
+            instance.locked_out_player = None
+            instance.save(update_fields=[
+                'winner',
+                'loser',
+                'timestamp',
+                'final_question_active',
+                'final_question_player',
+                'current_buzzer',
+                'locked_out_player',
+            ])
 
-        leaderboard_winner, _ = Leaderboard.objects.get_or_create(user=winner)
-        leaderboard_winner.wins += 1
-        leaderboard_winner.points += 10
-        leaderboard_winner.save(update_fields=['wins', 'points'])
+            leaderboard_winner, _ = Leaderboard.objects.get_or_create(user=winner)
+            leaderboard_winner.wins += 1
+            leaderboard_winner.points += 10
+            leaderboard_winner.save(update_fields=['wins', 'points'])
 
-        if loser:
-            leaderboard_loser, _ = Leaderboard.objects.get_or_create(user=loser)
-            leaderboard_loser.points -= 5
-            leaderboard_loser.save(update_fields=['points'])
-            loser.black_card_active = False
-            loser.save(update_fields=['black_card_active'])
+            if loser:
+                leaderboard_loser, _ = Leaderboard.objects.get_or_create(user=loser)
+                leaderboard_loser.points -= 5
+                leaderboard_loser.save(update_fields=['points'])
+
+                black_card, _ = BlackCard.objects.get_or_create(owner=loser, defaults={'current_holder': loser})
+                if instance.card_saved:
+                    black_card.current_holder = loser
+                    black_card.captured_at = None
+                    loser.black_card_active = True
+                else:
+                    black_card.current_holder = winner
+                    black_card.captured_at = timezone.now()
+                    loser.black_card_active = False
+                black_card.save(update_fields=['current_holder', 'captured_at'])
+                loser.save(update_fields=['black_card_active'])
+
+            winner.black_card_active = True
+            winner.save(update_fields=['black_card_active'])
 
         return instance
 
