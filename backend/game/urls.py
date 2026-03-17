@@ -1,16 +1,18 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
+    CurrentUserView,
     RegisterView,
     QuestionListCreateView,
     QuestionRetrieveUpdateDestroyView,
     RandomQuestionView,
     StartMatchView,
+    MatchDetailView,
+    JoinMatchByCodeView,
     JoinMatchView,
     BuzzView,
     AnswerQuestionView,
     ChooseCategoryView,
-    SubmitMatchResultView,
     LeaderboardListView,
     UserStatusView,
     home,
@@ -20,6 +22,7 @@ from .views import (
 urlpatterns = [
     # User Registration and Authentication
     path('register/', RegisterView.as_view(), name='register'),
+    path('me/', CurrentUserView.as_view(), name='current-user'),
     path('login/', TokenObtainPairView.as_view(), name='login'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -31,7 +34,8 @@ urlpatterns = [
 
     # Match Management
     path('matches/', StartMatchView.as_view(), name='start-match'),
-    path('matches/<int:pk>/', SubmitMatchResultView.as_view(), name='submit-match-result'),
+    path('matches/join/', JoinMatchByCodeView.as_view(), name='join-match-by-code'),
+    path('matches/<int:pk>/', MatchDetailView.as_view(), name='match-detail'),
     path('matches/<int:pk>/join/', JoinMatchView.as_view(), name='join-match'),
     path('matches/<int:pk>/buzz/', BuzzView.as_view(), name='buzz'),
     path('matches/<int:pk>/answer/', AnswerQuestionView.as_view(), name='answer-question'),
