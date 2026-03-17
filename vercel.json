@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "cd backend && DATABASE_URL=${DATABASE_URL_UNPOOLED:-$DATABASE_URL} python manage.py migrate --noinput && DATABASE_URL=${DATABASE_URL_UNPOOLED:-$DATABASE_URL} python manage.py seed_questions",
+  "buildCommand": "cd backend && if [ -n \"$DATABASE_URL_UNPOOLED\" ]; then export DATABASE_URL=\"$DATABASE_URL_UNPOOLED\"; fi && if [ -n \"$PGHOST_UNPOOLED\" ]; then export PGHOST=\"$PGHOST_UNPOOLED\"; fi && python manage.py migrate --noinput && python manage.py seed_questions",
   "functions": {
     "api/index.py": {
       "excludeFiles": "{.git/**,.github/**,venv/**,node_modules/**,frontend/**,mobile/**,BlackCardShowdown/**,backend/staticfiles/**,backend/db.sqlite3,Dockerfile,.dockerignore,response.json}"

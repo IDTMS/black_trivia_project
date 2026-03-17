@@ -33,6 +33,7 @@ DATABASE_URL_UNPOOLED=postgresql://username:password@hostname:5432/black_trivia
 
 `DATABASE_URL` should be treated as required on Vercel. SQLite is still fine for local work, but it is not the right persistence layer for a public site.
 If you are using Neon, set `DATABASE_URL` to the pooled connection string for runtime and `DATABASE_URL_UNPOOLED` to the direct connection string for build-time migrations.
+If your Neon integration gives you `PGHOST`, `PGHOST_UNPOOLED`, `PGUSER`, `PGDATABASE`, and `PGPASSWORD` instead, the app now supports those directly as an alternative to `DATABASE_URL`.
 
 ## Deployment notes
 
@@ -40,7 +41,7 @@ If you are using Neon, set `DATABASE_URL` to the pooled connection string for ru
 - API base path: `/api/`
 - Vercel entrypoint: [api/index.py](/Users/marcuslit/Documents/source-code/black_trivia_project/api/index.py)
 - Vercel config: [vercel.json](/Users/marcuslit/Documents/source-code/black_trivia_project/vercel.json)
-- The Vercel build runs migrations and seeds bundled questions during deploy, and will prefer `DATABASE_URL_UNPOOLED` if provided.
+- The Vercel build runs migrations and seeds bundled questions during deploy, and will prefer `DATABASE_URL_UNPOOLED` or `PGHOST_UNPOOLED` if provided.
 - The mobile app can point to this backend by setting `EXPO_PUBLIC_API_BASE_URL=https://blackcard.joinhavn.io/api`
 
 ## Vercel
