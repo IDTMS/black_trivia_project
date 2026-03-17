@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0b0b0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Black Card</title>
     <style>
         :root {
@@ -33,8 +35,11 @@
         body {
             margin: 0;
             min-height: 100vh;
+            min-height: 100dvh;
             font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             background:
                 radial-gradient(circle at 14% 10%, rgba(126, 15, 33, 0.18), transparent 24%),
                 radial-gradient(circle at 86% 12%, rgba(212, 175, 90, 0.1), transparent 18%),
@@ -69,8 +74,9 @@
         main {
             width: min(100%, 470px);
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0 auto;
-            padding: 22px 18px 42px;
+            padding: calc(22px + env(safe-area-inset-top, 0px)) 18px calc(42px + env(safe-area-inset-bottom, 0px));
             display: grid;
             gap: 16px;
         }
@@ -87,7 +93,13 @@
         button {
             border: 0;
             cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
             transition: transform var(--transition), opacity var(--transition), border-color var(--transition), background var(--transition);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.97);
         }
 
         button:disabled {
@@ -749,21 +761,26 @@
 
         .wallet-card-owner {
             position: absolute;
-            right: 12%;
-            bottom: 18.4%;
+            right: 7.5%;
+            bottom: 7.8%;
             z-index: 3;
-            width: 29%;
+            width: 32%;
+            height: 7.5%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            font-family: Georgia, serif;
+            font-family: Georgia, "Times New Roman", serif;
             font-weight: 700;
-            font-size: clamp(14px, 3vw, 22px);
-            letter-spacing: 0.06em;
+            font-size: clamp(11px, 2.6vw, 18px);
+            letter-spacing: 0.08em;
             color: #f0c970;
             text-transform: uppercase;
-            text-shadow: 0 2px 14px rgba(0, 0, 0, 0.72);
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            pointer-events: none;
         }
 
         .wallet-vault-block {
@@ -1072,8 +1089,7 @@
                 padding-inline: 14px;
             }
 
-            .hero-stats,
-            .wallet-stats {
+            .hero-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
@@ -1093,9 +1109,9 @@
             }
 
             .wallet-card-owner {
-                width: 33%;
-                right: 10%;
-                font-size: clamp(12px, 3.6vw, 18px);
+                width: 32%;
+                right: 7.5%;
+                font-size: clamp(10px, 3.2vw, 16px);
             }
         }
     </style>
@@ -1104,8 +1120,8 @@
 <main>
     <section class="hero">
         <div class="topline">
-            <span class="badge">Private Entry</span>
-            <span class="badge badge-live">Two Phone Mode</span>
+            <span class="badge badge-live">Live</span>
+            <span class="badge">1v1 Trivia</span>
         </div>
         <span class="eyebrow">Culture. History. Speed.</span>
         <h1>
@@ -1113,8 +1129,8 @@
             <span class="brand-line brand-accent">CARD</span>
         </h1>
         <p class="hero-copy">
-            One phone. One login. One name on the line.
-            Create the room, share the code, and play fast enough to keep your card.
+            Two players. One card. One name in gold.
+            Sign in, create a match, share the code, and play fast enough to keep your card.
         </p>
         <div class="hero-stats">
             <div class="hero-stat">
@@ -1151,43 +1167,17 @@
                 <span class="eyebrow">Access</span>
                 <h2>Enter The Game</h2>
             </div>
-            <span class="pill" id="authModeChip">Login</span>
+            <span class="pill" id="authModeChip">Google</span>
         </div>
         <p class="section-copy">
-            Each player uses their own phone and their own account. No more double login on one screen.
+            Each player uses their own phone and their own account. Sign in with Google to get started.
         </p>
-        <div class="tab-row">
-            <button class="tab-button active" id="loginTab" type="button">Login</button>
-            <button class="tab-button" id="registerTab" type="button">Register</button>
-        </div>
 
-        <form id="loginForm">
-            <label class="field">
-                <span>Username</span>
-                <input id="loginUsername" type="text" placeholder="Your username" autocomplete="username" required>
-            </label>
-            <label class="field">
-                <span>Password</span>
-                <input id="loginPassword" type="password" placeholder="Your password" autocomplete="current-password" required>
-            </label>
-            <button class="primary-button" type="submit">Login</button>
-        </form>
-
-        <form class="hidden" id="registerForm">
-            <label class="field">
-                <span>Username</span>
-                <input id="registerUsername" type="text" placeholder="Pick a username" autocomplete="username" required>
-            </label>
-            <label class="field">
-                <span>Email</span>
-                <input id="registerEmail" type="email" placeholder="you@example.com" autocomplete="email" required>
-            </label>
-            <label class="field">
-                <span>Password</span>
-                <input id="registerPassword" type="password" placeholder="Choose a strong password" autocomplete="new-password" required>
-            </label>
-            <button class="primary-button" type="submit">Create Account</button>
-        </form>
+        <!-- Hidden stubs to keep JS references intact -->
+        <form class="hidden" id="loginForm"></form>
+        <form class="hidden" id="registerForm"></form>
+        <span class="hidden" id="loginTab"></span>
+        <span class="hidden" id="registerTab"></span>
 
         <form class="hidden" id="googleUsernameForm">
             <label class="field">
@@ -1198,12 +1188,11 @@
                 <span>Pick Your Username</span>
                 <input id="googleUsername" type="text" placeholder="Choose your Black Card username" autocomplete="username">
             </label>
-            <button class="primary-button" type="submit">Finish With Google</button>
+            <button class="primary-button" type="submit">Finish Setup</button>
         </form>
 
-        <div class="google-wrap hidden" id="googleAuthWrap">
-            <div class="auth-divider">or</div>
-            <p>Use Google to verify the account, then choose your Black Card username the first time you sign in.</p>
+        <div class="google-wrap" id="googleAuthWrap">
+            <p class="section-copy" style="margin-bottom:12px;">Sign in with Google to verify your account. First-time players pick a username after sign-in.</p>
             <div id="googleButton"></div>
         </div>
     </section>
@@ -1619,6 +1608,7 @@
         elements.googleEmail.value = '';
         elements.googleUsername.value = '';
         elements.googleUsernameForm.classList.add('hidden');
+        elements.googleAuthWrap.classList.remove('hidden');
     }
 
     let audioContext = null;
@@ -1700,13 +1690,7 @@
 
     function setAuthMode(mode) {
         state.authMode = mode;
-        const isLogin = mode === 'login';
-        elements.authModeChip.textContent = isLogin ? 'Login' : 'Register';
-        elements.loginTab.classList.toggle('active', isLogin);
-        elements.registerTab.classList.toggle('active', !isLogin);
-        elements.loginForm.classList.toggle('hidden', !isLogin);
-        elements.registerForm.classList.toggle('hidden', isLogin);
-        elements.googleAuthWrap.classList.toggle('hidden', !googleClientId);
+        elements.authModeChip.textContent = 'Google';
         if (!state.pendingGoogleCredential) {
             elements.googleUsernameForm.classList.add('hidden');
         }
@@ -1886,6 +1870,26 @@
         return Boolean(state.currentUser && match && match[key] && match[key].id === state.currentUser.id);
     }
 
+    function fitCardName(el) {
+        el.style.fontSize = '';
+        requestAnimationFrame(() => {
+            const maxWidth = el.clientWidth;
+            if (!maxWidth) return;
+            const span = document.createElement('span');
+            span.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:inherit;';
+            span.textContent = el.textContent;
+            el.parentNode.appendChild(span);
+            let size = parseFloat(getComputedStyle(el).fontSize);
+            const minSize = 8;
+            while (span.offsetWidth > maxWidth && size > minSize) {
+                size -= 0.5;
+                span.style.fontSize = size + 'px';
+            }
+            el.style.fontSize = size + 'px';
+            span.remove();
+        });
+    }
+
     function renderVisibility() {
         const isAuthed = Boolean(state.currentUser);
         elements.authCard.classList.toggle('hidden', isAuthed);
@@ -1926,6 +1930,7 @@
         elements.currentUsername.textContent = state.currentUser.username;
         elements.currentEmail.textContent = state.currentUser.email || 'No email on file';
         elements.walletCardOwner.textContent = state.currentUser.username.toUpperCase();
+        fitCardName(elements.walletCardOwner);
         elements.walletShell.classList.toggle('is-captured', isCaptured);
         elements.walletStatePill.textContent = isCaptured ? 'Captured' : 'Secured';
         elements.walletStatePill.classList.toggle('is-alert', isCaptured);
@@ -2235,9 +2240,9 @@
             state.pendingGoogleEmail = payload.email || '';
             elements.googleEmail.value = payload.email || '';
             elements.googleUsername.value = payload.suggested_username || '';
-            setAuthMode('register');
             elements.googleUsernameForm.classList.remove('hidden');
-            showStatus(extractMessage(payload, 'Choose your username to finish Google sign-in.'), 'info');
+            elements.googleAuthWrap.classList.add('hidden');
+            showStatus(extractMessage(payload, 'Almost there — pick a username to finish sign-in.'), 'info');
             return;
         }
 
@@ -2281,7 +2286,6 @@
             return;
         }
 
-        elements.googleAuthWrap.classList.remove('hidden');
         window.handleGoogleCredentialResponse = handleGoogleCredentialResponse;
         google.accounts.id.initialize({
             client_id: googleClientId,
