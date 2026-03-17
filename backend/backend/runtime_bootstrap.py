@@ -2,7 +2,8 @@ import os
 import threading
 
 from django.core.management import call_command
-from django.db import connection
+from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations.executor import MigrationExecutor
 
 
 class RuntimeBootstrapMiddleware:
@@ -32,11 +33,26 @@ class RuntimeBootstrapMiddleware:
             if self.__class__._ready:
                 return
 
-            existing_tables = set(connection.introspection.table_names())
-            required_tables = {'game_user', 'game_question', 'game_leaderboard', 'game_match'}
-
-            if not required_tables.issubset(existing_tables):
+            if self.requires_runtime_setup():
                 call_command('migrate', interactive=False, verbosity=0)
                 call_command('seed_questions', verbosity=0)
 
             self.__class__._ready = True
+
+    def requires_runtime_setup(self):
+        connection = connections[DEFAULT_DB_ALIAS]
+        existing_tables = set(connection.introspection.table_names())
+        required_tables = {
+            'game_user',
+            'game_question',
+            'game_leaderboard',
+            'game_match',
+            'game_blackcard',
+        }
+
+        if not required_tables.issubset(existing_tables):
+            return True
+
+        executor = MigrationExecutor(connection)
+        targets = executor.loader.graph.leaf_nodes()
+        return bool(executor.migration_plan(targets))
