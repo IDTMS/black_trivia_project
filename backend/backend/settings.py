@@ -58,9 +58,10 @@ def database_config():
     if env_bool('VERCEL', False) and not database_url and not postgres_config:
         raise RuntimeError('DATABASE_URL or PG* database environment variables must be set for Vercel deployments.')
 
+    if postgres_config:
+        return postgres_config
+
     if not database_url:
-        if postgres_config:
-            return postgres_config
         return {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
