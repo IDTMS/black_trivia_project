@@ -22,12 +22,19 @@ def env_list(name, default=''):
 
 def postgres_env_config():
     pg_host = os.getenv('PGHOST')
+    pg_host_unpooled = os.getenv('PGHOST_UNPOOLED')
     pg_name = os.getenv('PGDATABASE')
     pg_user = os.getenv('PGUSER')
     pg_password = os.getenv('PGPASSWORD')
 
     if not all([pg_host, pg_name, pg_user, pg_password]):
         return None
+
+    # Prefer the direct Neon host on Vercel unless explicitly disabled.
+    if env_bool('VERCEL', False) and env_bool('PG_USE_UNPOOLED_RUNTIME', True) and pg_host_unpooled:
+        pg_host = pg_host_unpooled
+
+    conn_max_age_default = '0' if env_bool('VERCEL', False) else '60'
 
     config = {
         'ENGINE': 'django.db.backends.postgresql',
@@ -36,7 +43,7 @@ def postgres_env_config():
         'PASSWORD': pg_password,
         'HOST': pg_host,
         'PORT': os.getenv('PGPORT', '5432'),
-        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', conn_max_age_default)),
     }
 
     options = {}
