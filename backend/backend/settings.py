@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +20,47 @@ def env_list(name, default=''):
     return [item.strip() for item in raw_value.split(',') if item.strip()]
 
 
+def postgres_env_config():
+    pg_host = os.getenv('PGHOST')
+    pg_name = os.getenv('PGDATABASE')
+    pg_user = os.getenv('PGUSER')
+    pg_password = os.getenv('PGPASSWORD')
+
+    if not all([pg_host, pg_name, pg_user, pg_password]):
+        return None
+
+    config = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': pg_name,
+        'USER': pg_user,
+        'PASSWORD': pg_password,
+        'HOST': pg_host,
+        'PORT': os.getenv('PGPORT', '5432'),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
+    }
+
+    options = {}
+    ssl_mode = os.getenv('PGSSLMODE') or os.getenv('DB_SSLMODE')
+    if ssl_mode:
+        options['sslmode'] = ssl_mode
+    channel_binding = os.getenv('PGCHANNELBINDING')
+    if channel_binding:
+        options['channel_binding'] = channel_binding
+    if options:
+        config['OPTIONS'] = options
+
+    return config
+
+
 def database_config():
     database_url = os.getenv('DATABASE_URL')
-    if env_bool('VERCEL', False) and not database_url:
-        raise RuntimeError('DATABASE_URL must be set for Vercel deployments.')
+    postgres_config = postgres_env_config()
+    if env_bool('VERCEL', False) and not database_url and not postgres_config:
+        raise RuntimeError('DATABASE_URL or PG* database environment variables must be set for Vercel deployments.')
 
     if not database_url:
+        if postgres_config:
+            return postgres_config
         return {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
@@ -44,9 +79,16 @@ def database_config():
             'PORT': str(parsed.port or ''),
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
         }
+        query_options = {
+            key: values[-1]
+            for key, values in parse_qs(parsed.query).items()
+            if values
+        }
+        if query_options:
+            config['OPTIONS'] = query_options
         ssl_mode = os.getenv('DB_SSLMODE')
         if ssl_mode:
-            config['OPTIONS'] = {'sslmode': ssl_mode}
+            config.setdefault('OPTIONS', {})['sslmode'] = ssl_mode
         return config
 
     if scheme == 'sqlite':
