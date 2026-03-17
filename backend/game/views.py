@@ -2,11 +2,12 @@ import os
 import random
 import secrets
 import string
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.http import JsonResponse
+from django.db import models, transaction
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Leaderboard, Match, Question
+from .models import BlackCard, Leaderboard, Match, Question
 from .serializers import (
     CurrentUserSerializer,
     LeaderboardSerializer,
@@ -25,9 +26,12 @@ from .serializers import (
 )
 
 User = get_user_model()
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BLACK_CARD_IMAGE_PATH = PROJECT_ROOT / 'blackcard.png'
 
 
 def home(request):
+    reset_expired_black_cards()
     return render(request, 'games/home.html', {
         'google_client_id': os.getenv('GOOGLE_CLIENT_ID', ''),
     })
@@ -35,6 +39,12 @@ def home(request):
 
 def health(request):
     return JsonResponse({"status": "ok"})
+
+
+def black_card_asset(request):
+    if not BLACK_CARD_IMAGE_PATH.exists():
+        raise Http404("Black card image not found.")
+    return FileResponse(BLACK_CARD_IMAGE_PATH.open('rb'), content_type='image/png')
 
 
 def dashboard(request):
@@ -62,10 +72,44 @@ def pick_random_question(category=None):
     return questions[random_index]
 
 
+def ensure_black_card_for_user(user):
+    black_card, _ = BlackCard.objects.get_or_create(
+        owner=user,
+        defaults={'current_holder': user},
+    )
+    should_be_active = black_card.current_holder_id == user.id
+    if user.black_card_active != should_be_active:
+        user.black_card_active = should_be_active
+        user.save(update_fields=['black_card_active'])
+    return black_card
+
+
+def reset_expired_black_cards():
+    expired_cards = BlackCard.objects.exclude(current_holder=models.F('owner')).filter(
+        captured_at__date__lt=timezone.localdate(),
+    ).select_related('owner')
+
+    for black_card in expired_cards:
+        black_card.current_holder = black_card.owner
+        black_card.captured_at = None
+        black_card.save(update_fields=['current_holder', 'captured_at'])
+        if not black_card.owner.black_card_active:
+            black_card.owner.black_card_active = True
+            black_card.owner.save(update_fields=['black_card_active'])
+
+
 def serialize_match(request, match, status_code=status.HTTP_200_OK, **extra):
     payload = MatchStateSerializer(match, context={'request': request}).data
     payload.update(extra)
     return Response(payload, status=status_code)
+
+
+def get_match_winner_and_loser(match):
+    if match.player1_score == match.player2_score:
+        return None, None
+    if match.player1_score > match.player2_score:
+        return match.player1, match.player2
+    return match.player2, match.player1
 
 
 def build_unique_username(base_username):
@@ -113,6 +157,7 @@ def verify_google_token(credential, client_id):
 
 
 def get_match_for_user(pk, user):
+    reset_expired_black_cards()
     return Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
         pk=pk,
@@ -122,11 +167,17 @@ def get_match_for_user(pk, user):
         'winner',
         'loser',
         'current_buzzer',
+        'locked_out_player',
+        'final_question_player',
+        'required_opponent',
         'current_question',
     ).first()
 
 
 def join_match(match, player):
+    reset_expired_black_cards()
+    player_black_card = ensure_black_card_for_user(player)
+
     if match.winner_id:
         return None, Response(
             {"error": "This match has already been completed."},
@@ -151,6 +202,18 @@ def join_match(match, player):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    if player_black_card.current_holder_id != player.id and player_black_card.current_holder_id != match.player1_id:
+        return None, Response(
+            {"error": f"Only {player_black_card.current_holder.username} can face you until the daily reset because they hold your black card."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    if match.required_opponent_id and match.required_opponent_id != player.id:
+        return None, Response(
+            {"error": f"Only {match.required_opponent.username} can answer this challenge because they currently hold the host's black card."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     match.player2 = player
     if not match.current_question_id:
         question = pick_random_question()
@@ -161,7 +224,19 @@ def join_match(match, player):
             )
         match.current_question = question
     match.current_buzzer = None
-    match.save(update_fields=['player2', 'current_question', 'current_buzzer'])
+    match.locked_out_player = None
+    match.final_question_active = False
+    match.final_question_player = None
+    match.card_saved = False
+    match.save(update_fields=[
+        'player2',
+        'current_question',
+        'current_buzzer',
+        'locked_out_player',
+        'final_question_active',
+        'final_question_player',
+        'card_saved',
+    ])
     return match, None
 
 
@@ -247,6 +322,7 @@ class GoogleAuthView(APIView):
             user.last_name = payload.get('family_name', '')
             user.save(update_fields=['google_sub', 'first_name', 'last_name'])
             Leaderboard.objects.create(user=user)
+            BlackCard.objects.create(owner=user, current_holder=user)
 
         response_payload = issue_tokens_for_user(user)
         response_payload['user'] = CurrentUserSerializer(user).data
@@ -257,6 +333,8 @@ class CurrentUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        reset_expired_black_cards()
+        ensure_black_card_for_user(request.user)
         serializer = CurrentUserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -298,15 +376,25 @@ class StartMatchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        reset_expired_black_cards()
+        black_card = ensure_black_card_for_user(request.user)
+        required_opponent = black_card.current_holder if black_card.current_holder_id != request.user.id else None
         match = Match.objects.create(
             player1=request.user,
             invite_code=generate_invite_code(),
+            required_opponent=required_opponent,
         )
+        message = "Match created. Share the code so another player can join."
+        if required_opponent:
+            message = (
+                f"Your black card is held by {required_opponent.username}. "
+                f"Only they can accept this challenge until the next reset."
+            )
         return serialize_match(
             request,
             match,
             status_code=status.HTTP_201_CREATED,
-            message="Match created. Share the code so another player can join.",
+            message=message,
         )
 
 
@@ -355,21 +443,40 @@ class MatchDetailView(APIView):
         if match.winner_id:
             return Response({"error": "Match result already submitted."}, status=status.HTTP_400_BAD_REQUEST)
 
-        winner_id = request.data.get('winner_id')
-        if not winner_id:
-            if match.player1_score == match.player2_score:
-                return Response({"error": "Winner ID is required when the score is tied."}, status=status.HTTP_400_BAD_REQUEST)
-            winner_id = match.player1_id if match.player1_score > match.player2_score else match.player2_id
+        winner, loser = get_match_winner_and_loser(match)
+        if not winner or not loser:
+            return Response({"error": "The final score is tied. Play another question before finishing the match."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = SubmitMatchResultSerializer(
-            instance=match,
-            data={'winner_id': winner_id},
-            context={'request': request},
+        if not match.final_question_active:
+            question = pick_random_question()
+            if not question:
+                return Response({"error": "No questions available."}, status=status.HTTP_404_NOT_FOUND)
+
+            match.final_question_active = True
+            match.final_question_player = loser
+            match.current_question = question
+            match.current_buzzer = None
+            match.locked_out_player = None
+            match.card_saved = False
+            match.save(update_fields=[
+                'final_question_active',
+                'final_question_player',
+                'current_question',
+                'current_buzzer',
+                'locked_out_player',
+                'card_saved',
+            ])
+            return serialize_match(
+                request,
+                match,
+                message=f"Final question live. {loser.username} has one chance to save their black card.",
+                result='final_question_started',
+            )
+
+        return Response(
+            {"error": "The final question is already live. Answer it to decide the black card."},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        match.refresh_from_db()
-        return serialize_match(request, match, message="Match finished.")
 
 
 class JoinMatchView(APIView):
@@ -399,8 +506,12 @@ class BuzzView(APIView):
             return Response({"error": "Waiting for another player to join."}, status=status.HTTP_400_BAD_REQUEST)
         if match.winner_id:
             return Response({"error": "This match is already completed."}, status=status.HTTP_400_BAD_REQUEST)
+        if match.final_question_active:
+            return Response({"error": "The final save question is live. No buzzer is used for that round."}, status=status.HTTP_400_BAD_REQUEST)
         if match.current_buzzer_id:
             return Response({"error": "Another player has already buzzed."}, status=status.HTTP_400_BAD_REQUEST)
+        if match.locked_out_player_id == request.user.id:
+            return Response({"error": "You missed this question already. Your opponent can steal now."}, status=status.HTTP_400_BAD_REQUEST)
 
         match.current_buzzer = request.user
         match.save(update_fields=['current_buzzer'])
@@ -414,8 +525,6 @@ class AnswerQuestionView(APIView):
         match = get_match_for_user(pk, request.user)
         if not match:
             return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
-        if match.current_buzzer_id != request.user.id:
-            return Response({"error": "You did not buzz first."}, status=status.HTTP_403_FORBIDDEN)
         if not match.current_question_id:
             return Response({"error": "No active question."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -425,6 +534,44 @@ class AnswerQuestionView(APIView):
 
         question = match.current_question
         is_correct = answer.casefold() == question.correct_answer.strip().casefold()
+
+        if match.final_question_active:
+            if match.final_question_player_id != request.user.id:
+                return Response({"error": "Only the trailing player can answer the final save question."}, status=status.HTTP_403_FORBIDDEN)
+
+            winner, loser = get_match_winner_and_loser(match)
+            if not winner or not loser:
+                return Response({"error": "The final score is tied."}, status=status.HTTP_400_BAD_REQUEST)
+
+            match.card_saved = is_correct
+            match.save(update_fields=['card_saved'])
+
+            serializer = SubmitMatchResultSerializer(
+                instance=match,
+                data={'winner_id': winner.id},
+                context={'request': request},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            match.refresh_from_db()
+
+            if is_correct:
+                return serialize_match(
+                    request,
+                    match,
+                    message=f"{loser.username} answered the final question and saved their black card.",
+                    result='card_saved',
+                )
+
+            return serialize_match(
+                request,
+                match,
+                message=f"{winner.username} won the match and claimed {loser.username}'s black card.",
+                result='card_lost',
+            )
+
+        if match.current_buzzer_id != request.user.id:
+            return Response({"error": "You did not buzz first."}, status=status.HTTP_403_FORBIDDEN)
 
         if is_correct:
             if request.user.id == match.player1_id:
@@ -439,8 +586,9 @@ class AnswerQuestionView(APIView):
             leaderboard.save(update_fields=['points'])
 
             match.current_buzzer = None
+            match.locked_out_player = None
             match.current_question = pick_random_question()
-            match.save(update_fields=[score_field, 'current_buzzer', 'current_question'])
+            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question'])
             return serialize_match(
                 request,
                 match,
@@ -448,13 +596,33 @@ class AnswerQuestionView(APIView):
                 result='correct',
             )
 
+        penalty = 5
         match.current_buzzer = None
-        match.save(update_fields=['current_buzzer'])
+        is_player1 = request.user.id == match.player1_id
+        score_field = 'player1_score' if is_player1 else 'player2_score'
+        if is_player1:
+            match.player1_score -= penalty
+        else:
+            match.player2_score -= penalty
+
+        if match.locked_out_player_id and match.locked_out_player_id != request.user.id:
+            match.locked_out_player = None
+            match.current_question = pick_random_question()
+            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question'])
+            return serialize_match(
+                request,
+                match,
+                message=f"Wrong answer. -{penalty} points. Both players missed, so a new question is live.",
+                result='double_miss',
+            )
+
+        match.locked_out_player = request.user
+        match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player'])
         return serialize_match(
             request,
             match,
-            message="Incorrect answer. The question stays on the board.",
-            result='incorrect',
+            message=f"Wrong answer. -{penalty} points. Your opponent can steal the black card round.",
+            result='steal_open',
         )
 
 
@@ -478,7 +646,8 @@ class ChooseCategoryView(APIView):
 
         match.current_question = question
         match.current_buzzer = None
-        match.save(update_fields=['current_question', 'current_buzzer'])
+        match.locked_out_player = None
+        match.save(update_fields=['current_question', 'current_buzzer', 'locked_out_player'])
         return serialize_match(request, match, message=f"New {category} question loaded.")
 
 
@@ -487,11 +656,17 @@ class LeaderboardListView(generics.ListAPIView):
     serializer_class = LeaderboardSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_queryset(self):
+        reset_expired_black_cards()
+        return super().get_queryset()
+
 
 class UserStatusView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        reset_expired_black_cards()
+        ensure_black_card_for_user(request.user)
         user = request.user
         data = {'black_card_active': user.black_card_active}
         return Response(data, status=status.HTTP_200_OK)

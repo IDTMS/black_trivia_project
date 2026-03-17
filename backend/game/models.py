@@ -54,8 +54,31 @@ class Match(models.Model):
     winner = models.ForeignKey(User, related_name='wins', on_delete=models.SET_NULL, null=True, blank=True)
     loser = models.ForeignKey(User, related_name='losses', on_delete=models.SET_NULL, null=True, blank=True)
     current_buzzer = models.ForeignKey(User, related_name='current_buzzer', on_delete=models.SET_NULL, null=True, blank=True)
+    locked_out_player = models.ForeignKey(
+        User,
+        related_name='locked_out_matches',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    final_question_player = models.ForeignKey(
+        User,
+        related_name='final_question_matches',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    required_opponent = models.ForeignKey(
+        User,
+        related_name='required_opponent_matches',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     player1_score = models.IntegerField(default=0)
     player2_score = models.IntegerField(default=0)
+    final_question_active = models.BooleanField(default=False)
+    card_saved = models.BooleanField(default=False)
     current_question = models.ForeignKey(
         'Question',
         related_name='current_question',
@@ -77,3 +100,12 @@ class Leaderboard(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Wins: {self.wins}, Points: {self.points}"
+
+
+class BlackCard(models.Model):
+    owner = models.OneToOneField(User, related_name='owned_black_card', on_delete=models.CASCADE)
+    current_holder = models.ForeignKey(User, related_name='wallet_black_cards', on_delete=models.CASCADE)
+    captured_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.owner.username} card held by {self.current_holder.username}"
