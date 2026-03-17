@@ -886,14 +886,19 @@
         }
 
         let payload = null;
+        let rawText = '';
         try {
-            payload = await response.json();
+            rawText = await response.text();
+            payload = rawText ? JSON.parse(rawText) : null;
         } catch (error) {
             payload = null;
         }
 
         if (!response.ok) {
-            throw new Error(extractMessage(payload, 'Request failed.'));
+            const fallback = rawText
+                ? `Request failed (${response.status}).`
+                : `Request failed (${response.status}).`;
+            throw new Error(extractMessage(payload, fallback));
         }
 
         return payload;
@@ -1323,7 +1328,9 @@
 
     renderVisibility();
     renderMatch();
-    refreshLeaderboard();
+    refreshLeaderboard().catch(() => {
+        showStatus('Leaderboard is unavailable right now.', 'error');
+    });
     if (state.accessToken) {
         fetchCurrentUser();
     }
