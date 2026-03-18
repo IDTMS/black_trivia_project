@@ -748,26 +748,27 @@
 
         .wallet-card-owner {
             position: absolute;
-            right: 12.1%;
-            bottom: 9.4%;
+            left: 50%;
+            bottom: 7%;
+            transform: translateX(-50%);
             z-index: 3;
-            width: 23.4%;
-            height: 8.4%;
+            width: 36%;
+            height: 8%;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6%;
+            padding: 0 2%;
             text-align: center;
             font-family: Georgia, "Times New Roman", serif;
             font-weight: 700;
-            font-size: clamp(10px, 2.1vw, 17px);
+            font-size: clamp(10px, 2.4vw, 17px);
             line-height: 1;
             letter-spacing: 0.06em;
             color: #f0c970;
             text-transform: uppercase;
             text-shadow: 0 1px 8px rgba(0, 0, 0, 0.92);
             white-space: nowrap;
-            overflow: hidden;
+            overflow: visible;
             pointer-events: none;
         }
 
@@ -1105,7 +1106,7 @@
             }
 
             .wallet-card-owner {
-                width: 25%;
+                width: 36%;
                 font-size: clamp(9px, 2.8vw, 14px);
             }
         }
