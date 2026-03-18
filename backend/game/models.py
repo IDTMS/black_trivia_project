@@ -4,6 +4,7 @@ from django.utils import timezone
 
 
 QUESTION_TIME_LIMIT_SECONDS = 15
+MATCH_TARGET_SCORE = 50
 
 
 class User(AbstractUser):

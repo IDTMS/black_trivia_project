@@ -1551,7 +1551,6 @@
             </p>
             <div class="action-row" id="matchActionRow">
                 <button class="accent-button" id="buzzButton" type="button">Buzz In</button>
-                <button class="secondary-button" id="finishMatchButton" type="button">Finish Match</button>
             </div>
             <div class="action-row hidden" id="completedMatchActions">
                 <button class="secondary-button" id="toggleCompletedQuestionButton" type="button">View Final Question</button>
@@ -1715,7 +1714,6 @@
         turnMessage: document.getElementById('turnMessage'),
         matchActionRow: document.getElementById('matchActionRow'),
         buzzButton: document.getElementById('buzzButton'),
-        finishMatchButton: document.getElementById('finishMatchButton'),
         completedMatchActions: document.getElementById('completedMatchActions'),
         toggleCompletedQuestionButton: document.getElementById('toggleCompletedQuestionButton'),
         completedQuestionDetails: document.getElementById('completedQuestionDetails'),
@@ -2474,6 +2472,7 @@
         const isCompleted = match.status === 'completed';
         const winnerName = match.winner ? match.winner.username : 'Winner';
         const loserName = match.loser ? match.loser.username : 'the opponent';
+        const targetScore = match.target_score || 50;
 
         elements.lobbyStateChip.textContent = match.status === 'waiting'
             ? 'Waiting For Opponent'
@@ -2533,13 +2532,12 @@
         const isCurrentBuzzer = Boolean(match.current_buzzer && state.currentUser && match.current_buzzer.id === state.currentUser.id);
         const isFinalResponder = Boolean(match.final_question_player && state.currentUser && match.final_question_player.id === state.currentUser.id);
         const canBuzz = match.status === 'live' && isParticipant && !buzzLocked;
-        const canFinish = match.status === 'live' && isParticipant && match.player1_score !== match.player2_score;
 
         if (match.status === 'waiting') {
             const waitMsg = isPlayer1 && match.required_opponent
                 ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match.`
                 : isPlayer1
-                    ? 'Send the code above to your opponent. The match starts when they join.'
+                    ? `Send the code above to your opponent. First to ${targetScore} triggers the final save question.`
                 : 'Waiting for the host to bring in another player.';
             elements.turnMessage.textContent = waitMsg;
             elements.waitingMessage.textContent = waitMsg;
@@ -2560,7 +2558,7 @@
                 ? 'You missed and took a penalty. Your opponent can steal this question now.'
                 : `${match.locked_out_player.username} missed. Steal the question now.`;
         } else {
-            elements.turnMessage.textContent = 'The question is live. First buzz wins the answer.';
+            elements.turnMessage.textContent = `The question is live. First buzz wins the answer. First to ${targetScore} forces the final save question.`;
         }
 
         elements.questionLabel.textContent = isCompleted ? 'Match Recap' : match.status === 'final_question' ? 'Final Question' : 'Question';
@@ -2571,7 +2569,6 @@
         elements.completedQuestionPrompt.classList.toggle('hidden', !(isCompleted && state.completedQuestionExpanded && match.current_question));
         elements.toggleCompletedQuestionButton.textContent = state.completedQuestionExpanded ? 'Hide Final Question' : 'View Final Question';
         elements.buzzButton.disabled = !canBuzz;
-        elements.finishMatchButton.disabled = !canFinish;
         elements.codeCard.classList.toggle('hidden', match.status !== 'waiting');
 
         // Show scores and question card once match has a second player
@@ -2866,6 +2863,8 @@
             await refreshLeaderboard();
             if (payload.result === 'correct' || payload.result === 'card_saved') {
                 playSound(payload.result === 'card_saved' ? 'final' : 'correct');
+            } else if (payload.result === 'final_question_started') {
+                playSound('final');
             } else if (payload.result === 'card_lost') {
                 playSound(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? 'victory' : 'wrong');
                 await fetchCurrentUser();
@@ -2877,37 +2876,14 @@
             if (payload.result === 'card_saved') {
                 await fetchCurrentUser();
             }
-            showStatus(extractMessage(payload, 'Answer submitted.'), payload.result === 'correct' || payload.result === 'card_saved' || payload.result === 'card_lost' ? 'success' : 'info');
-        } catch (error) {
-            showStatus(error.message, 'error');
-        }
-    }
-
-    async function finishMatch() {
-        if (!state.activeMatch) {
-            return;
-        }
-
-        const winnerId = state.activeMatch.player1_score > state.activeMatch.player2_score
-            ? state.activeMatch.player1.id
-            : state.activeMatch.player2.id;
-
-        try {
-            const payload = await request(`/api/matches/${state.activeMatch.id}/`, {
-                method: 'PATCH',
-                body: JSON.stringify({winner_id: winnerId}),
-            });
-            state.activeMatch = payload;
-            renderMatch();
-            if (payload.result === 'final_question_started') {
-                playSound('final');
-                showStatus(extractMessage(payload, 'Final question started.'), 'info');
-                return;
-            }
-            await refreshLeaderboard();
-            playSound('victory');
-            await fetchCurrentUser();
-            showStatus(extractMessage(payload, 'Match finished.'), 'success');
+            showStatus(
+                extractMessage(payload, 'Answer submitted.'),
+                payload.result === 'correct' || payload.result === 'card_saved' || payload.result === 'card_lost'
+                    ? 'success'
+                    : payload.result === 'final_question_started'
+                        ? 'info'
+                        : 'info'
+            );
         } catch (error) {
             showStatus(error.message, 'error');
         }
@@ -3082,7 +3058,6 @@
     elements.createMatchButton.addEventListener('click', createMatch);
     elements.joinForm.addEventListener('submit', joinByCode);
     elements.buzzButton.addEventListener('click', buzzIn);
-    elements.finishMatchButton.addEventListener('click', finishMatch);
     elements.copyCodeButton.addEventListener('click', copyInviteCode);
     elements.backToLobbyButton.addEventListener('click', () => {
         state.activeMatch = null;
