@@ -1237,7 +1237,7 @@
 
         .question-card h3 {
             margin-top: 8px;
-            font-size: clamp(30px, 7vw, 44px);
+            font-size: clamp(26px, 6.2vw, 40px);
             line-height: 1.1;
             letter-spacing: 0.01em;
             text-wrap: balance;
@@ -1823,12 +1823,6 @@
             Each player uses their own phone and their own account. Sign in with Google to get started.
         </p>
 
-        <!-- Hidden stubs to keep JS references intact -->
-        <form class="hidden" id="loginForm"></form>
-        <form class="hidden" id="registerForm"></form>
-        <span class="hidden" id="loginTab"></span>
-        <span class="hidden" id="registerTab"></span>
-
         <form class="hidden" id="googleUsernameForm">
             <label class="field">
                 <span>Google Email</span>
@@ -2016,9 +2010,9 @@
                 <button class="secondary-button" id="toggleCompletedQuestionButton" type="button">View Deciding Question</button>
                 <button class="primary-button" id="rematchButton" type="button">Rematch</button>
             </div>
+            <div class="choice-grid hidden" id="answerChoices"></div>
             <div class="hidden" id="completedQuestionDetails">
                 <p class="section-copy" id="completedQuestionPrompt" style="margin-top:10px;"></p>
-                <div class="choice-grid" id="answerChoices"></div>
             </div>
         </div>
 
@@ -2103,7 +2097,6 @@
         completedQuestionExpanded: false,
         questionTimerHandle: null,
         questionTimerSyncPending: false,
-        authMode: 'login',
         pollHandle: null,
         pendingGoogleCredential: '',
         pendingGoogleEmail: '',
@@ -2124,7 +2117,6 @@
         victoryCard: document.getElementById('victoryCard'),
         statusBanner: document.getElementById('statusBanner'),
         statusMode: document.getElementById('statusMode'),
-        authModeChip: document.getElementById('authModeChip'),
         playerRoleChip: document.getElementById('playerRoleChip'),
         lobbyStateChip: document.getElementById('lobbyStateChip'),
         matchEyebrow: document.getElementById('matchEyebrow'),
@@ -2143,10 +2135,6 @@
         walletStatus: document.getElementById('walletStatus'),
         walletVaultChip: document.getElementById('walletVaultChip'),
         walletList: document.getElementById('walletList'),
-        loginTab: document.getElementById('loginTab'),
-        registerTab: document.getElementById('registerTab'),
-        loginForm: document.getElementById('loginForm'),
-        registerForm: document.getElementById('registerForm'),
         googleUsernameForm: document.getElementById('googleUsernameForm'),
         googleEmail: document.getElementById('googleEmail'),
         googleUsername: document.getElementById('googleUsername'),
@@ -2684,14 +2672,6 @@
         }
     }
 
-    function setAuthMode(mode) {
-        state.authMode = mode;
-        elements.authModeChip.textContent = 'Google';
-        if (!state.pendingGoogleCredential) {
-            elements.googleUsernameForm.classList.add('hidden');
-        }
-    }
-
     function sanitizeFileName(value) {
         return (value || 'black-card')
             .toLowerCase()
@@ -2705,7 +2685,7 @@
     }
 
     function getVictoryContext(match) {
-        if (!match || match.status !== 'completed' || !match.winner || !match.loser || match.card_saved) {
+        if (!match || match.status !== 'completed' || !match.winner || !match.loser) {
             return null;
         }
 
@@ -3195,6 +3175,7 @@
             setAnimatedVisibility(elements.questionCard, false);
             setAnimatedVisibility(elements.backToLobbyRow, false);
             elements.answerChoices.innerHTML = '';
+            elements.answerChoices.classList.add('hidden');
             elements.completedQuestionPrompt.textContent = '';
             elements.completedQuestionPrompt.classList.add('hidden');
             setAnimatedVisibility(elements.matchActionRow, true);
@@ -3314,6 +3295,8 @@
         setAnimatedVisibility(elements.backToLobbyRow, isWaiting || isCompleted);
 
         elements.answerChoices.innerHTML = '';
+        const showAnswerChoices = Boolean(match.current_question && (!isCompleted || state.completedQuestionExpanded));
+        elements.answerChoices.classList.toggle('hidden', !showAnswerChoices);
         if (match.current_question && Array.isArray(match.current_question.choices)) {
             match.current_question.choices.forEach((choice) => {
                 const button = document.createElement('button');
@@ -3404,45 +3387,6 @@
         renderMatch();
     }
 
-    async function handleLogin(event) {
-        event.preventDefault();
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
-
-        try {
-            const payload = await request('/api/login/', {
-                method: 'POST',
-                body: JSON.stringify({username, password}),
-            });
-            setStoredTokens(payload.access, payload.refresh);
-            await fetchCurrentUser();
-            showStatus(`Welcome back, ${username}.`, 'success');
-        } catch (error) {
-            showStatus(error.message, 'error');
-        }
-    }
-
-    async function handleRegister(event) {
-        event.preventDefault();
-        const username = document.getElementById('registerUsername').value.trim();
-        const email = document.getElementById('registerEmail').value.trim();
-        const password = document.getElementById('registerPassword').value;
-
-        try {
-            await request('/api/register/', {
-                method: 'POST',
-                body: JSON.stringify({username, email, password}),
-            });
-            showStatus('Account created. Logging you in now.', 'success');
-            setAuthMode('login');
-            document.getElementById('loginUsername').value = username;
-            document.getElementById('loginPassword').value = password;
-            await handleLogin(new Event('submit'));
-        } catch (error) {
-            showStatus(error.message, 'error');
-        }
-    }
-
     async function completeGoogleSignIn(credential, username = '') {
         const payload = await request('/api/auth/google/', {
             method: 'POST',
@@ -3519,6 +3463,8 @@
 
     function loadGoogleScript() {
         if (!googleClientId) {
+            elements.googleAuthWrap.innerHTML = '<p class="section-copy">Google sign-in is unavailable right now. Try again later.</p>';
+            showStatus('Google sign-in is not configured right now.', 'error');
             return;
         }
 
@@ -3537,7 +3483,10 @@
             applyMatchPayload(payload);
             renderProfile();
             startPolling();
-            showStatus(extractMessage(payload, 'Match created.'), 'success');
+            showStatus(
+                extractMessage(payload, 'Match created.'),
+                payload.result === 'active_match_exists' ? 'info' : 'success'
+            );
         } catch (error) {
             showStatus(error.message, 'error');
         } finally {
@@ -3564,7 +3513,10 @@
             elements.inviteCodeInput.value = '';
             renderProfile();
             startPolling();
-            showStatus(extractMessage(payload, 'Joined the match.'), 'success');
+            showStatus(
+                extractMessage(payload, 'Joined the match.'),
+                payload.result === 'active_match_exists' ? 'info' : 'success'
+            );
         } catch (error) {
             showStatus(error.message, 'error');
         } finally {
@@ -3606,7 +3558,7 @@
             if (payload.result === 'correct') {
                 playSound('correct');
                 triggerHaptic([14, 30, 14]);
-            } else if (payload.result === 'match_finished' || payload.result === 'card_lost') {
+            } else if (payload.result === 'match_finished') {
                 playSound(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? 'victory' : 'wrong');
                 await fetchCurrentUser();
                 triggerHaptic(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? [22, 28, 22, 40, 44] : [60]);
@@ -3621,7 +3573,7 @@
             }
             showStatus(
                 extractMessage(payload, 'Answer submitted.'),
-                payload.result === 'correct' || payload.result === 'match_finished' || payload.result === 'card_lost'
+                payload.result === 'correct' || payload.result === 'match_finished'
                     ? 'success'
                     : 'info'
             );
@@ -3823,10 +3775,6 @@
         showStatus('Logged out on this phone.', 'info');
     }
 
-    elements.loginTab.addEventListener('click', () => setAuthMode('login'));
-    elements.registerTab.addEventListener('click', () => setAuthMode('register'));
-    elements.loginForm.addEventListener('submit', handleLogin);
-    elements.registerForm.addEventListener('submit', handleRegister);
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
     elements.logoutButton.addEventListener('click', logout);
     elements.createMatchButton.addEventListener('click', createMatch);
@@ -3872,7 +3820,12 @@
             applyMatchPayload(payload);
             renderProfile();
             startPolling();
-            showStatus('Rematch room opened. Share the code and run it back.', 'success');
+            showStatus(
+                payload.result === 'active_match_exists'
+                    ? extractMessage(payload, 'You already have an active match on this phone.')
+                    : 'Rematch room opened. Share the code and run it back.',
+                payload.result === 'active_match_exists' ? 'info' : 'success'
+            );
         } catch (error) {
             showStatus(error.message, 'error');
         } finally {
@@ -3910,7 +3863,6 @@
     });
 
     renderVisibility();
-    setAuthMode('login');
     renderMatch();
     loadGoogleScript();
     refreshLeaderboard().catch(() => {
