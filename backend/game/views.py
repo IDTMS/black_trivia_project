@@ -627,6 +627,32 @@ class MatchDetailView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    def delete(self, request, pk):
+        match = self.get_object(request, pk)
+        if not match:
+            return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if match.winner_id:
+            return Response(
+                {"error": "Completed matches stay in your history."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if match.player1_id != request.user.id:
+            return Response(
+                {"error": "Only the host can cancel this room."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if match.player2_id:
+            return Response(
+                {"error": "Once another player joins, this match can't be canceled from the lobby."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        match.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class JoinMatchView(APIView):
     permission_classes = [permissions.IsAuthenticated]

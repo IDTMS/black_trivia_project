@@ -93,6 +93,31 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(len(response.data['invite_code']), 6)
         self.assertEqual(Match.objects.count(), 1)
 
+    def test_host_can_cancel_waiting_match(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        match_id = create_response.data['id']
+
+        cancel_response = self.client.delete(f'/api/matches/{match_id}/')
+
+        self.assertEqual(cancel_response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Match.objects.filter(id=match_id).exists())
+
+    def test_host_cannot_cancel_match_after_opponent_joins(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+
+        self.client.force_authenticate(user=self.player1)
+        cancel_response = self.client.delete(f'/api/matches/{match_id}/')
+
+        self.assertEqual(cancel_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("can't be canceled", cancel_response.data['error'])
+
     def test_join_by_code_and_answer_updates_match_score(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
