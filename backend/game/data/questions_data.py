@@ -1,3 +1,14 @@
+DEPRECATED_QUESTION_TEXTS = {
+    "Which rapper is also known as 'Slim Shady'?",
+    "What was the first hip-hop song to reach #1 on the Billboard Hot 100?",
+    "What NFL quarterback led the San Francisco 49ers to four Super Bowl victories?",
+    "Which WNBA player is the all-time leading scorer?",
+    "What barbecue style is Kansas City most famous for?",
+    "Who is the creator of the acclaimed TV series 'Watchmen' that explored the Tulsa Race Massacre?",
+    "What historically Black fashion event takes place annually at the Met in New York?",
+}
+
+
 questions = [
     # ================================================================
     # HISTORY (45 questions)
@@ -345,9 +356,9 @@ questions = [
     {
         "category": "hip_hop",
         "difficulty": "easy",
-        "question_text": "Which rapper is also known as 'Slim Shady'?",
-        "answer_choices": ["Eminem", "50 Cent", "Dr. Dre", "Snoop Dogg"],
-        "correct_answer": "Eminem"
+        "question_text": "Which singer is known as the 'Godfather of Soul'?",
+        "answer_choices": ["Otis Redding", "James Brown", "Al Green", "Sam Cooke"],
+        "correct_answer": "James Brown"
     },
     {
         "category": "hip_hop",
@@ -429,9 +440,9 @@ questions = [
     {
         "category": "hip_hop",
         "difficulty": "medium",
-        "question_text": "What was the first hip-hop song to reach #1 on the Billboard Hot 100?",
-        "answer_choices": ["The Message", "Rapper's Delight", "Walk This Way", "Rapture"],
-        "correct_answer": "Rapture"
+        "question_text": "Which group recorded the landmark 1982 song 'The Message'?",
+        "answer_choices": ["Run-D.M.C.", "Public Enemy", "Grandmaster Flash and the Furious Five", "A Tribe Called Quest"],
+        "correct_answer": "Grandmaster Flash and the Furious Five"
     },
     {
         "category": "hip_hop",
@@ -650,9 +661,9 @@ questions = [
     {
         "category": "sports",
         "difficulty": "medium",
-        "question_text": "What NFL quarterback led the San Francisco 49ers to four Super Bowl victories?",
-        "answer_choices": ["Joe Montana", "Steve Young", "Jerry Rice", "Warren Moon"],
-        "correct_answer": "Joe Montana"
+        "question_text": "Which quarterback became the second Black QB to win a Super Bowl after Doug Williams?",
+        "answer_choices": ["Cam Newton", "Russell Wilson", "Patrick Mahomes", "Warren Moon"],
+        "correct_answer": "Russell Wilson"
     },
     {
         "category": "sports",
@@ -734,9 +745,9 @@ questions = [
     {
         "category": "sports",
         "difficulty": "medium",
-        "question_text": "Which WNBA player is the all-time leading scorer?",
-        "answer_choices": ["Lisa Leslie", "Diana Taurasi", "Candace Parker", "Tina Thompson"],
-        "correct_answer": "Diana Taurasi"
+        "question_text": "Which WNBA legend became the first player to dunk in a regular-season game?",
+        "answer_choices": ["Lisa Leslie", "Sheryl Swoopes", "Tina Thompson", "Candace Parker"],
+        "correct_answer": "Lisa Leslie"
     },
     {
         "category": "sports",
@@ -1208,9 +1219,9 @@ questions = [
     {
         "category": "food_culture",
         "difficulty": "easy",
-        "question_text": "What barbecue style is Kansas City most famous for?",
-        "answer_choices": ["Vinegar-based", "Mustard-based", "Sweet and tangy tomato-based", "Dry rub only"],
-        "correct_answer": "Sweet and tangy tomato-based"
+        "question_text": "What dessert is a soul food holiday staple at many Black family gatherings?",
+        "answer_choices": ["Pecan pie", "Sweet potato pie", "Chess pie", "Peach cobbler"],
+        "correct_answer": "Sweet potato pie"
     },
     {
         "category": "food_culture",
@@ -1517,9 +1528,9 @@ questions = [
     {
         "category": "current_events",
         "difficulty": "medium",
-        "question_text": "Who is the creator of the acclaimed TV series 'Watchmen' that explored the Tulsa Race Massacre?",
-        "answer_choices": ["Ava DuVernay", "Damon Lindelof", "Jordan Peele", "Donald Glover"],
-        "correct_answer": "Damon Lindelof"
+        "question_text": "Who created and stars in the hit comedy series 'Abbott Elementary'?",
+        "answer_choices": ["Ayo Edebiri", "Issa Rae", "Quinta Brunson", "Lena Waithe"],
+        "correct_answer": "Quinta Brunson"
     },
     {
         "category": "current_events",
@@ -1552,9 +1563,9 @@ questions = [
     {
         "category": "current_events",
         "difficulty": "medium",
-        "question_text": "What historically Black fashion event takes place annually at the Met in New York?",
-        "answer_choices": ["ESSENCE Festival", "The Met Gala", "AFROPUNK", "BET Awards"],
-        "correct_answer": "The Met Gala"
+        "question_text": "Which designer became the first Black artistic director of Louis Vuitton menswear in 2018?",
+        "answer_choices": ["Olivier Rousteing", "Virgil Abloh", "LaQuan Smith", "Kerby Jean-Raymond"],
+        "correct_answer": "Virgil Abloh"
     },
     {
         "category": "current_events",
