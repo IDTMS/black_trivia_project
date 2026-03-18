@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import BlackCard, Leaderboard, Match, Question, QUESTION_TIME_LIMIT_SECONDS
+from .models import BlackCard, Leaderboard, Match, Question, MATCH_TARGET_SCORE, QUESTION_TIME_LIMIT_SECONDS
 
 User = get_user_model()
 
@@ -105,6 +105,7 @@ class MatchStateSerializer(serializers.ModelSerializer):
     user_role = serializers.SerializerMethodField()
     question_deadline = serializers.SerializerMethodField()
     question_time_limit_seconds = serializers.SerializerMethodField()
+    target_score = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
@@ -128,6 +129,7 @@ class MatchStateSerializer(serializers.ModelSerializer):
             'current_question',
             'question_deadline',
             'question_time_limit_seconds',
+            'target_score',
             'timestamp',
         )
         read_only_fields = fields
@@ -160,6 +162,9 @@ class MatchStateSerializer(serializers.ModelSerializer):
         if not obj.current_question_id:
             return None
         return QUESTION_TIME_LIMIT_SECONDS
+
+    def get_target_score(self, obj):
+        return MATCH_TARGET_SCORE
 
 
 class SubmitMatchResultSerializer(serializers.ModelSerializer):
@@ -222,6 +227,12 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
                     loser.black_card_active = False
                 black_card.save(update_fields=['current_holder', 'captured_at'])
                 loser.save(update_fields=['black_card_active'])
+
+            winner_black_card, _ = BlackCard.objects.get_or_create(owner=winner, defaults={'current_holder': winner})
+            if winner_black_card.current_holder_id == loser.id:
+                winner_black_card.current_holder = winner
+                winner_black_card.captured_at = None
+                winner_black_card.save(update_fields=['current_holder', 'captured_at'])
 
             winner.black_card_active = True
             winner.save(update_fields=['black_card_active'])
