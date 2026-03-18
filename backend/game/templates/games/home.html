@@ -662,10 +662,13 @@
         .wallet-card-frame {
             position: relative;
             overflow: hidden;
-            padding: 0;
+            padding: 18px;
             border-radius: 22px;
-            border: 1px solid rgba(212, 175, 90, 0.2);
-            background: #050505;
+            border: 1px solid rgba(212, 175, 90, 0.22);
+            background:
+                radial-gradient(circle at 12% 16%, rgba(111, 15, 29, 0.16), transparent 24%),
+                radial-gradient(circle at 86% 18%, rgba(212, 175, 90, 0.1), transparent 22%),
+                linear-gradient(180deg, rgba(11, 11, 12, 0.98), rgba(4, 4, 5, 0.99));
             box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
@@ -708,22 +711,35 @@
             color: #f0c2ca;
         }
 
-        .wallet-card-image {
+        .wallet-card-art {
             position: relative;
             z-index: 1;
-            display: block;
+            overflow: hidden;
             width: 100%;
-            border-radius: 0;
-            filter: brightness(0.88) contrast(1.08) saturate(0.92);
+            aspect-ratio: 1024 / 625;
+            border-radius: 18px;
+            background: #040404;
+            border: 1px solid rgba(212, 175, 90, 0.14);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 18px 34px rgba(0, 0, 0, 0.34);
+        }
+
+        .wallet-card-image {
+            position: absolute;
+            top: -32.8%;
+            left: 0;
+            width: 100%;
+            height: 163.84%;
+            display: block;
+            border-radius: 18px;
             background: #050505;
-            mix-blend-mode: lighten;
+            object-fit: cover;
         }
 
         .wallet-card-glow {
             position: absolute;
-            inset: 0;
+            inset: 18px;
             z-index: 2;
-            border-radius: 22px;
+            border-radius: 18px;
             background:
                 radial-gradient(circle at 18% 18%, rgba(255, 241, 196, 0.12), transparent 18%),
                 radial-gradient(circle at 82% 78%, rgba(165, 27, 47, 0.14), transparent 20%);
@@ -732,25 +748,26 @@
 
         .wallet-card-owner {
             position: absolute;
-            left: 50%;
-            bottom: 5.5%;
-            transform: translateX(-50%);
+            right: 12.1%;
+            bottom: 9.4%;
             z-index: 3;
-            width: 40%;
-            height: 7%;
+            width: 23.4%;
+            height: 8.4%;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 0 6%;
             text-align: center;
             font-family: Georgia, "Times New Roman", serif;
             font-weight: 700;
-            font-size: clamp(10px, 2.4vw, 17px);
-            letter-spacing: 0.08em;
+            font-size: clamp(10px, 2.1vw, 17px);
+            line-height: 1;
+            letter-spacing: 0.06em;
             color: #f0c970;
             text-transform: uppercase;
-            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.92);
             white-space: nowrap;
-            overflow: visible;
+            overflow: hidden;
             pointer-events: none;
         }
 
@@ -1079,8 +1096,16 @@
                 flex-direction: column;
             }
 
+            .wallet-card-frame {
+                padding: 14px;
+            }
+
+            .wallet-card-glow {
+                inset: 14px;
+            }
+
             .wallet-card-owner {
-                width: 40%;
+                width: 25%;
                 font-size: clamp(9px, 2.8vw, 14px);
             }
         }
@@ -1194,9 +1219,11 @@
                 <div class="wallet-card-stage">
                     <div class="wallet-card-frame is-secured" id="walletCardFrame">
                         <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
-                        <img class="wallet-card-image" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
+                        <div class="wallet-card-art">
+                            <img class="wallet-card-image" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
+                            <span class="wallet-card-owner" id="walletCardOwner"></span>
+                        </div>
                         <div class="wallet-card-glow" aria-hidden="true"></div>
-                        <span class="wallet-card-owner" id="walletCardOwner"></span>
                     </div>
                 </div>
             </div>
@@ -1249,7 +1276,7 @@
     <section class="card hidden" id="matchCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Active Match</span>
+                <span class="eyebrow" id="matchEyebrow">Active Match</span>
                 <h2 id="matchTitle">Waiting For Match</h2>
             </div>
             <span class="pill" id="matchStatusChip">Waiting</span>
@@ -1277,8 +1304,8 @@
         </div>
 
         <div class="question-card" id="questionCard">
-            <span class="label">Question</span>
-            <div class="question-meta">
+            <span class="label" id="questionLabel">Question</span>
+            <div class="question-meta" id="questionMeta">
                 <span class="badge" id="questionCategory">Category</span>
                 <span class="badge" id="questionDifficulty">Difficulty</span>
             </div>
@@ -1286,11 +1313,17 @@
             <p class="section-copy" id="turnMessage" style="margin-top:10px;">
                 Buzz in from your phone when the room is live.
             </p>
-            <div class="action-row">
+            <div class="action-row" id="matchActionRow">
                 <button class="accent-button" id="buzzButton" type="button">Buzz In</button>
                 <button class="secondary-button" id="finishMatchButton" type="button">Finish Match</button>
             </div>
-            <div class="choice-grid" id="answerChoices"></div>
+            <div class="action-row hidden" id="completedMatchActions">
+                <button class="secondary-button" id="toggleCompletedQuestionButton" type="button">View Final Question</button>
+            </div>
+            <div class="hidden" id="completedQuestionDetails">
+                <p class="section-copy" id="completedQuestionPrompt" style="margin-top:10px;"></p>
+                <div class="choice-grid" id="answerChoices"></div>
+            </div>
         </div>
     </section>
 
@@ -1365,6 +1398,7 @@
         currentUser: null,
         activeMatchId: localStorage.getItem('blackCardMatchId') || '',
         activeMatch: null,
+        completedQuestionExpanded: false,
         authMode: 'login',
         pollHandle: null,
         pendingGoogleCredential: '',
@@ -1386,6 +1420,7 @@
         authModeChip: document.getElementById('authModeChip'),
         playerRoleChip: document.getElementById('playerRoleChip'),
         lobbyStateChip: document.getElementById('lobbyStateChip'),
+        matchEyebrow: document.getElementById('matchEyebrow'),
         matchStatusChip: document.getElementById('matchStatusChip'),
         heroLeaderboardCount: document.getElementById('heroLeaderboardCount'),
         currentUsername: document.getElementById('currentUsername'),
@@ -1422,12 +1457,19 @@
         player2Score: document.getElementById('player2Score'),
         player1ScoreCard: document.getElementById('player1ScoreCard'),
         player2ScoreCard: document.getElementById('player2ScoreCard'),
+        questionLabel: document.getElementById('questionLabel'),
+        questionMeta: document.getElementById('questionMeta'),
         questionCategory: document.getElementById('questionCategory'),
         questionDifficulty: document.getElementById('questionDifficulty'),
         questionText: document.getElementById('questionText'),
         turnMessage: document.getElementById('turnMessage'),
+        matchActionRow: document.getElementById('matchActionRow'),
         buzzButton: document.getElementById('buzzButton'),
         finishMatchButton: document.getElementById('finishMatchButton'),
+        completedMatchActions: document.getElementById('completedMatchActions'),
+        toggleCompletedQuestionButton: document.getElementById('toggleCompletedQuestionButton'),
+        completedQuestionDetails: document.getElementById('completedQuestionDetails'),
+        completedQuestionPrompt: document.getElementById('completedQuestionPrompt'),
         answerChoices: document.getElementById('answerChoices'),
         victoryTitle: document.getElementById('victoryTitle'),
         victoryChip: document.getElementById('victoryChip'),
@@ -1873,7 +1915,8 @@
             elements.walletCardFrame.classList.remove('is-captured');
             elements.walletCardChip.textContent = 'In Wallet';
             elements.walletCardChip.classList.remove('is-alert');
-            elements.walletCardOwner.textContent = '';
+            elements.walletCardOwner.textContent = 'PLAYER NAME';
+            fitCardName(elements.walletCardOwner);
             elements.walletStatus.textContent = 'Your black card is in your wallet.';
             elements.walletVaultChip.textContent = 'Vault';
             elements.walletList.innerHTML = '';
@@ -2016,7 +2059,9 @@
         const match = state.activeMatch;
 
         if (!match) {
+            state.completedQuestionExpanded = false;
             elements.lobbyStateChip.textContent = 'No Active Match';
+            elements.matchEyebrow.textContent = 'Active Match';
             elements.matchTitle.textContent = 'Create or Join a Match';
             elements.matchStatusChip.textContent = 'Lobby';
             elements.inviteCodeDisplay.textContent = '------';
@@ -2024,11 +2069,18 @@
             elements.player2Name.textContent = 'Open Seat';
             elements.player1Score.textContent = '0 pts';
             elements.player2Score.textContent = '0 pts';
+            elements.questionLabel.textContent = 'Question';
+            elements.questionMeta.classList.remove('hidden');
             elements.questionCategory.textContent = 'Category';
             elements.questionDifficulty.textContent = 'Difficulty';
             elements.questionText.textContent = 'Create or join a match to load the first question.';
             elements.turnMessage.textContent = 'Buzz in from your phone when the room is live.';
+            elements.completedQuestionPrompt.textContent = '';
+            elements.completedQuestionPrompt.classList.add('hidden');
             elements.answerChoices.innerHTML = '';
+            elements.matchActionRow.classList.remove('hidden');
+            elements.completedMatchActions.classList.add('hidden');
+            elements.completedQuestionDetails.classList.add('hidden');
             elements.buzzButton.disabled = true;
             elements.finishMatchButton.disabled = true;
             elements.codeCard.classList.remove('hidden');
@@ -2039,15 +2091,24 @@
             return;
         }
 
-        elements.lobbyStateChip.textContent = match.status === 'waiting' ? 'Waiting For Opponent' : `Match ${match.status}`;
+        const isCompleted = match.status === 'completed';
+        const winnerName = match.winner ? match.winner.username : 'Winner';
+        const loserName = match.loser ? match.loser.username : 'the opponent';
+
+        elements.lobbyStateChip.textContent = match.status === 'waiting'
+            ? 'Waiting For Opponent'
+            : isCompleted
+                ? 'Recent Match'
+                : `Match ${match.status}`;
+        elements.matchEyebrow.textContent = isCompleted ? 'Match Summary' : 'Active Match';
         elements.matchTitle.textContent = match.status === 'waiting'
             ? 'Share This Code'
             : match.status === 'final_question'
                 ? 'Save Your Card'
-            : match.status === 'completed'
+            : isCompleted
                 ? 'Match Complete'
                 : 'Question Is Live';
-        elements.matchStatusChip.textContent = match.status;
+        elements.matchStatusChip.textContent = isCompleted ? 'Completed' : match.status;
         elements.inviteCodeDisplay.textContent = match.invite_code || '------';
         elements.player1Name.textContent = match.player1 ? match.player1.username : 'Host';
         elements.player2Name.textContent = match.player2 ? match.player2.username : 'Open Seat';
@@ -2065,11 +2126,21 @@
         if (match.current_question) {
             elements.questionCategory.textContent = match.current_question.category.replace('_', ' ');
             elements.questionDifficulty.textContent = match.current_question.difficulty;
-            elements.questionText.textContent = match.current_question.text;
+            elements.questionText.textContent = isCompleted && !state.completedQuestionExpanded
+                ? match.card_saved
+                    ? `${loserName} saved the black card on the final question.`
+                    : `${winnerName} closed the match and took the black card.`
+                : match.current_question.text;
+            elements.completedQuestionPrompt.textContent = isCompleted && state.completedQuestionExpanded
+                ? 'Final question from the match:'
+                : '';
         } else {
             elements.questionCategory.textContent = 'Waiting';
             elements.questionDifficulty.textContent = 'Pending';
-            elements.questionText.textContent = 'The room will load a question once both players are in.';
+            elements.questionText.textContent = isCompleted
+                ? 'The match recap is ready.'
+                : 'The room will load a question once both players are in.';
+            elements.completedQuestionPrompt.textContent = '';
         }
 
         const isPlayer1 = isCurrentUserPlayer(match, 'player1');
@@ -2091,9 +2162,7 @@
             elements.turnMessage.textContent = isFinalResponder
                 ? 'This is your final question. Answer correctly to save your black card.'
                 : `${match.final_question_player.username} is on the final question to save their black card.`;
-        } else if (match.status === 'completed') {
-            const winnerName = match.winner ? match.winner.username : 'Winner';
-            const loserName = match.loser ? match.loser.username : 'the opponent';
+        } else if (isCompleted) {
             elements.turnMessage.textContent = match.card_saved
                 ? `${winnerName} won the match, but ${loserName} answered the final question and saved the black card.`
                 : `${winnerName} took the match and claimed ${loserName}'s black card.`;
@@ -2109,6 +2178,13 @@
             elements.turnMessage.textContent = 'The question is live. First buzz wins the answer.';
         }
 
+        elements.questionLabel.textContent = isCompleted ? 'Match Recap' : match.status === 'final_question' ? 'Final Question' : 'Question';
+        elements.questionMeta.classList.toggle('hidden', isCompleted && !state.completedQuestionExpanded);
+        elements.matchActionRow.classList.toggle('hidden', isCompleted);
+        elements.completedMatchActions.classList.toggle('hidden', !isCompleted);
+        elements.completedQuestionDetails.classList.toggle('hidden', isCompleted ? !state.completedQuestionExpanded : false);
+        elements.completedQuestionPrompt.classList.toggle('hidden', !(isCompleted && state.completedQuestionExpanded && match.current_question));
+        elements.toggleCompletedQuestionButton.textContent = state.completedQuestionExpanded ? 'Hide Final Question' : 'View Final Question';
         elements.buzzButton.disabled = !canBuzz;
         elements.finishMatchButton.disabled = !canFinish;
         elements.codeCard.classList.toggle('hidden', match.status !== 'waiting');
@@ -2162,12 +2238,17 @@
     async function loadMatch(matchId, announce = true) {
         if (!matchId) {
             state.activeMatch = null;
+            state.completedQuestionExpanded = false;
             renderMatch();
             return;
         }
 
         try {
             const payload = await request(`/api/matches/${matchId}/`);
+            const previousMatch = state.activeMatch;
+            if (!previousMatch || previousMatch.id !== payload.id || previousMatch.status !== payload.status) {
+                state.completedQuestionExpanded = false;
+            }
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
             renderMatch();
@@ -2180,6 +2261,14 @@
             renderMatch();
             showStatus(error.message, 'error');
         }
+    }
+
+    function toggleCompletedQuestionDetails() {
+        if (!state.activeMatch || state.activeMatch.status !== 'completed') {
+            return;
+        }
+        state.completedQuestionExpanded = !state.completedQuestionExpanded;
+        renderMatch();
     }
 
     async function handleLogin(event) {
@@ -2540,6 +2629,8 @@
     elements.shareCardButton.addEventListener('click', shareVictoryCard);
     elements.shareXButton.addEventListener('click', () => shareToSocial('x'));
     elements.shareFacebookButton.addEventListener('click', () => shareToSocial('facebook'));
+    elements.toggleCompletedQuestionButton.addEventListener('click', toggleCompletedQuestionDetails);
+    window.addEventListener('resize', () => fitCardName(elements.walletCardOwner));
 
     renderVisibility();
     setAuthMode('login');
