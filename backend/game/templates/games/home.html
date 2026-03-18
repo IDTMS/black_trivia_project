@@ -2470,6 +2470,7 @@
         }
 
         const isCompleted = match.status === 'completed';
+        const isWaiting = match.status === 'waiting';
         const winnerName = match.winner ? match.winner.username : 'Winner';
         const loserName = match.loser ? match.loser.username : 'the opponent';
         const targetScore = match.target_score || 50;
@@ -2533,7 +2534,7 @@
         const isFinalResponder = Boolean(match.final_question_player && state.currentUser && match.final_question_player.id === state.currentUser.id);
         const canBuzz = match.status === 'live' && isParticipant && !buzzLocked;
 
-        if (match.status === 'waiting') {
+        if (isWaiting) {
             const waitMsg = isPlayer1 && match.required_opponent
                 ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match.`
                 : isPlayer1
@@ -2569,15 +2570,15 @@
         elements.completedQuestionPrompt.classList.toggle('hidden', !(isCompleted && state.completedQuestionExpanded && match.current_question));
         elements.toggleCompletedQuestionButton.textContent = state.completedQuestionExpanded ? 'Hide Final Question' : 'View Final Question';
         elements.buzzButton.disabled = !canBuzz;
-        elements.codeCard.classList.toggle('hidden', match.status !== 'waiting');
+        elements.codeCard.classList.toggle('hidden', !isWaiting);
 
         // Show scores and question card once match has a second player
         const matchStarted = Boolean(match.player2);
         elements.scoreRow.classList.toggle('hidden', !matchStarted);
         elements.questionCard.classList.toggle('hidden', !matchStarted);
 
-        // Show back to lobby button only when match is completed
-        elements.backToLobbyRow.classList.toggle('hidden', match.status !== 'completed');
+        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Back to Lobby';
+        elements.backToLobbyRow.classList.toggle('hidden', !(isWaiting || isCompleted));
 
         elements.answerChoices.innerHTML = '';
         if (match.current_question && Array.isArray(match.current_question.choices)) {
@@ -3059,7 +3060,26 @@
     elements.joinForm.addEventListener('submit', joinByCode);
     elements.buzzButton.addEventListener('click', buzzIn);
     elements.copyCodeButton.addEventListener('click', copyInviteCode);
-    elements.backToLobbyButton.addEventListener('click', () => {
+    elements.backToLobbyButton.addEventListener('click', async () => {
+        if (!state.activeMatch) {
+            return;
+        }
+
+        if (state.activeMatch.status === 'waiting') {
+            try {
+                await request(`/api/matches/${state.activeMatch.id}/`, {method: 'DELETE'});
+                state.activeMatch = null;
+                setActiveMatchId('');
+                stopPolling();
+                renderVisibility();
+                renderMatch();
+                showStatus('Match canceled. Back in the lobby.', 'info');
+            } catch (error) {
+                showStatus(error.message, 'error');
+            }
+            return;
+        }
+
         state.activeMatch = null;
         setActiveMatchId('');
         stopPolling();
