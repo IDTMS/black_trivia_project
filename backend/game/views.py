@@ -206,15 +206,15 @@ def join_match(match, player):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if match.player1_id == player.id or match.player2_id == player.id:
-        if match.player2_id and not match.current_question_id:
+    if match.player2_id == player.id:
+        if not match.current_question_id:
             match.current_question = pick_random_question()
             match.save(update_fields=['current_question'])
         return match, None
 
     if match.player1_id == player.id:
         return None, Response(
-            {"error": "Use a different account to join this match."},
+            {"error": "You created this match. Have another player join with the invite code from their phone."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
