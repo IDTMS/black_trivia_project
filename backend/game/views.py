@@ -2,6 +2,7 @@ import os
 import random
 import secrets
 import string
+from datetime import timedelta
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -15,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import BlackCard, Leaderboard, Match, Question
+from .models import BlackCard, Leaderboard, Match, Question, QUESTION_TIME_LIMIT_SECONDS
 from .serializers import (
     CurrentUserSerializer,
     LeaderboardSerializer,
@@ -134,6 +135,73 @@ def get_match_winner_and_loser(match):
     return match.player2, match.player1
 
 
+def set_match_question(match, question):
+    match.current_question = question
+    match.question_started_at = timezone.now() if question else None
+
+
+def finalize_match(match, winner):
+    serializer = SubmitMatchResultSerializer(
+        instance=match,
+        data={'winner_id': winner.id},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    match.refresh_from_db()
+    return match
+
+
+def resolve_question_timeout(match):
+    if (
+        not match
+        or match.winner_id
+        or not match.player2_id
+        or not match.current_question_id
+        or not match.question_started_at
+    ):
+        return
+
+    deadline = match.question_started_at + timedelta(seconds=QUESTION_TIME_LIMIT_SECONDS)
+    if timezone.now() < deadline:
+        return
+
+    if match.final_question_active:
+        winner, loser = get_match_winner_and_loser(match)
+        if not winner or not loser:
+            return
+
+        match.card_saved = False
+        match.save(update_fields=['card_saved'])
+        finalize_match(match, winner)
+        return
+
+    if match.current_buzzer_id:
+        penalty = 5
+        timed_out_user = match.current_buzzer
+        score_field = 'player1_score' if timed_out_user.id == match.player1_id else 'player2_score'
+        if timed_out_user.id == match.player1_id:
+            match.player1_score -= penalty
+        else:
+            match.player2_score -= penalty
+
+        match.current_buzzer = None
+        if match.locked_out_player_id and match.locked_out_player_id != timed_out_user.id:
+            match.locked_out_player = None
+            set_match_question(match, pick_random_question())
+            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
+            return
+
+        match.locked_out_player = timed_out_user
+        match.question_started_at = timezone.now()
+        match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'question_started_at'])
+        return
+
+    match.current_buzzer = None
+    match.locked_out_player = None
+    set_match_question(match, pick_random_question())
+    match.save(update_fields=['current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
+
+
 def build_unique_username(base_username):
     clean_base = ''.join(char for char in base_username.lower() if char.isalnum() or char == '_').strip('_')
     if not clean_base:
@@ -180,6 +248,25 @@ def verify_google_token(credential, client_id):
 
 def get_match_for_user(pk, user):
     reset_expired_black_cards()
+    match = Match.objects.filter(
+        models.Q(player1=user) | models.Q(player2=user),
+        pk=pk,
+    ).select_related(
+        'player1',
+        'player2',
+        'winner',
+        'loser',
+        'current_buzzer',
+        'locked_out_player',
+        'final_question_player',
+        'required_opponent',
+        'current_question',
+    ).first()
+    if not match:
+        return None
+
+    resolve_question_timeout(match)
+
     return Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
         pk=pk,
@@ -206,10 +293,12 @@ def join_match(match, player):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    resolve_question_timeout(match)
+
     if match.player2_id == player.id:
         if not match.current_question_id:
-            match.current_question = pick_random_question()
-            match.save(update_fields=['current_question'])
+            set_match_question(match, pick_random_question())
+            match.save(update_fields=['current_question', 'question_started_at'])
         return match, None
 
     if match.player1_id == player.id:
@@ -244,7 +333,7 @@ def join_match(match, player):
                 {"error": "No questions available."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        match.current_question = question
+        set_match_question(match, question)
     match.current_buzzer = None
     match.locked_out_player = None
     match.final_question_active = False
@@ -253,6 +342,7 @@ def join_match(match, player):
     match.save(update_fields=[
         'player2',
         'current_question',
+        'question_started_at',
         'current_buzzer',
         'locked_out_player',
         'final_question_active',
@@ -476,7 +566,7 @@ class MatchDetailView(APIView):
 
             match.final_question_active = True
             match.final_question_player = loser
-            match.current_question = question
+            set_match_question(match, question)
             match.current_buzzer = None
             match.locked_out_player = None
             match.card_saved = False
@@ -484,6 +574,7 @@ class MatchDetailView(APIView):
                 'final_question_active',
                 'final_question_player',
                 'current_question',
+                'question_started_at',
                 'current_buzzer',
                 'locked_out_player',
                 'card_saved',
@@ -609,8 +700,8 @@ class AnswerQuestionView(APIView):
 
             match.current_buzzer = None
             match.locked_out_player = None
-            match.current_question = pick_random_question()
-            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question'])
+            set_match_question(match, pick_random_question())
+            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
             return serialize_match(
                 request,
                 match,
@@ -629,8 +720,8 @@ class AnswerQuestionView(APIView):
 
         if match.locked_out_player_id and match.locked_out_player_id != request.user.id:
             match.locked_out_player = None
-            match.current_question = pick_random_question()
-            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question'])
+            set_match_question(match, pick_random_question())
+            match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
             return serialize_match(
                 request,
                 match,
@@ -639,7 +730,8 @@ class AnswerQuestionView(APIView):
             )
 
         match.locked_out_player = request.user
-        match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player'])
+        match.question_started_at = timezone.now()
+        match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'question_started_at'])
         return serialize_match(
             request,
             match,
@@ -666,10 +758,10 @@ class ChooseCategoryView(APIView):
         if not question:
             return Response({"error": "No questions available in this category."}, status=status.HTTP_404_NOT_FOUND)
 
-        match.current_question = question
+        set_match_question(match, question)
         match.current_buzzer = None
         match.locked_out_player = None
-        match.save(update_fields=['current_question', 'current_buzzer', 'locked_out_player'])
+        match.save(update_fields=['current_question', 'question_started_at', 'current_buzzer', 'locked_out_player'])
         return serialize_match(request, match, message=f"New {category} question loaded.")
 
 

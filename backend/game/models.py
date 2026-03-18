@@ -3,6 +3,9 @@ from django.db import models
 from django.utils import timezone
 
 
+QUESTION_TIME_LIMIT_SECONDS = 15
+
+
 class User(AbstractUser):
     black_card_active = models.BooleanField(default=True)
     google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
@@ -79,6 +82,7 @@ class Match(models.Model):
     player2_score = models.IntegerField(default=0)
     final_question_active = models.BooleanField(default=False)
     card_saved = models.BooleanField(default=False)
+    question_started_at = models.DateTimeField(null=True, blank=True)
     current_question = models.ForeignKey(
         'Question',
         related_name='current_question',

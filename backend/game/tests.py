@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -6,7 +7,9 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import BlackCard, Leaderboard, Match, Question
+from .data.load_questions import load_questions
+from .data.questions_data import DEPRECATED_QUESTION_TEXTS, questions as bundled_questions
+from .models import BlackCard, Leaderboard, Match, Question, QUESTION_TIME_LIMIT_SECONDS
 
 User = get_user_model()
 
@@ -64,14 +67,14 @@ class MatchFlowTests(APITestCase):
         Leaderboard.objects.create(user=self.player2)
         Leaderboard.objects.create(user=self.player3)
 
-        Question.objects.create(
+        self.question_one = Question.objects.create(
             category='history',
             difficulty='easy',
             question_text='What year did Juneteenth mark the arrival of emancipation news in Texas?',
             answer_choices=['1863', '1865', '1870', '1876'],
             correct_answer='1865',
         )
-        Question.objects.create(
+        self.question_two = Question.objects.create(
             category='sports',
             difficulty='easy',
             question_text='Which boxer was known as The Greatest?',
@@ -258,6 +261,93 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(blocked_response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIn('Only player_one can face you', blocked_response.data['error'])
 
+    @patch('game.views.pick_random_question')
+    def test_question_timer_expiry_loads_new_question(self, mock_pick_random_question):
+        mock_pick_random_question.return_value = self.question_two
+
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+
+        match = Match.objects.get(id=match_id)
+        match.current_question = self.question_one
+        match.question_started_at = timezone.now() - timedelta(seconds=QUESTION_TIME_LIMIT_SECONDS + 1)
+        match.save(update_fields=['current_question', 'question_started_at'])
+
+        self.client.force_authenticate(user=self.player1)
+        response = self.client.get(f'/api/matches/{match_id}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['current_question']['id'], self.question_two.id)
+        self.assertEqual(response.data['question_time_limit_seconds'], QUESTION_TIME_LIMIT_SECONDS)
+        self.assertIsNotNone(response.data['question_deadline'])
+
+    def test_buzz_timeout_applies_penalty_and_opens_steal(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+
+        match = Match.objects.get(id=match_id)
+        match.current_question = self.question_one
+        match.current_buzzer = self.player2
+        match.question_started_at = timezone.now() - timedelta(seconds=QUESTION_TIME_LIMIT_SECONDS + 1)
+        match.save(update_fields=['current_question', 'current_buzzer', 'question_started_at'])
+
+        self.client.force_authenticate(user=self.player1)
+        response = self.client.get(f'/api/matches/{match_id}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        match.refresh_from_db()
+        self.assertEqual(match.player2_score, -5)
+        self.assertIsNone(match.current_buzzer)
+        self.assertEqual(match.locked_out_player_id, self.player2.id)
+        self.assertEqual(response.data['locked_out_player']['id'], self.player2.id)
+
+    def test_final_question_timer_expiry_transfers_black_card(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+
+        match = Match.objects.get(id=match_id)
+        match.player1_score = 20
+        match.player2_score = 10
+        match.final_question_active = True
+        match.final_question_player = self.player2
+        match.current_question = self.question_one
+        match.question_started_at = timezone.now() - timedelta(seconds=QUESTION_TIME_LIMIT_SECONDS + 1)
+        match.save(update_fields=[
+            'player1_score',
+            'player2_score',
+            'final_question_active',
+            'final_question_player',
+            'current_question',
+            'question_started_at',
+        ])
+
+        self.client.force_authenticate(user=self.player1)
+        response = self.client.get(f'/api/matches/{match_id}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        match.refresh_from_db()
+        self.assertEqual(match.winner_id, self.player1.id)
+        self.assertEqual(match.loser_id, self.player2.id)
+        self.assertEqual(response.data['status'], 'completed')
+
+        black_card = BlackCard.objects.get(owner=self.player2)
+        self.assertEqual(black_card.current_holder_id, self.player1.id)
+
 
 class GoogleAuthTests(APITestCase):
     @patch.dict(os.environ, {'GOOGLE_CLIENT_ID': 'test-google-client-id'})
@@ -312,3 +402,31 @@ class GoogleAuthTests(APITestCase):
         user = User.objects.get(username='google_player')
         self.assertEqual(user.google_sub, 'google-sub-456')
         self.assertTrue(Leaderboard.objects.filter(user=user).exists())
+
+
+class QuestionBankAuditTests(APITestCase):
+    def test_bundled_question_bank_excludes_removed_prompts(self):
+        question_texts = {question['question_text'] for question in bundled_questions}
+
+        self.assertTrue(DEPRECATED_QUESTION_TEXTS.isdisjoint(question_texts))
+        self.assertIn("Which singer is known as the 'Godfather of Soul'?", question_texts)
+        self.assertIn("Which quarterback became the second Black QB to win a Super Bowl after Doug Williams?", question_texts)
+        self.assertIn("Who created and stars in the hit comedy series 'Abbott Elementary'?", question_texts)
+
+    def test_load_questions_removes_deprecated_questions_from_database(self):
+        Question.objects.create(
+            category='sports',
+            difficulty='medium',
+            question_text="What NFL quarterback led the San Francisco 49ers to four Super Bowl victories?",
+            answer_choices=["Joe Montana", "Steve Young", "Jerry Rice", "Warren Moon"],
+            correct_answer="Joe Montana",
+        )
+
+        load_questions()
+
+        self.assertFalse(Question.objects.filter(question_text__in=DEPRECATED_QUESTION_TEXTS).exists())
+        self.assertTrue(
+            Question.objects.filter(
+                question_text="Which quarterback became the second Black QB to win a Super Bowl after Doug Williams?"
+            ).exists()
+        )

@@ -1029,6 +1029,70 @@
             flex-wrap: wrap;
         }
 
+        .timer-row {
+            margin-top: 12px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .timer-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .timer-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 64px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 90, 0.18);
+            background: rgba(212, 175, 90, 0.08);
+            color: var(--gold);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .timer-pill.is-alert {
+            border-color: rgba(165, 27, 47, 0.28);
+            background: rgba(111, 15, 29, 0.22);
+            color: #ffd9df;
+        }
+
+        .timer-copy {
+            color: rgba(244, 239, 229, 0.62);
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .timer-track {
+            overflow: hidden;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .timer-fill {
+            width: 100%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #f7e6b6 0%, #d4af5a 62%, #8e681b 100%);
+            box-shadow: 0 0 18px rgba(212, 175, 90, 0.18);
+            transform-origin: left center;
+            transition: width 0.25s linear;
+        }
+
+        .timer-fill.is-alert {
+            background: linear-gradient(90deg, #ffcf9f 0%, #c84856 100%);
+            box-shadow: 0 0 18px rgba(200, 72, 86, 0.18);
+        }
+
         .action-row {
             margin-top: 14px;
             flex-wrap: wrap;
@@ -1472,6 +1536,15 @@
                 <span class="badge" id="questionCategory">Category</span>
                 <span class="badge" id="questionDifficulty">Difficulty</span>
             </div>
+            <div class="timer-row hidden" id="questionTimerRow">
+                <div class="timer-head">
+                    <span class="timer-copy" id="questionTimerCopy">Question Clock</span>
+                    <span class="timer-pill" id="questionTimerPill">15s</span>
+                </div>
+                <div class="timer-track">
+                    <div class="timer-fill" id="questionTimerFill"></div>
+                </div>
+            </div>
             <h3 id="questionText">Waiting for both players to join.</h3>
             <p class="section-copy" id="turnMessage" style="margin-top:10px;">
                 The question appears once both players are in the room.
@@ -1567,6 +1640,8 @@
         activeMatchId: localStorage.getItem('blackCardMatchId') || '',
         activeMatch: null,
         completedQuestionExpanded: false,
+        questionTimerHandle: null,
+        questionTimerSyncPending: false,
         authMode: 'login',
         pollHandle: null,
         pendingGoogleCredential: '',
@@ -1632,6 +1707,10 @@
         questionMeta: document.getElementById('questionMeta'),
         questionCategory: document.getElementById('questionCategory'),
         questionDifficulty: document.getElementById('questionDifficulty'),
+        questionTimerRow: document.getElementById('questionTimerRow'),
+        questionTimerCopy: document.getElementById('questionTimerCopy'),
+        questionTimerPill: document.getElementById('questionTimerPill'),
+        questionTimerFill: document.getElementById('questionTimerFill'),
         questionText: document.getElementById('questionText'),
         turnMessage: document.getElementById('turnMessage'),
         matchActionRow: document.getElementById('matchActionRow'),
@@ -2122,6 +2201,76 @@
         return vaultCard;
     }
 
+    function stopQuestionTimer() {
+        if (state.questionTimerHandle) {
+            window.clearInterval(state.questionTimerHandle);
+            state.questionTimerHandle = null;
+        }
+    }
+
+    function updateQuestionTimer(match) {
+        const hasTimer = Boolean(
+            match
+            && match.current_question
+            && match.question_deadline
+            && (match.status === 'live' || match.status === 'final_question')
+        );
+
+        if (!hasTimer) {
+            elements.questionTimerRow.classList.add('hidden');
+            elements.questionTimerPill.classList.remove('is-alert');
+            elements.questionTimerFill.classList.remove('is-alert');
+            elements.questionTimerFill.style.width = '100%';
+            elements.questionTimerCopy.textContent = 'Question Clock';
+            elements.questionTimerPill.textContent = '15s';
+            return;
+        }
+
+        const deadline = new Date(match.question_deadline).getTime();
+        const totalSeconds = match.question_time_limit_seconds || 15;
+        const millisecondsLeft = deadline - Date.now();
+        const clampedMilliseconds = Math.max(0, millisecondsLeft);
+        const secondsLeft = Math.max(0, Math.ceil(clampedMilliseconds / 1000));
+        const progress = Math.max(0, Math.min(1, clampedMilliseconds / (totalSeconds * 1000)));
+        const isAlert = secondsLeft <= 5;
+
+        elements.questionTimerRow.classList.remove('hidden');
+        elements.questionTimerPill.textContent = `${secondsLeft}s`;
+        elements.questionTimerPill.classList.toggle('is-alert', isAlert);
+        elements.questionTimerFill.classList.toggle('is-alert', isAlert);
+        elements.questionTimerFill.style.width = `${progress * 100}%`;
+        elements.questionTimerCopy.textContent = match.status === 'final_question'
+            ? 'Final Question Clock'
+            : match.current_buzzer
+                ? 'Answer Clock'
+                : match.locked_out_player
+                    ? 'Steal Clock'
+                    : 'Buzz Clock';
+
+        if (millisecondsLeft <= 0 && state.activeMatchId && !state.questionTimerSyncPending) {
+            state.questionTimerSyncPending = true;
+            loadMatch(state.activeMatchId, true).finally(() => {
+                state.questionTimerSyncPending = false;
+            });
+        }
+    }
+
+    function syncQuestionTimer(match) {
+        stopQuestionTimer();
+        updateQuestionTimer(match);
+
+        if (
+            match
+            && match.current_question
+            && match.question_deadline
+            && (match.status === 'live' || match.status === 'final_question')
+        ) {
+            state.questionTimerHandle = window.setInterval(() => {
+                updateQuestionTimer(state.activeMatch);
+            }, 250);
+        }
+    }
+
     function renderVisibility() {
         const isAuthed = Boolean(state.currentUser);
         const hasMatch = Boolean(state.activeMatch);
@@ -2303,6 +2452,7 @@
 
         if (!match) {
             state.completedQuestionExpanded = false;
+            stopQuestionTimer();
             elements.lobbyStateChip.textContent = 'No Active Match';
             elements.scoreRow.classList.add('hidden');
             elements.questionCard.classList.add('hidden');
@@ -2447,6 +2597,7 @@
         }
 
         renderVictory(match);
+        syncQuestionTimer(match);
         renderProfile();
     }
 

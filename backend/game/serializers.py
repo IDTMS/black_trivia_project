@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 # game/serializers.py
 
 from django.contrib.auth import get_user_model
@@ -6,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import BlackCard, Leaderboard, Match, Question
+from .models import BlackCard, Leaderboard, Match, Question, QUESTION_TIME_LIMIT_SECONDS
 
 User = get_user_model()
 
@@ -101,6 +103,8 @@ class MatchStateSerializer(serializers.ModelSerializer):
     current_question = MatchQuestionSerializer(read_only=True)
     status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
+    question_deadline = serializers.SerializerMethodField()
+    question_time_limit_seconds = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
@@ -122,6 +126,8 @@ class MatchStateSerializer(serializers.ModelSerializer):
             'final_question_active',
             'card_saved',
             'current_question',
+            'question_deadline',
+            'question_time_limit_seconds',
             'timestamp',
         )
         read_only_fields = fields
@@ -144,6 +150,16 @@ class MatchStateSerializer(serializers.ModelSerializer):
         if obj.player2_id == request.user.id:
             return 'player2'
         return None
+
+    def get_question_deadline(self, obj):
+        if not obj.current_question_id or not obj.question_started_at:
+            return None
+        return obj.question_started_at + timedelta(seconds=QUESTION_TIME_LIMIT_SECONDS)
+
+    def get_question_time_limit_seconds(self, obj):
+        if not obj.current_question_id:
+            return None
+        return QUESTION_TIME_LIMIT_SECONDS
 
 
 class SubmitMatchResultSerializer(serializers.ModelSerializer):
