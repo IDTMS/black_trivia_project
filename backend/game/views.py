@@ -733,6 +733,7 @@ class AnswerQuestionView(APIView):
                 match,
                 message=f"Wrong answer. -{penalty} points. Both players missed, so a new question is live.",
                 result='double_miss',
+                correct_answer=question.correct_answer,
             )
 
         match.locked_out_player = request.user
