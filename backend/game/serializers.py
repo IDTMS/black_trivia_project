@@ -137,8 +137,6 @@ class MatchStateSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         if obj.winner_id:
             return 'completed'
-        if obj.final_question_active:
-            return 'final_question'
         if obj.player2_id:
             return 'live'
         return 'waiting'
@@ -196,6 +194,7 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
             instance.final_question_player = None
             instance.current_buzzer = None
             instance.locked_out_player = None
+            instance.card_saved = False
             instance.save(update_fields=[
                 'winner',
                 'loser',
@@ -204,6 +203,7 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
                 'final_question_player',
                 'current_buzzer',
                 'locked_out_player',
+                'card_saved',
             ])
 
             leaderboard_winner, _ = Leaderboard.objects.get_or_create(user=winner)
@@ -217,14 +217,9 @@ class SubmitMatchResultSerializer(serializers.ModelSerializer):
                 leaderboard_loser.save(update_fields=['points'])
 
                 black_card, _ = BlackCard.objects.get_or_create(owner=loser, defaults={'current_holder': loser})
-                if instance.card_saved:
-                    black_card.current_holder = loser
-                    black_card.captured_at = None
-                    loser.black_card_active = True
-                else:
-                    black_card.current_holder = winner
-                    black_card.captured_at = timezone.now()
-                    loser.black_card_active = False
+                black_card.current_holder = winner
+                black_card.captured_at = timezone.now()
+                loser.black_card_active = False
                 black_card.save(update_fields=['current_holder', 'captured_at'])
                 loser.save(update_fields=['black_card_active'])
 

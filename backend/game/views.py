@@ -151,47 +151,23 @@ def finalize_match(match, winner):
     return match
 
 
-def start_final_question(match, loser):
-    question = pick_random_question()
-    if not question:
-        return None
+def maybe_finalize_match(match):
+    if not match or match.winner_id or not match.player2_id:
+        return None, None
 
-    match.final_question_active = True
-    match.final_question_player = loser
-    set_match_question(match, question)
-    match.current_buzzer = None
-    match.locked_out_player = None
-    match.card_saved = False
-    match.save(update_fields=[
-        'final_question_active',
-        'final_question_player',
-        'current_question',
-        'question_started_at',
-        'current_buzzer',
-        'locked_out_player',
-        'card_saved',
-    ])
-    return question
-
-
-def maybe_start_final_question(match):
-    if (
-        not match
-        or match.winner_id
-        or match.final_question_active
-        or not match.player2_id
-        or max(match.player1_score, match.player2_score) < MATCH_TARGET_SCORE
-    ):
+    if max(match.player1_score, match.player2_score) < MATCH_TARGET_SCORE:
+        if match.final_question_active or match.final_question_player_id or match.card_saved:
+            match.final_question_active = False
+            match.final_question_player = None
+            match.card_saved = False
+            match.save(update_fields=['final_question_active', 'final_question_player', 'card_saved'])
         return None, None
 
     winner, loser = get_match_winner_and_loser(match)
     if not winner or not loser:
         return None, None
 
-    question = start_final_question(match, loser)
-    if not question:
-        return None, None
-
+    finalize_match(match, winner)
     return winner, loser
 
 
@@ -209,16 +185,6 @@ def resolve_question_timeout(match):
     if timezone.now() < deadline:
         return
 
-    if match.final_question_active:
-        winner, loser = get_match_winner_and_loser(match)
-        if not winner or not loser:
-            return
-
-        match.card_saved = False
-        match.save(update_fields=['card_saved'])
-        finalize_match(match, winner)
-        return
-
     if match.current_buzzer_id:
         penalty = 5
         timed_out_user = match.current_buzzer
@@ -233,20 +199,20 @@ def resolve_question_timeout(match):
             match.locked_out_player = None
             set_match_question(match, pick_random_question())
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
-            maybe_start_final_question(match)
+            maybe_finalize_match(match)
             return
 
         match.locked_out_player = timed_out_user
         match.question_started_at = timezone.now()
         match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'question_started_at'])
-        maybe_start_final_question(match)
+        maybe_finalize_match(match)
         return
 
     match.current_buzzer = None
     match.locked_out_player = None
     set_match_question(match, pick_random_question())
     match.save(update_fields=['current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
-    maybe_start_final_question(match)
+    maybe_finalize_match(match)
 
 
 def build_unique_username(base_username):
@@ -313,7 +279,7 @@ def get_match_for_user(pk, user):
         return None
 
     resolve_question_timeout(match)
-    maybe_start_final_question(match)
+    maybe_finalize_match(match)
 
     return Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
@@ -611,20 +577,13 @@ class MatchDetailView(APIView):
         winner, loser = get_match_winner_and_loser(match)
         if not winner or not loser:
             return Response({"error": "The final score is tied. Play another question before finishing the match."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not match.final_question_active:
-            if not start_final_question(match, loser):
-                return Response({"error": "No questions available."}, status=status.HTTP_404_NOT_FOUND)
-            return serialize_match(
-                request,
-                match,
-                message=f"Final question live. {loser.username} has one chance to save their black card.",
-                result='final_question_started',
-            )
-
-        return Response(
-            {"error": "The final question is already live. Answer it to decide the black card."},
-            status=status.HTTP_400_BAD_REQUEST,
+        maybe_finalize_match(match)
+        match.refresh_from_db()
+        return serialize_match(
+            request,
+            match,
+            message=f"{winner.username} reached {MATCH_TARGET_SCORE} and claimed {loser.username}'s black card.",
+            result='match_finished',
         )
 
     def delete(self, request, pk):
@@ -681,8 +640,6 @@ class BuzzView(APIView):
             return Response({"error": "Waiting for another player to join."}, status=status.HTTP_400_BAD_REQUEST)
         if match.winner_id:
             return Response({"error": "This match is already completed."}, status=status.HTTP_400_BAD_REQUEST)
-        if match.final_question_active:
-            return Response({"error": "The final save question is live. No buzzer is used for that round."}, status=status.HTTP_400_BAD_REQUEST)
         if match.current_buzzer_id:
             return Response({"error": "Another player has already buzzed."}, status=status.HTTP_400_BAD_REQUEST)
         if match.locked_out_player_id == request.user.id:
@@ -710,41 +667,6 @@ class AnswerQuestionView(APIView):
         question = match.current_question
         is_correct = answer.casefold() == question.correct_answer.strip().casefold()
 
-        if match.final_question_active:
-            if match.final_question_player_id != request.user.id:
-                return Response({"error": "Only the trailing player can answer the final save question."}, status=status.HTTP_403_FORBIDDEN)
-
-            winner, loser = get_match_winner_and_loser(match)
-            if not winner or not loser:
-                return Response({"error": "The final score is tied."}, status=status.HTTP_400_BAD_REQUEST)
-
-            match.card_saved = is_correct
-            match.save(update_fields=['card_saved'])
-
-            serializer = SubmitMatchResultSerializer(
-                instance=match,
-                data={'winner_id': winner.id},
-                context={'request': request},
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            match.refresh_from_db()
-
-            if is_correct:
-                return serialize_match(
-                    request,
-                    match,
-                    message=f"{loser.username} answered the final question and saved their black card.",
-                    result='card_saved',
-                )
-
-            return serialize_match(
-                request,
-                match,
-                message=f"{winner.username} won the match and claimed {loser.username}'s black card.",
-                result='card_lost',
-            )
-
         if match.current_buzzer_id != request.user.id:
             return Response({"error": "You did not buzz first."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -763,13 +685,14 @@ class AnswerQuestionView(APIView):
             match.current_buzzer = None
             match.locked_out_player = None
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player'])
-            winner, loser = maybe_start_final_question(match)
+            winner, loser = maybe_finalize_match(match)
             if winner and loser:
+                match.refresh_from_db()
                 return serialize_match(
                     request,
                     match,
-                    message=f"{winner.username} hit {MATCH_TARGET_SCORE}. Final question live for {loser.username} to save their black card.",
-                    result='final_question_started',
+                    message=f"{winner.username} hit {MATCH_TARGET_SCORE} and claimed {loser.username}'s black card.",
+                    result='match_finished',
                 )
 
             set_match_question(match, pick_random_question())
@@ -793,13 +716,14 @@ class AnswerQuestionView(APIView):
         if match.locked_out_player_id and match.locked_out_player_id != request.user.id:
             match.locked_out_player = None
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player'])
-            winner, loser = maybe_start_final_question(match)
+            winner, loser = maybe_finalize_match(match)
             if winner and loser:
+                match.refresh_from_db()
                 return serialize_match(
                     request,
                     match,
-                    message=f"{winner.username} reached {MATCH_TARGET_SCORE}. Final question live for {loser.username}.",
-                    result='final_question_started',
+                    message=f"{winner.username} reached {MATCH_TARGET_SCORE} and claimed {loser.username}'s black card.",
+                    result='match_finished',
                 )
 
             set_match_question(match, pick_random_question())
@@ -814,13 +738,14 @@ class AnswerQuestionView(APIView):
         match.locked_out_player = request.user
         match.question_started_at = timezone.now()
         match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'question_started_at'])
-        winner, loser = maybe_start_final_question(match)
+        winner, loser = maybe_finalize_match(match)
         if winner and loser:
+            match.refresh_from_db()
             return serialize_match(
                 request,
                 match,
-                message=f"{winner.username} reached {MATCH_TARGET_SCORE}. Final question live for {loser.username}.",
-                result='final_question_started',
+                message=f"{winner.username} reached {MATCH_TARGET_SCORE} and claimed {loser.username}'s black card.",
+                result='match_finished',
             )
 
         return serialize_match(

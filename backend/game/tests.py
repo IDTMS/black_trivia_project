@@ -195,48 +195,7 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(steal_buzz.status_code, status.HTTP_200_OK)
         self.assertEqual(steal_buzz.data['current_buzzer']['username'], 'player_one')
 
-    def test_final_question_can_save_black_card(self):
-        self.client.force_authenticate(user=self.player1)
-        create_response = self.client.post('/api/matches/', {}, format='json')
-        invite_code = create_response.data['invite_code']
-        match_id = create_response.data['id']
-
-        self.client.force_authenticate(user=self.player2)
-        join_response = self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
-        match = Match.objects.get(id=match_id)
-        match.player1_score = MATCH_TARGET_SCORE
-        match.player2_score = 10
-        match.current_question = Question.objects.first()
-        match.save(update_fields=['player1_score', 'player2_score', 'current_question'])
-
-        self.client.force_authenticate(user=self.player1)
-        finish_response = self.client.get(f'/api/matches/{match_id}/')
-        self.assertEqual(finish_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(finish_response.data['status'], 'final_question')
-
-        match.refresh_from_db()
-        final_question = match.current_question
-
-        self.client.force_authenticate(user=self.player2)
-        save_response = self.client.post(
-            f'/api/matches/{match_id}/answer/',
-            {'answer': final_question.correct_answer},
-            format='json',
-        )
-
-        self.assertEqual(save_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(save_response.data['result'], 'card_saved')
-
-        match.refresh_from_db()
-        self.assertEqual(match.winner_id, self.player1.id)
-        self.assertEqual(match.loser_id, self.player2.id)
-        self.assertTrue(match.card_saved)
-
-        black_card = BlackCard.objects.get(owner=self.player2)
-        self.assertEqual(black_card.current_holder_id, self.player2.id)
-        self.assertIsNone(black_card.captured_at)
-
-    def test_losing_final_question_transfers_black_card(self):
+    def test_target_score_finishes_match_on_refresh(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
         invite_code = create_response.data['invite_code']
@@ -251,26 +210,23 @@ class MatchFlowTests(APITestCase):
         match.save(update_fields=['player1_score', 'player2_score', 'current_question'])
 
         self.client.force_authenticate(user=self.player1)
-        self.client.get(f'/api/matches/{match_id}/')
+        refresh_response = self.client.get(f'/api/matches/{match_id}/')
+
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(refresh_response.data['status'], 'completed')
+        self.assertEqual(refresh_response.data['winner']['id'], self.player1.id)
+        self.assertEqual(refresh_response.data['loser']['id'], self.player2.id)
 
         match.refresh_from_db()
-        wrong_choice = next(choice for choice in match.current_question.answer_choices if choice != match.current_question.correct_answer)
-
-        self.client.force_authenticate(user=self.player2)
-        lose_response = self.client.post(
-            f'/api/matches/{match_id}/answer/',
-            {'answer': wrong_choice},
-            format='json',
-        )
-
-        self.assertEqual(lose_response.status_code, status.HTTP_200_OK)
-        self.assertEqual(lose_response.data['result'], 'card_lost')
+        self.assertEqual(match.winner_id, self.player1.id)
+        self.assertEqual(match.loser_id, self.player2.id)
+        self.assertFalse(match.card_saved)
 
         black_card = BlackCard.objects.get(owner=self.player2)
         self.assertEqual(black_card.current_holder_id, self.player1.id)
         self.assertIsNotNone(black_card.captured_at)
 
-    def test_reaching_target_score_auto_starts_final_question(self):
+    def test_reaching_target_score_finishes_match(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
         invite_code = create_response.data['invite_code']
@@ -295,14 +251,16 @@ class MatchFlowTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['result'], 'final_question_started')
-        self.assertEqual(response.data['status'], 'final_question')
-        self.assertEqual(response.data['final_question_player']['id'], self.player2.id)
+        self.assertEqual(response.data['result'], 'match_finished')
+        self.assertEqual(response.data['status'], 'completed')
+        self.assertEqual(response.data['winner']['id'], self.player1.id)
+        self.assertEqual(response.data['loser']['id'], self.player2.id)
         self.assertEqual(response.data['target_score'], MATCH_TARGET_SCORE)
 
         match.refresh_from_db()
         self.assertEqual(match.player1_score, MATCH_TARGET_SCORE)
-        self.assertTrue(match.final_question_active)
+        self.assertEqual(match.winner_id, self.player1.id)
+        self.assertEqual(match.loser_id, self.player2.id)
 
     def test_defeating_card_holder_reclaims_your_black_card(self):
         winner_card, _ = BlackCard.objects.get_or_create(owner=self.player1, defaults={'current_holder': self.player1})
@@ -318,25 +276,24 @@ class MatchFlowTests(APITestCase):
         match_id = create_response.data['id']
 
         self.client.force_authenticate(user=self.player2)
-        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+        join_response = self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+        question = Question.objects.get(id=join_response.data['current_question']['id'])
         match = Match.objects.get(id=match_id)
-        match.player1_score = MATCH_TARGET_SCORE
+        match.player1_score = MATCH_TARGET_SCORE - 10
         match.player2_score = 10
-        match.current_question = Question.objects.first()
-        match.save(update_fields=['player1_score', 'player2_score', 'current_question'])
+        match.current_question = question
+        match.current_buzzer = self.player1
+        match.save(update_fields=['player1_score', 'player2_score', 'current_question', 'current_buzzer'])
 
         self.client.force_authenticate(user=self.player1)
-        self.client.get(f'/api/matches/{match_id}/')
-
-        match.refresh_from_db()
-        wrong_choice = next(choice for choice in match.current_question.answer_choices if choice != match.current_question.correct_answer)
-
-        self.client.force_authenticate(user=self.player2)
-        self.client.post(
+        response = self.client.post(
             f'/api/matches/{match_id}/answer/',
-            {'answer': wrong_choice},
+            {'answer': question.correct_answer},
             format='json',
         )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['result'], 'match_finished')
 
         winner_card.refresh_from_db()
         self.player1.refresh_from_db()
@@ -346,6 +303,40 @@ class MatchFlowTests(APITestCase):
         self.assertIsNone(winner_card.captured_at)
         self.assertEqual(loser_card.current_holder_id, self.player1.id)
         self.assertTrue(self.player1.black_card_active)
+
+    def test_legacy_final_question_state_finishes_match_on_refresh(self):
+        self.client.force_authenticate(user=self.player1)
+        create_response = self.client.post('/api/matches/', {}, format='json')
+        invite_code = create_response.data['invite_code']
+        match_id = create_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
+
+        match = Match.objects.get(id=match_id)
+        match.player1_score = MATCH_TARGET_SCORE
+        match.player2_score = 10
+        match.final_question_active = True
+        match.final_question_player = self.player2
+        match.current_question = self.question_one
+        match.save(update_fields=[
+            'player1_score',
+            'player2_score',
+            'final_question_active',
+            'final_question_player',
+            'current_question',
+        ])
+
+        self.client.force_authenticate(user=self.player1)
+        response = self.client.get(f'/api/matches/{match_id}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], 'completed')
+        self.assertEqual(response.data['winner']['id'], self.player1.id)
+
+        match.refresh_from_db()
+        self.assertEqual(match.winner_id, self.player1.id)
+        self.assertFalse(match.final_question_active)
 
     def test_match_cannot_be_finished_before_target_score(self):
         self.client.force_authenticate(user=self.player1)
@@ -433,7 +424,7 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(match.locked_out_player_id, self.player2.id)
         self.assertEqual(response.data['locked_out_player']['id'], self.player2.id)
 
-    def test_final_question_timer_expiry_transfers_black_card(self):
+    def test_legacy_final_question_timeout_state_finishes_match(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
         invite_code = create_response.data['invite_code']
@@ -443,7 +434,7 @@ class MatchFlowTests(APITestCase):
         self.client.post('/api/matches/join/', {'invite_code': invite_code}, format='json')
 
         match = Match.objects.get(id=match_id)
-        match.player1_score = 20
+        match.player1_score = MATCH_TARGET_SCORE
         match.player2_score = 10
         match.final_question_active = True
         match.final_question_player = self.player2
@@ -466,6 +457,7 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(match.winner_id, self.player1.id)
         self.assertEqual(match.loser_id, self.player2.id)
         self.assertEqual(response.data['status'], 'completed')
+        self.assertFalse(match.final_question_active)
 
         black_card = BlackCard.objects.get(owner=self.player2)
         self.assertEqual(black_card.current_holder_id, self.player1.id)
