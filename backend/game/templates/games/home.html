@@ -1553,7 +1553,7 @@
                 <button class="accent-button" id="buzzButton" type="button">Buzz In</button>
             </div>
             <div class="action-row hidden" id="completedMatchActions">
-                <button class="secondary-button" id="toggleCompletedQuestionButton" type="button">View Final Question</button>
+                <button class="secondary-button" id="toggleCompletedQuestionButton" type="button">View Deciding Question</button>
             </div>
             <div class="hidden" id="completedQuestionDetails">
                 <p class="section-copy" id="completedQuestionPrompt" style="margin-top:10px;"></p>
@@ -2211,7 +2211,7 @@
             match
             && match.current_question
             && match.question_deadline
-            && (match.status === 'live' || match.status === 'final_question')
+            && match.status === 'live'
         );
 
         if (!hasTimer) {
@@ -2237,13 +2237,11 @@
         elements.questionTimerPill.classList.toggle('is-alert', isAlert);
         elements.questionTimerFill.classList.toggle('is-alert', isAlert);
         elements.questionTimerFill.style.width = `${progress * 100}%`;
-        elements.questionTimerCopy.textContent = match.status === 'final_question'
-            ? 'Final Question Clock'
-            : match.current_buzzer
-                ? 'Answer Clock'
-                : match.locked_out_player
-                    ? 'Steal Clock'
-                    : 'Buzz Clock';
+        elements.questionTimerCopy.textContent = match.current_buzzer
+            ? 'Answer Clock'
+            : match.locked_out_player
+                ? 'Steal Clock'
+                : 'Buzz Clock';
 
         if (millisecondsLeft <= 0 && state.activeMatchId && !state.questionTimerSyncPending) {
             state.questionTimerSyncPending = true;
@@ -2261,7 +2259,7 @@
             match
             && match.current_question
             && match.question_deadline
-            && (match.status === 'live' || match.status === 'final_question')
+            && match.status === 'live'
         ) {
             state.questionTimerHandle = window.setInterval(() => {
                 updateQuestionTimer(state.activeMatch);
@@ -2426,7 +2424,7 @@
             item.innerHTML = `
                 <div>
                     <strong>${won ? 'W' : 'L'} vs ${opponentName}</strong>
-                    <span>${score}${m.card_saved ? ' · Card Saved' : ''}</span>
+                    <span>${score}</span>
                 </div>
                 <div class="leaderboard-points">
                     <strong style="color:${won ? 'var(--success)' : 'var(--danger)'}">${won ? 'Win' : 'Loss'}</strong>
@@ -2483,14 +2481,11 @@
         elements.matchEyebrow.textContent = isCompleted ? 'Match Summary' : 'Active Match';
         elements.matchTitle.textContent = match.status === 'waiting'
             ? 'Waiting for Opponent'
-            : match.status === 'final_question'
-                ? 'Save Your Card'
             : isCompleted
                 ? 'Match Complete'
                 : 'Question Is Live';
         elements.matchStatusChip.textContent = match.status === 'waiting' ? 'Share Code'
             : match.status === 'live' ? 'Live'
-            : match.status === 'final_question' ? 'Final Round'
             : match.status === 'completed' ? 'Done' : match.status;
         elements.inviteCodeDisplay.textContent = match.invite_code || '------';
         elements.player1Name.textContent = match.player1 ? match.player1.username : 'Host';
@@ -2510,12 +2505,10 @@
             elements.questionCategory.textContent = match.current_question.category.replace('_', ' ');
             elements.questionDifficulty.textContent = match.current_question.difficulty;
             elements.questionText.textContent = isCompleted && !state.completedQuestionExpanded
-                ? match.card_saved
-                    ? `${loserName} saved the black card on the final question.`
-                    : `${winnerName} closed the match and took the black card.`
+                ? `${winnerName} closed the match and took ${loserName}'s black card.`
                 : match.current_question.text;
             elements.completedQuestionPrompt.textContent = isCompleted && state.completedQuestionExpanded
-                ? 'Final question from the match:'
+                ? 'Deciding question from the match:'
                 : '';
         } else {
             elements.questionCategory.textContent = 'Waiting';
@@ -2531,25 +2524,18 @@
         const isParticipant = isPlayer1 || isPlayer2;
         const buzzLocked = Boolean(match.current_buzzer);
         const isCurrentBuzzer = Boolean(match.current_buzzer && state.currentUser && match.current_buzzer.id === state.currentUser.id);
-        const isFinalResponder = Boolean(match.final_question_player && state.currentUser && match.final_question_player.id === state.currentUser.id);
         const canBuzz = match.status === 'live' && isParticipant && !buzzLocked;
 
         if (isWaiting) {
             const waitMsg = isPlayer1 && match.required_opponent
                 ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match.`
                 : isPlayer1
-                    ? `Send the code above to your opponent. First to ${targetScore} triggers the final save question.`
+                    ? `Send the code above to your opponent. First to ${targetScore} wins the match and the black card.`
                 : 'Waiting for the host to bring in another player.';
             elements.turnMessage.textContent = waitMsg;
             elements.waitingMessage.textContent = waitMsg;
-        } else if (match.status === 'final_question') {
-            elements.turnMessage.textContent = isFinalResponder
-                ? 'This is your final question. Answer correctly to save your black card.'
-                : `${match.final_question_player.username} is on the final question to save their black card.`;
         } else if (isCompleted) {
-            elements.turnMessage.textContent = match.card_saved
-                ? `${winnerName} won the match, but ${loserName} answered the final question and saved the black card.`
-                : `${winnerName} took the match and claimed ${loserName}'s black card.`;
+            elements.turnMessage.textContent = `${winnerName} took the match and claimed ${loserName}'s black card.`;
         } else if (match.current_buzzer) {
             elements.turnMessage.textContent = isCurrentBuzzer
                 ? 'You locked the buzzer. Pick the answer from your phone now.'
@@ -2559,16 +2545,16 @@
                 ? 'You missed and took a penalty. Your opponent can steal this question now.'
                 : `${match.locked_out_player.username} missed. Steal the question now.`;
         } else {
-            elements.turnMessage.textContent = `The question is live. First buzz wins the answer. First to ${targetScore} forces the final save question.`;
+            elements.turnMessage.textContent = `The question is live. First buzz wins the answer. First to ${targetScore} wins the match and the black card.`;
         }
 
-        elements.questionLabel.textContent = isCompleted ? 'Match Recap' : match.status === 'final_question' ? 'Final Question' : 'Question';
+        elements.questionLabel.textContent = isCompleted ? 'Match Recap' : 'Question';
         elements.questionMeta.classList.toggle('hidden', isCompleted && !state.completedQuestionExpanded);
         elements.matchActionRow.classList.toggle('hidden', isCompleted);
         elements.completedMatchActions.classList.toggle('hidden', !isCompleted);
         elements.completedQuestionDetails.classList.toggle('hidden', isCompleted ? !state.completedQuestionExpanded : false);
         elements.completedQuestionPrompt.classList.toggle('hidden', !(isCompleted && state.completedQuestionExpanded && match.current_question));
-        elements.toggleCompletedQuestionButton.textContent = state.completedQuestionExpanded ? 'Hide Final Question' : 'View Final Question';
+        elements.toggleCompletedQuestionButton.textContent = state.completedQuestionExpanded ? 'Hide Deciding Question' : 'View Deciding Question';
         elements.buzzButton.disabled = !canBuzz;
         elements.codeCard.classList.toggle('hidden', !isWaiting);
 
@@ -2585,7 +2571,7 @@
             match.current_question.choices.forEach((choice) => {
                 const button = document.createElement('button');
                 button.type = 'button';
-                const canAnswer = (match.status === 'live' && isCurrentBuzzer) || (match.status === 'final_question' && isFinalResponder);
+                const canAnswer = match.status === 'live' && isCurrentBuzzer;
                 button.className = `answer-button ${canAnswer ? 'is-active' : ''}`;
                 button.textContent = choice;
                 button.disabled = !canAnswer;
@@ -2862,11 +2848,9 @@
             state.activeMatch = payload;
             renderMatch();
             await refreshLeaderboard();
-            if (payload.result === 'correct' || payload.result === 'card_saved') {
-                playSound(payload.result === 'card_saved' ? 'final' : 'correct');
-            } else if (payload.result === 'final_question_started') {
-                playSound('final');
-            } else if (payload.result === 'card_lost') {
+            if (payload.result === 'correct') {
+                playSound('correct');
+            } else if (payload.result === 'match_finished' || payload.result === 'card_lost') {
                 playSound(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? 'victory' : 'wrong');
                 await fetchCurrentUser();
             } else if (payload.result === 'steal_open' || payload.result === 'double_miss') {
@@ -2874,16 +2858,11 @@
             } else {
                 playSound('wrong');
             }
-            if (payload.result === 'card_saved') {
-                await fetchCurrentUser();
-            }
             showStatus(
                 extractMessage(payload, 'Answer submitted.'),
-                payload.result === 'correct' || payload.result === 'card_saved' || payload.result === 'card_lost'
+                payload.result === 'correct' || payload.result === 'match_finished' || payload.result === 'card_lost'
                     ? 'success'
-                    : payload.result === 'final_question_started'
-                        ? 'info'
-                        : 'info'
+                    : 'info'
             );
         } catch (error) {
             showStatus(error.message, 'error');
