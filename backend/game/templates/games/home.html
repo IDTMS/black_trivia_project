@@ -911,32 +911,6 @@
             backdrop-filter: blur(10px);
         }
 
-        .vault-card-owner {
-            position: absolute;
-            left: 50%;
-            bottom: 7%;
-            transform: translateX(-50%);
-            z-index: 2;
-            width: 36%;
-            height: 8%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 2%;
-            text-align: center;
-            font-family: Georgia, "Times New Roman", serif;
-            font-weight: 700;
-            font-size: clamp(8px, 2.1vw, 14px);
-            line-height: 1;
-            letter-spacing: 0.06em;
-            color: #f0c970;
-            text-transform: uppercase;
-            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.92);
-            white-space: nowrap;
-            overflow: visible;
-            pointer-events: none;
-        }
-
         .vault-card-meta {
             display: grid;
             gap: 4px;
@@ -1172,7 +1146,7 @@
         }
 
         .social-actions {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .sparkle-field {
@@ -1549,12 +1523,13 @@
 
             <div class="victory-actions hidden" id="victoryActions">
                 <button class="primary-button" id="downloadCardButton" type="button">Download Black Card</button>
-                <button class="accent-button" id="shareCardButton" type="button">Share Black Card</button>
+                <button class="accent-button" id="shareCardButton" type="button">Share To Apps</button>
             </div>
 
             <div class="social-actions hidden" id="socialActions">
                 <button class="secondary-button" id="shareXButton" type="button">Share To X</button>
                 <button class="secondary-button" id="shareFacebookButton" type="button">Share To Facebook</button>
+                <button class="secondary-button" id="shareInstagramButton" type="button">Share To Instagram</button>
             </div>
         </div>
     </section>
@@ -1687,6 +1662,7 @@
         shareCardButton: document.getElementById('shareCardButton'),
         shareXButton: document.getElementById('shareXButton'),
         shareFacebookButton: document.getElementById('shareFacebookButton'),
+        shareInstagramButton: document.getElementById('shareInstagramButton'),
         leaderboardList: document.getElementById('leaderboardList'),
         historyCard: document.getElementById('historyCard'),
         historyList: document.getElementById('historyList'),
@@ -1977,21 +1953,6 @@
                 context.drawImage(image, 0, 205, image.width, 625, 70, 240, 1060, 648);
                 context.restore();
 
-                const plateCenterX = 878;
-                const plateBaselineY = 782;
-                let ownerLabel = ownerName.toUpperCase();
-                let fontSize = 38;
-                context.fillStyle = '#f4c76a';
-                context.textAlign = 'center';
-                while (fontSize > 18) {
-                    context.font = `700 ${fontSize}px Georgia, serif`;
-                    if (context.measureText(ownerLabel).width <= 248) {
-                        break;
-                    }
-                    fontSize -= 1;
-                }
-                context.fillText(ownerLabel, plateCenterX, plateBaselineY);
-
                 context.strokeStyle = 'rgba(248, 231, 167, 0.28)';
                 context.lineWidth = 2;
                 context.strokeRect(72, 242, 1056, 644);
@@ -2119,14 +2080,8 @@
         image.alt = `${card.owner} black card`;
         image.loading = 'lazy';
 
-        const owner = document.createElement('span');
-        owner.className = 'vault-card-owner';
-        owner.dataset.fitCardName = 'true';
-        owner.textContent = String(card.owner || '').toUpperCase();
-
         preview.appendChild(chip);
         preview.appendChild(image);
-        preview.appendChild(owner);
 
         const meta = document.createElement('div');
         meta.className = 'vault-card-meta';
@@ -2247,11 +2202,6 @@
         if (capturedCount) {
             state.currentUser.wallet_cards.forEach((card) => {
                 elements.walletList.appendChild(buildVaultCard(card));
-            });
-            requestAnimationFrame(() => {
-                elements.walletList.querySelectorAll('[data-fit-card-name]').forEach((cardOwner) => {
-                    fitCardName(cardOwner);
-                });
             });
         } else {
             const chip = document.createElement('div');
@@ -2860,27 +2810,31 @@
         }
     }
 
+    async function shareBlackCardToApps(file, shareText, title = 'Black Card') {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                title,
+                text: shareText,
+                files: [file],
+            });
+            return true;
+        }
+
+        return false;
+    }
+
     async function shareVictoryCard() {
         try {
             const victory = getVictoryContext(state.activeMatch);
             const file = await buildVictoryCardFile();
             const shareText = getBlackCardShareText(victory.ownerName);
 
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: 'Black Card Victory',
-                    text: shareText,
-                    files: [file],
-                });
+            if (await shareBlackCardToApps(file, shareText, 'Black Card Victory')) {
                 showStatus('Black card shared.', 'success');
                 return;
             }
 
-            const tweetUrl = new URL('https://twitter.com/intent/tweet');
-            tweetUrl.searchParams.set('text', shareText);
-            tweetUrl.searchParams.set('url', window.location.origin);
-            window.open(tweetUrl.toString(), '_blank', 'noopener');
-            showStatus('Direct file sharing is not supported here. Download the card and attach it in the composer.', 'info');
+            showStatus('Native app sharing is not supported here. Use Download Black Card, then post it to the app you want.', 'info');
         } catch (error) {
             if (error.name === 'AbortError') {
                 return;
@@ -2895,21 +2849,12 @@
             const file = await buildBlackCardFile(ownerName, holderName);
             const shareText = getBlackCardShareText(ownerName);
 
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: 'Black Card Take',
-                    text: shareText,
-                    files: [file],
-                });
+            if (await shareBlackCardToApps(file, shareText, 'Black Card Take')) {
                 showStatus('Black card shared.', 'success');
                 return;
             }
 
-            const tweetUrl = new URL('https://twitter.com/intent/tweet');
-            tweetUrl.searchParams.set('text', shareText);
-            tweetUrl.searchParams.set('url', window.location.origin);
-            window.open(tweetUrl.toString(), '_blank', 'noopener');
-            showStatus('X share opened. Download the card if you want to attach the artwork too.', 'info');
+            showStatus('Native app sharing is not supported here. Download the card, then post it from your app.', 'info');
         } catch (error) {
             if (error.name === 'AbortError') {
                 return;
@@ -2918,7 +2863,7 @@
         }
     }
 
-    function shareToSocial(network) {
+    async function shareToSocial(network) {
         const victory = getVictoryContext(state.activeMatch);
         if (!victory) {
             return;
@@ -2940,6 +2885,24 @@
             facebookUrl.searchParams.set('quote', shareText);
             window.open(facebookUrl.toString(), '_blank', 'noopener');
             showStatus('Facebook share opened. Download the card first if you want to post the artwork itself.', 'info');
+            return;
+        }
+
+        if (network === 'instagram') {
+            try {
+                const file = await buildVictoryCardFile();
+                if (await shareBlackCardToApps(file, shareText, 'Black Card Take')) {
+                    showStatus('Share sheet opened. Pick Instagram if your device/browser supports it.', 'success');
+                    return;
+                }
+
+                showStatus('Instagram does not provide a direct web image composer here. Download the card or use Share To Apps on mobile.', 'info');
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                showStatus(error.message, 'error');
+            }
         }
     }
 
@@ -2981,6 +2944,7 @@
     elements.shareCardButton.addEventListener('click', shareVictoryCard);
     elements.shareXButton.addEventListener('click', () => shareToSocial('x'));
     elements.shareFacebookButton.addEventListener('click', () => shareToSocial('facebook'));
+    elements.shareInstagramButton.addEventListener('click', () => shareToSocial('instagram'));
     elements.toggleCompletedQuestionButton.addEventListener('click', toggleCompletedQuestionDetails);
     elements.walletList.addEventListener('click', (event) => {
         const actionButton = event.target.closest('[data-card-action]');
@@ -3004,9 +2968,6 @@
     });
     window.addEventListener('resize', () => {
         fitCardName(elements.walletCardOwner);
-        elements.walletList.querySelectorAll('[data-fit-card-name]').forEach((cardOwner) => {
-            fitCardName(cardOwner);
-        });
     });
 
     renderVisibility();
