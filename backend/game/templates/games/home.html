@@ -1873,7 +1873,7 @@
         }
         state.pollHandle = window.setInterval(() => {
             loadMatch(state.activeMatchId, false);
-        }, 4000);
+        }, 2000);
     }
 
     function stopPolling() {
@@ -1917,7 +1917,7 @@
 
         // Arena mode: hide everything except the match and victory sections
         elements.heroSection.classList.toggle('hidden', inArena);
-        elements.statusCard.classList.toggle('hidden', inArena);
+        // Keep status card visible always so error/success messages are seen
         elements.profileCard.classList.toggle('hidden', !isAuthed || inArena);
         elements.lobbyCard.classList.toggle('hidden', !isAuthed || hasMatch);
         elements.historyCard.classList.toggle('hidden', !isAuthed || inArena);
