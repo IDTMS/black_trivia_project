@@ -1285,12 +1285,15 @@
         <div class="code-card" id="codeCard">
             <span class="label">Invite Code</span>
             <strong class="code-value" id="inviteCodeDisplay">------</strong>
+            <p class="section-copy" id="waitingMessage" style="margin-top:8px;">
+                Send the code above to your opponent. The match starts when they join.
+            </p>
             <div class="action-row">
                 <button class="secondary-button" id="copyCodeButton" type="button">Copy Code</button>
             </div>
         </div>
 
-        <div class="score-row">
+        <div class="score-row hidden" id="scoreRow">
             <div class="score-card" id="player1ScoreCard">
                 <span class="label">Player 1</span>
                 <strong id="player1Name">Waiting...</strong>
@@ -1303,15 +1306,15 @@
             </div>
         </div>
 
-        <div class="question-card" id="questionCard">
+        <div class="question-card hidden" id="questionCard">
             <span class="label" id="questionLabel">Question</span>
             <div class="question-meta" id="questionMeta">
                 <span class="badge" id="questionCategory">Category</span>
                 <span class="badge" id="questionDifficulty">Difficulty</span>
             </div>
-            <h3 id="questionText">Create or join a match to load the first question.</h3>
+            <h3 id="questionText">Waiting for both players to join.</h3>
             <p class="section-copy" id="turnMessage" style="margin-top:10px;">
-                Buzz in from your phone when the room is live.
+                The question appears once both players are in the room.
             </p>
             <div class="action-row" id="matchActionRow">
                 <button class="accent-button" id="buzzButton" type="button">Buzz In</button>
@@ -1324,6 +1327,10 @@
                 <p class="section-copy" id="completedQuestionPrompt" style="margin-top:10px;"></p>
                 <div class="choice-grid" id="answerChoices"></div>
             </div>
+        </div>
+
+        <div class="action-row hidden" id="backToLobbyRow" style="margin-top:16px;">
+            <button class="secondary-button" id="backToLobbyButton" type="button" style="width:100%;">Back to Lobby</button>
         </div>
     </section>
 
@@ -1450,6 +1457,7 @@
         matchTitle: document.getElementById('matchTitle'),
         inviteCodeDisplay: document.getElementById('inviteCodeDisplay'),
         codeCard: document.getElementById('codeCard'),
+        waitingMessage: document.getElementById('waitingMessage'),
         copyCodeButton: document.getElementById('copyCodeButton'),
         player1Name: document.getElementById('player1Name'),
         player2Name: document.getElementById('player2Name'),
@@ -1471,6 +1479,13 @@
         completedQuestionDetails: document.getElementById('completedQuestionDetails'),
         completedQuestionPrompt: document.getElementById('completedQuestionPrompt'),
         answerChoices: document.getElementById('answerChoices'),
+        scoreRow: document.getElementById('scoreRow'),
+        questionCard: document.getElementById('questionCard'),
+        backToLobbyRow: document.getElementById('backToLobbyRow'),
+        backToLobbyButton: document.getElementById('backToLobbyButton'),
+        heroSection: document.querySelector('.hero'),
+        statusCard: document.getElementById('statusCard'),
+        leaderboardCard: document.getElementById('leaderboardCard'),
         victoryTitle: document.getElementById('victoryTitle'),
         victoryChip: document.getElementById('victoryChip'),
         victoryHeadline: document.getElementById('victoryHeadline'),
@@ -1893,13 +1908,25 @@
 
     function renderVisibility() {
         const isAuthed = Boolean(state.currentUser);
+        const hasMatch = Boolean(state.activeMatch);
+        const isCompleted = hasMatch && state.activeMatch.status === 'completed';
+        const inArena = hasMatch && !isCompleted;
+
         elements.authCard.classList.toggle('hidden', isAuthed);
-        elements.profileCard.classList.toggle('hidden', !isAuthed);
-        elements.lobbyCard.classList.toggle('hidden', !isAuthed);
-        elements.matchCard.classList.toggle('hidden', !isAuthed);
-        elements.historyCard.classList.toggle('hidden', !isAuthed);
-        elements.victoryCard.classList.toggle('hidden', !isAuthed || !state.activeMatch || state.activeMatch.status !== 'completed');
-        elements.statusMode.textContent = state.activeMatch ? 'Match Live' : (isAuthed ? 'Signed In' : 'Lobby');
+
+        // Arena mode: hide everything except the match and victory sections
+        elements.heroSection.classList.toggle('hidden', inArena);
+        elements.statusCard.classList.toggle('hidden', inArena);
+        elements.profileCard.classList.toggle('hidden', !isAuthed || inArena);
+        elements.lobbyCard.classList.toggle('hidden', !isAuthed || hasMatch);
+        elements.historyCard.classList.toggle('hidden', !isAuthed || inArena);
+        elements.leaderboardCard.classList.toggle('hidden', inArena);
+
+        // Match and victory only show when there's an active match
+        elements.matchCard.classList.toggle('hidden', !isAuthed || !hasMatch);
+        elements.victoryCard.classList.toggle('hidden', !isAuthed || !isCompleted);
+
+        elements.statusMode.textContent = inArena ? 'Match Live' : (isAuthed ? 'Signed In' : 'Lobby');
     }
 
     function renderProfile() {
@@ -2061,32 +2088,19 @@
         if (!match) {
             state.completedQuestionExpanded = false;
             elements.lobbyStateChip.textContent = 'No Active Match';
-            elements.matchEyebrow.textContent = 'Active Match';
-            elements.matchTitle.textContent = 'Create or Join a Match';
-            elements.matchStatusChip.textContent = 'Lobby';
-            elements.inviteCodeDisplay.textContent = '------';
-            elements.player1Name.textContent = 'Waiting...';
-            elements.player2Name.textContent = 'Open Seat';
-            elements.player1Score.textContent = '0 pts';
-            elements.player2Score.textContent = '0 pts';
-            elements.questionLabel.textContent = 'Question';
-            elements.questionMeta.classList.remove('hidden');
-            elements.questionCategory.textContent = 'Category';
-            elements.questionDifficulty.textContent = 'Difficulty';
-            elements.questionText.textContent = 'Create or join a match to load the first question.';
-            elements.turnMessage.textContent = 'Buzz in from your phone when the room is live.';
+            elements.scoreRow.classList.add('hidden');
+            elements.questionCard.classList.add('hidden');
+            elements.backToLobbyRow.classList.add('hidden');
+            elements.answerChoices.innerHTML = '';
             elements.completedQuestionPrompt.textContent = '';
             elements.completedQuestionPrompt.classList.add('hidden');
-            elements.answerChoices.innerHTML = '';
             elements.matchActionRow.classList.remove('hidden');
             elements.completedMatchActions.classList.add('hidden');
             elements.completedQuestionDetails.classList.add('hidden');
-            elements.buzzButton.disabled = true;
-            elements.finishMatchButton.disabled = true;
-            elements.codeCard.classList.remove('hidden');
             elements.player1ScoreCard.classList.remove('is-leading');
             elements.player2ScoreCard.classList.remove('is-leading');
             renderVictory(null);
+            renderVisibility();
             renderProfile();
             return;
         }
@@ -2102,13 +2116,16 @@
                 : `Match ${match.status}`;
         elements.matchEyebrow.textContent = isCompleted ? 'Match Summary' : 'Active Match';
         elements.matchTitle.textContent = match.status === 'waiting'
-            ? 'Share This Code'
+            ? 'Waiting for Opponent'
             : match.status === 'final_question'
                 ? 'Save Your Card'
             : isCompleted
                 ? 'Match Complete'
                 : 'Question Is Live';
-        elements.matchStatusChip.textContent = isCompleted ? 'Completed' : match.status;
+        elements.matchStatusChip.textContent = match.status === 'waiting' ? 'Share Code'
+            : match.status === 'live' ? 'Live'
+            : match.status === 'final_question' ? 'Final Round'
+            : match.status === 'completed' ? 'Done' : match.status;
         elements.inviteCodeDisplay.textContent = match.invite_code || '------';
         elements.player1Name.textContent = match.player1 ? match.player1.username : 'Host';
         elements.player2Name.textContent = match.player2 ? match.player2.username : 'Open Seat';
@@ -2153,11 +2170,13 @@
         const canFinish = match.status === 'live' && isParticipant && match.player1_score !== match.player2_score;
 
         if (match.status === 'waiting') {
-            elements.turnMessage.textContent = isPlayer1 && match.required_opponent
-                ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match today.`
+            const waitMsg = isPlayer1 && match.required_opponent
+                ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match.`
                 : isPlayer1
-                    ? 'Your room is open. Send the invite code to the second player.'
+                    ? 'Send the code above to your opponent. The match starts when they join.'
                 : 'Waiting for the host to bring in another player.';
+            elements.turnMessage.textContent = waitMsg;
+            elements.waitingMessage.textContent = waitMsg;
         } else if (match.status === 'final_question') {
             elements.turnMessage.textContent = isFinalResponder
                 ? 'This is your final question. Answer correctly to save your black card.'
@@ -2188,6 +2207,14 @@
         elements.buzzButton.disabled = !canBuzz;
         elements.finishMatchButton.disabled = !canFinish;
         elements.codeCard.classList.toggle('hidden', match.status !== 'waiting');
+
+        // Show scores and question card once match has a second player
+        const matchStarted = Boolean(match.player2);
+        elements.scoreRow.classList.toggle('hidden', !matchStarted);
+        elements.questionCard.classList.toggle('hidden', !matchStarted);
+
+        // Show back to lobby button only when match is completed
+        elements.backToLobbyRow.classList.toggle('hidden', match.status !== 'completed');
 
         elements.answerChoices.innerHTML = '';
         if (match.current_question && Array.isArray(match.current_question.choices)) {
@@ -2239,6 +2266,7 @@
         if (!matchId) {
             state.activeMatch = null;
             state.completedQuestionExpanded = false;
+            renderVisibility();
             renderMatch();
             return;
         }
@@ -2251,6 +2279,7 @@
             }
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
+            renderVisibility();
             renderMatch();
             if (announce) {
                 showStatus(extractMessage(payload, 'Match updated.'), 'success');
@@ -2258,6 +2287,7 @@
         } catch (error) {
             state.activeMatch = null;
             setActiveMatchId('');
+            renderVisibility();
             renderMatch();
             showStatus(error.message, 'error');
         }
@@ -2402,6 +2432,7 @@
             const payload = await request('/api/matches/', {method: 'POST'});
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
+            renderVisibility();
             renderMatch();
             renderProfile();
             startPolling();
@@ -2427,6 +2458,7 @@
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
             elements.inviteCodeInput.value = '';
+            renderVisibility();
             renderMatch();
             renderProfile();
             startPolling();
@@ -2625,6 +2657,13 @@
     elements.buzzButton.addEventListener('click', buzzIn);
     elements.finishMatchButton.addEventListener('click', finishMatch);
     elements.copyCodeButton.addEventListener('click', copyInviteCode);
+    elements.backToLobbyButton.addEventListener('click', () => {
+        state.activeMatch = null;
+        setActiveMatchId('');
+        stopPolling();
+        renderMatch();
+        showStatus('Back in the lobby.', 'info');
+    });
     elements.downloadCardButton.addEventListener('click', downloadVictoryCard);
     elements.shareCardButton.addEventListener('click', shareVictoryCard);
     elements.shareXButton.addEventListener('click', () => shareToSocial('x'));
