@@ -6,6 +6,9 @@ DEPRECATED_QUESTION_TEXTS = {
     "What barbecue style is Kansas City most famous for?",
     "Who is the creator of the acclaimed TV series 'Watchmen' that explored the Tulsa Race Massacre?",
     "What historically Black fashion event takes place annually at the Met in New York?",
+    "What player hit 73 home runs in a single season?",
+    "What country is Usain Bolt from?",
+    "Who scored 100 points in a single NBA game?",
 }
 
 
@@ -724,9 +727,9 @@ questions = [
     {
         "category": "sports",
         "difficulty": "easy",
-        "question_text": "What player hit 73 home runs in a single season?",
+        "question_text": "Which Black baseball legend broke Babe Ruth's career home run record in 1974 despite receiving death threats?",
         "answer_choices": ["Jackie Robinson", "Hank Aaron", "Willie Mays", "Barry Bonds"],
-        "correct_answer": "Barry Bonds"
+        "correct_answer": "Hank Aaron"
     },
     {
         "category": "sports",
@@ -752,14 +755,14 @@ questions = [
     {
         "category": "sports",
         "difficulty": "easy",
-        "question_text": "What country is Usain Bolt from?",
-        "answer_choices": ["Trinidad and Tobago", "Jamaica", "Barbados", "Nigeria"],
-        "correct_answer": "Jamaica"
+        "question_text": "Which Black sprinter became the fastest man alive at the 2008 Beijing Olympics, repping the Caribbean on the world stage?",
+        "answer_choices": ["Yohan Blake", "Usain Bolt", "Asafa Powell", "Justin Gatlin"],
+        "correct_answer": "Usain Bolt"
     },
     {
         "category": "sports",
         "difficulty": "medium",
-        "question_text": "Who scored 100 points in a single NBA game?",
+        "question_text": "Which Black NBA legend set the still-unbroken record of 100 points in a single game in 1962?",
         "answer_choices": ["Michael Jordan", "Kobe Bryant", "Wilt Chamberlain", "Kareem Abdul-Jabbar"],
         "correct_answer": "Wilt Chamberlain"
     },
