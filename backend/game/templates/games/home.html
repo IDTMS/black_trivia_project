@@ -735,6 +735,11 @@
             object-fit: cover;
         }
 
+        .wallet-card-image,
+        .wallet-card-owner {
+            transition: opacity 180ms ease, transform 180ms ease;
+        }
+
         .wallet-card-glow {
             position: absolute;
             inset: 18px;
@@ -772,6 +777,58 @@
             pointer-events: none;
         }
 
+        .wallet-card-taken {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            gap: 10px;
+            padding: 26px;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(212, 175, 90, 0.08), transparent 34%),
+                radial-gradient(circle at 14% 18%, rgba(111, 15, 29, 0.14), transparent 24%),
+                linear-gradient(180deg, rgba(8, 8, 9, 0.82), rgba(4, 4, 5, 0.96));
+            backdrop-filter: blur(4px);
+        }
+
+        .wallet-card-taken strong {
+            font-size: 22px;
+            line-height: 1.12;
+            color: #f4efe5;
+            letter-spacing: 0.04em;
+        }
+
+        .wallet-card-taken span {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 90, 0.18);
+            background: rgba(212, 175, 90, 0.08);
+            color: var(--gold);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .wallet-card-taken p {
+            max-width: 18rem;
+            color: rgba(244, 239, 229, 0.7);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .wallet-card-frame.is-captured .wallet-card-image,
+        .wallet-card-frame.is-captured .wallet-card-owner {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .wallet-card-frame.is-captured .wallet-card-glow {
+            opacity: 0.38;
+        }
+
         .wallet-vault-block {
             padding: 16px;
         }
@@ -788,10 +845,10 @@
             margin-top: 12px;
         }
 
+        .vault-card,
         .vault-chip {
             display: grid;
             gap: 4px;
-            min-height: 72px;
             padding: 12px 13px;
             border-radius: 16px;
             border: 1px solid rgba(212, 175, 90, 0.14);
@@ -800,10 +857,124 @@
                 linear-gradient(120deg, rgba(212, 175, 90, 0.03), transparent 50%);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
             color: var(--text);
+        }
+
+        .vault-card {
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .vault-card-preview {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 1024 / 625;
+            border-radius: 16px;
+            border: 1px solid rgba(212, 175, 90, 0.14);
+            background: #050505;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 14px 28px rgba(0, 0, 0, 0.28);
+        }
+
+        .vault-card-preview::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 18%, rgba(255, 241, 196, 0.08), transparent 18%),
+                radial-gradient(circle at 85% 82%, rgba(165, 27, 47, 0.12), transparent 22%);
+            pointer-events: none;
+        }
+
+        .vault-card-image {
+            position: absolute;
+            top: -32.8%;
+            left: 0;
+            width: 100%;
+            height: 163.84%;
+            display: block;
+            object-fit: cover;
+            background: #050505;
+        }
+
+        .vault-card-chip {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(212, 175, 90, 0.2);
+            background: rgba(6, 6, 7, 0.66);
+            color: var(--gold);
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+        }
+
+        .vault-card-owner {
+            position: absolute;
+            left: 50%;
+            bottom: 7%;
+            transform: translateX(-50%);
+            z-index: 2;
+            width: 36%;
+            height: 8%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 2%;
+            text-align: center;
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 700;
+            font-size: clamp(8px, 2.1vw, 14px);
+            line-height: 1;
+            letter-spacing: 0.06em;
+            color: #f0c970;
+            text-transform: uppercase;
+            text-shadow: 0 1px 8px rgba(0, 0, 0, 0.92);
+            white-space: nowrap;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .vault-card-meta {
+            display: grid;
+            gap: 4px;
             font-size: 13px;
             line-height: 1.4;
         }
 
+        .vault-card-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .vault-action-button {
+            min-height: 38px;
+            border-radius: 14px;
+            border: 1px solid rgba(212, 175, 90, 0.16);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .vault-action-button--accent {
+            background: linear-gradient(180deg, #ffd15a, var(--gold));
+            color: #0b0b0b;
+            box-shadow: 0 12px 24px rgba(240, 179, 35, 0.16);
+        }
+
+        .vault-chip {
+            min-height: 72px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .vault-card-meta strong,
         .vault-chip strong {
             font-size: 15px;
             font-weight: 800;
@@ -811,6 +982,7 @@
             color: #f2e1ae;
         }
 
+        .vault-card-meta span,
         .vault-chip span {
             color: rgba(244, 239, 229, 0.56);
             font-size: 11px;
@@ -1109,6 +1281,14 @@
                 width: 36%;
                 font-size: clamp(9px, 2.8vw, 14px);
             }
+
+            .vault-card-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .wallet-card-taken strong {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
@@ -1220,9 +1400,14 @@
                 <div class="wallet-card-stage">
                     <div class="wallet-card-frame is-secured" id="walletCardFrame">
                         <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
-                        <div class="wallet-card-art">
-                            <img class="wallet-card-image" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
+                        <div class="wallet-card-art" id="walletCardArt">
+                            <img class="wallet-card-image" id="walletCardImage" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
                             <span class="wallet-card-owner" id="walletCardOwner"></span>
+                            <div class="wallet-card-taken hidden" id="walletCardTaken">
+                                <span>Card Taken</span>
+                                <strong id="walletCardTakenBy">Held by -</strong>
+                                <p>Beat the holder before the daily reset if you want your black card back.</p>
+                            </div>
                         </div>
                         <div class="wallet-card-glow" aria-hidden="true"></div>
                     </div>
@@ -1439,6 +1624,8 @@
         walletCardFrame: document.getElementById('walletCardFrame'),
         walletCardChip: document.getElementById('walletCardChip'),
         walletCardOwner: document.getElementById('walletCardOwner'),
+        walletCardTaken: document.getElementById('walletCardTaken'),
+        walletCardTakenBy: document.getElementById('walletCardTakenBy'),
         walletStatus: document.getElementById('walletStatus'),
         walletVaultChip: document.getElementById('walletVaultChip'),
         walletList: document.getElementById('walletList'),
@@ -1721,6 +1908,10 @@
             .slice(0, 48) || 'black-card';
     }
 
+    function getBlackCardShareText(ownerName) {
+        return `I took ${ownerName}'s Black Card on Black Card. It's in my vault now.`;
+    }
+
     function getVictoryContext(match) {
         if (!match || match.status !== 'completed' || !match.winner || !match.loser || match.card_saved) {
             return null;
@@ -1774,11 +1965,11 @@
                 context.textAlign = 'center';
                 context.fillStyle = '#f0b323';
                 context.font = '700 34px Georgia, serif';
-                context.fillText('BLACK CARD CLAIMED', width / 2, 96);
+                context.fillText('BLACK CARD TAKEN', width / 2, 96);
 
                 context.fillStyle = '#f7f0e6';
                 context.font = '500 26px "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif';
-                context.fillText(`Captured by ${winnerName}`, width / 2, 144);
+                context.fillText(`Taken by ${winnerName}`, width / 2, 144);
 
                 context.save();
                 context.shadowColor = 'rgba(240, 179, 35, 0.24)';
@@ -1807,7 +1998,7 @@
 
                 context.fillStyle = 'rgba(247, 240, 230, 0.84)';
                 context.font = '500 24px "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif';
-                context.fillText(`${ownerName}'s card now sits in the winner's vault.`, width / 2, 1048);
+                context.fillText(`${winnerName} took ${ownerName}'s Black Card.`, width / 2, 1048);
 
                 state.victoryCardDataUrl = canvas.toDataURL('image/png');
                 state.victoryCardOwner = key;
@@ -1822,6 +2013,12 @@
         return state.victoryCardPromise;
     }
 
+    async function buildBlackCardFile(ownerName, holderName) {
+        await paintVictoryCard(ownerName, holderName);
+        const blob = await new Promise((resolve) => elements.victoryCanvas.toBlob(resolve, 'image/png'));
+        return new File([blob], `${sanitizeFileName(ownerName)}-black-card.png`, { type: 'image/png' });
+    }
+
     async function buildVictoryCardFile() {
         if (!state.activeMatch) {
             throw new Error('No completed match to export.');
@@ -1832,9 +2029,7 @@
             throw new Error('No black card has been claimed yet.');
         }
 
-        await paintVictoryCard(victory.ownerName, victory.winnerName);
-        const blob = await new Promise((resolve) => elements.victoryCanvas.toBlob(resolve, 'image/png'));
-        return new File([blob], `${sanitizeFileName(victory.ownerName)}-black-card.png`, { type: 'image/png' });
+        return buildBlackCardFile(victory.ownerName, victory.winnerName);
     }
 
     function renderVictory(match) {
@@ -1851,10 +2046,10 @@
         elements.victoryChip.textContent = victory.isWinner ? 'Victory' : 'Captured';
         elements.victoryTitle.textContent = victory.isWinner ? 'You Took The Card' : 'Black Card Lost';
         elements.victoryHeadline.textContent = victory.isWinner
-            ? `You claimed ${victory.ownerName}'s black card.`
-            : `${victory.winnerName} claimed ${victory.ownerName}'s black card.`;
+            ? `You took ${victory.ownerName}'s black card.`
+            : `${victory.winnerName} took ${victory.ownerName}'s black card.`;
         elements.victorySummary.textContent = victory.isWinner
-            ? `${victory.ownerName}'s name is stamped on the card. Download it, post it, and let the gold shimmer do the talking.`
+            ? `${victory.ownerName}'s name is stamped on the card. Download it, share it, and let everybody know whose black card is in your vault.`
             : `That black card now sits in ${victory.winnerName}'s vault. Run it back and take one next time.`;
         elements.victoryStamp.textContent = victory.isWinner ? 'Vaulted' : 'Claimed';
         elements.victoryArtWrap.classList.toggle('is-winner', victory.isWinner);
@@ -1907,6 +2102,71 @@
         });
     }
 
+    function buildVaultCard(card) {
+        const vaultCard = document.createElement('article');
+        vaultCard.className = 'vault-card';
+
+        const preview = document.createElement('div');
+        preview.className = 'vault-card-preview';
+
+        const chip = document.createElement('span');
+        chip.className = 'vault-card-chip';
+        chip.textContent = 'Taken';
+
+        const image = document.createElement('img');
+        image.className = 'vault-card-image';
+        image.src = '/assets/blackcard.png';
+        image.alt = `${card.owner} black card`;
+        image.loading = 'lazy';
+
+        const owner = document.createElement('span');
+        owner.className = 'vault-card-owner';
+        owner.dataset.fitCardName = 'true';
+        owner.textContent = String(card.owner || '').toUpperCase();
+
+        preview.appendChild(chip);
+        preview.appendChild(image);
+        preview.appendChild(owner);
+
+        const meta = document.createElement('div');
+        meta.className = 'vault-card-meta';
+
+        const title = document.createElement('strong');
+        title.textContent = card.owner;
+
+        const subtitle = document.createElement('span');
+        subtitle.textContent = 'Black Card In Vault';
+
+        meta.appendChild(title);
+        meta.appendChild(subtitle);
+
+        const actions = document.createElement('div');
+        actions.className = 'vault-card-actions';
+
+        const downloadButton = document.createElement('button');
+        downloadButton.type = 'button';
+        downloadButton.className = 'vault-action-button';
+        downloadButton.dataset.cardAction = 'download';
+        downloadButton.dataset.cardOwner = card.owner;
+        downloadButton.textContent = 'Download';
+
+        const shareButton = document.createElement('button');
+        shareButton.type = 'button';
+        shareButton.className = 'vault-action-button vault-action-button--accent';
+        shareButton.dataset.cardAction = 'share';
+        shareButton.dataset.cardOwner = card.owner;
+        shareButton.textContent = 'Share';
+
+        actions.appendChild(downloadButton);
+        actions.appendChild(shareButton);
+
+        vaultCard.appendChild(preview);
+        vaultCard.appendChild(meta);
+        vaultCard.appendChild(actions);
+
+        return vaultCard;
+    }
+
     function renderVisibility() {
         const isAuthed = Boolean(state.currentUser);
         const hasMatch = Boolean(state.activeMatch);
@@ -1944,6 +2204,8 @@
             elements.walletCardChip.textContent = 'In Wallet';
             elements.walletCardChip.classList.remove('is-alert');
             elements.walletCardOwner.textContent = 'PLAYER NAME';
+            elements.walletCardTaken.classList.add('hidden');
+            elements.walletCardTakenBy.textContent = 'Held by -';
             fitCardName(elements.walletCardOwner);
             elements.walletStatus.textContent = 'Your black card is in your wallet.';
             elements.walletVaultChip.textContent = 'Vault';
@@ -1970,6 +2232,10 @@
         elements.walletCardChip.textContent = isCaptured ? 'Card Out' : 'In Wallet';
         elements.walletCardChip.classList.toggle('is-alert', isCaptured);
         elements.walletVaultChip.textContent = capturedCount ? `Vault ${capturedCount}` : 'Vault';
+        elements.walletCardTaken.classList.toggle('hidden', !isCaptured);
+        elements.walletCardTakenBy.textContent = isCaptured
+            ? `Held by ${state.currentUser.card_holder}`
+            : 'Held by -';
 
         if (state.currentUser.card_holder) {
             elements.walletStatus.textContent = `${state.currentUser.card_holder} currently holds your black card. Beat them before the reset if you want it back today.`;
@@ -1980,13 +2246,12 @@
         elements.walletList.innerHTML = '';
         if (capturedCount) {
             state.currentUser.wallet_cards.forEach((card) => {
-                const chip = document.createElement('div');
-                chip.className = 'vault-chip';
-                chip.innerHTML = `
-                    <strong>${card.owner}</strong>
-                    <span>Black Card In Vault</span>
-                `;
-                elements.walletList.appendChild(chip);
+                elements.walletList.appendChild(buildVaultCard(card));
+            });
+            requestAnimationFrame(() => {
+                elements.walletList.querySelectorAll('[data-fit-card-name]').forEach((cardOwner) => {
+                    fitCardName(cardOwner);
+                });
             });
         } else {
             const chip = document.createElement('div');
@@ -2577,11 +2842,29 @@
         }
     }
 
+    async function downloadVaultCard(ownerName) {
+        try {
+            const holderName = state.currentUser ? state.currentUser.username : 'winner';
+            const file = await buildBlackCardFile(ownerName, holderName);
+            const url = URL.createObjectURL(file);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = file.name;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            showStatus(`${ownerName}'s black card downloaded.`, 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        }
+    }
+
     async function shareVictoryCard() {
         try {
             const victory = getVictoryContext(state.activeMatch);
             const file = await buildVictoryCardFile();
-            const shareText = `I just claimed ${victory.ownerName}'s Black Card on Black Card.`;
+            const shareText = getBlackCardShareText(victory.ownerName);
 
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
@@ -2606,13 +2889,42 @@
         }
     }
 
+    async function shareVaultCard(ownerName) {
+        try {
+            const holderName = state.currentUser ? state.currentUser.username : 'winner';
+            const file = await buildBlackCardFile(ownerName, holderName);
+            const shareText = getBlackCardShareText(ownerName);
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Black Card Take',
+                    text: shareText,
+                    files: [file],
+                });
+                showStatus('Black card shared.', 'success');
+                return;
+            }
+
+            const tweetUrl = new URL('https://twitter.com/intent/tweet');
+            tweetUrl.searchParams.set('text', shareText);
+            tweetUrl.searchParams.set('url', window.location.origin);
+            window.open(tweetUrl.toString(), '_blank', 'noopener');
+            showStatus('X share opened. Download the card if you want to attach the artwork too.', 'info');
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
+            showStatus(error.message, 'error');
+        }
+    }
+
     function shareToSocial(network) {
         const victory = getVictoryContext(state.activeMatch);
         if (!victory) {
             return;
         }
 
-        const shareText = `I just claimed ${victory.ownerName}'s Black Card on Black Card.`;
+        const shareText = getBlackCardShareText(victory.ownerName);
         if (network === 'x') {
             const tweetUrl = new URL('https://twitter.com/intent/tweet');
             tweetUrl.searchParams.set('text', shareText);
@@ -2670,7 +2982,32 @@
     elements.shareXButton.addEventListener('click', () => shareToSocial('x'));
     elements.shareFacebookButton.addEventListener('click', () => shareToSocial('facebook'));
     elements.toggleCompletedQuestionButton.addEventListener('click', toggleCompletedQuestionDetails);
-    window.addEventListener('resize', () => fitCardName(elements.walletCardOwner));
+    elements.walletList.addEventListener('click', (event) => {
+        const actionButton = event.target.closest('[data-card-action]');
+        if (!actionButton) {
+            return;
+        }
+
+        const ownerName = actionButton.dataset.cardOwner;
+        if (!ownerName) {
+            return;
+        }
+
+        if (actionButton.dataset.cardAction === 'download') {
+            downloadVaultCard(ownerName);
+            return;
+        }
+
+        if (actionButton.dataset.cardAction === 'share') {
+            shareVaultCard(ownerName);
+        }
+    });
+    window.addEventListener('resize', () => {
+        fitCardName(elements.walletCardOwner);
+        elements.walletList.querySelectorAll('[data-fit-card-name]').forEach((cardOwner) => {
+            fitCardName(cardOwner);
+        });
+    });
 
     renderVisibility();
     setAuthMode('login');
