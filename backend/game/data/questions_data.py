@@ -6,6 +6,7 @@ DEPRECATED_QUESTION_TEXTS = {
     "What barbecue style is Kansas City most famous for?",
     "Who is the creator of the acclaimed TV series 'Watchmen' that explored the Tulsa Race Massacre?",
     "What historically Black fashion event takes place annually at the Met in New York?",
+    "The Emancipation Proclamation was issued by which president?",
 }
 
 
@@ -51,9 +52,9 @@ questions = [
     {
         "category": "history",
         "difficulty": "easy",
-        "question_text": "The Emancipation Proclamation was issued by which president?",
-        "answer_choices": ["George Washington", "Thomas Jefferson", "Abraham Lincoln", "Andrew Johnson"],
-        "correct_answer": "Abraham Lincoln"
+        "question_text": "What year did the Emancipation Proclamation go into effect, beginning the legal end of slavery?",
+        "answer_choices": ["1776", "1863", "1865", "1870"],
+        "correct_answer": "1863"
     },
     {
         "category": "history",
