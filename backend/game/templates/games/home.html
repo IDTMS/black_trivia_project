@@ -420,41 +420,14 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .top-auth-bar {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 0;
+        .topline {
+            flex-wrap: wrap;
         }
 
-        .top-auth-bar #googleButton {
-            min-width: 0;
+        .top-sign-in {
+            margin-left: auto;
         }
 
-        .top-auth-bar #googleUsernameForm {
-            width: 100%;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-        }
-
-        .top-auth-bar #googleUsernameForm:not(.hidden) ~ .google-wrap {
-            display: none;
-        }
-
-        .google-wrap {
-            margin-top: 0;
-            display: grid;
-            gap: 10px;
-        }
-
-        .google-wrap p {
-            color: var(--text-soft);
-            font-size: 13px;
-            line-height: 1.45;
-        }
 
         .field {
             display: grid;
@@ -2069,27 +2042,15 @@
 </head>
 <body>
 <main>
-    <div class="top-auth-bar" id="authCard">
-        <div class="google-wrap" id="googleAuthWrap">
-            <div id="googleButton"></div>
-        </div>
-        <form class="hidden" id="googleUsernameForm">
-            <label class="field">
-                <span>Google Email</span>
-                <input id="googleEmail" type="email" autocomplete="email" disabled>
-            </label>
-            <label class="field">
-                <span>Pick Your Username</span>
-                <input id="googleUsername" type="text" placeholder="Choose your username" autocomplete="username">
-            </label>
-            <button class="primary-button" type="submit">Finish Setup</button>
-        </form>
-    </div>
-
     <section class="hero">
         <div class="topline">
             <span class="badge badge-live">Live</span>
             <span class="badge">1v1 Trivia</span>
+            <div class="top-sign-in" id="authCard">
+                <div id="googleAuthWrap">
+                    <div id="googleButton"></div>
+                </div>
+            </div>
         </div>
         <span class="eyebrow">Culture. History. Speed.</span>
         <h1>
@@ -2113,6 +2074,26 @@
                 <span>On Board</span>
             </div>
         </div>
+    </section>
+
+    <section class="card hidden" id="googleUsernameCard">
+        <form id="googleUsernameForm">
+            <div class="section-head">
+                <div>
+                    <span class="eyebrow">Almost There</span>
+                    <h2>Pick Your Username</h2>
+                </div>
+            </div>
+            <label class="field">
+                <span>Google Email</span>
+                <input id="googleEmail" type="email" autocomplete="email" disabled>
+            </label>
+            <label class="field">
+                <span>Username</span>
+                <input id="googleUsername" type="text" placeholder="Choose your username" autocomplete="username">
+            </label>
+            <button class="primary-button" type="submit">Finish Setup</button>
+        </form>
     </section>
 
     <section class="card" id="statusCard">
@@ -2420,6 +2401,7 @@
         walletVaultChip: document.getElementById('walletVaultChip'),
         walletList: document.getElementById('walletList'),
         googleUsernameForm: document.getElementById('googleUsernameForm'),
+        googleUsernameCard: document.getElementById('googleUsernameCard'),
         googleEmail: document.getElementById('googleEmail'),
         googleUsername: document.getElementById('googleUsername'),
         googleAuthWrap: document.getElementById('googleAuthWrap'),
@@ -2915,7 +2897,7 @@
         state.pendingGoogleEmail = '';
         elements.googleEmail.value = '';
         elements.googleUsername.value = '';
-        elements.googleUsernameForm.classList.add('hidden');
+        elements.googleUsernameCard.classList.add('hidden');
         elements.googleAuthWrap.classList.remove('hidden');
     }
 
@@ -3783,7 +3765,7 @@
             state.pendingGoogleEmail = payload.email || '';
             elements.googleEmail.value = payload.email || '';
             elements.googleUsername.value = payload.suggested_username || '';
-            elements.googleUsernameForm.classList.remove('hidden');
+            elements.googleUsernameCard.classList.remove('hidden');
             elements.googleAuthWrap.classList.add('hidden');
             showStatus(extractMessage(payload, 'Almost there — pick a username to finish sign-in.'), 'info');
             return;
@@ -3844,7 +3826,7 @@
 
     function loadGoogleScript() {
         if (!googleClientId) {
-            elements.googleAuthWrap.innerHTML = '<p class="section-copy">Google sign-in is unavailable right now. Try again later.</p>';
+            elements.googleAuthWrap.innerHTML = '<span class="badge">Sign-in unavailable</span>';
             showStatus('Google sign-in is not configured right now.', 'error');
             return;
         }
