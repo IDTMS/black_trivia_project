@@ -106,6 +106,7 @@ class MatchStateSerializer(serializers.ModelSerializer):
     question_time_limit_seconds = serializers.SerializerMethodField()
     target_score = serializers.SerializerMethodField()
     round_name = serializers.SerializerMethodField()
+    categories = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
