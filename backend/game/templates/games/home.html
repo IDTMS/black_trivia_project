@@ -420,13 +420,6 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .topline {
-            flex-wrap: wrap;
-        }
-
-        .top-sign-in {
-            margin-left: auto;
-        }
 
 
         .field {
@@ -2046,11 +2039,6 @@
         <div class="topline">
             <span class="badge badge-live">Live</span>
             <span class="badge">1v1 Trivia</span>
-            <div class="top-sign-in" id="authCard">
-                <div id="googleAuthWrap">
-                    <div id="googleButton"></div>
-                </div>
-            </div>
         </div>
         <span class="eyebrow">Culture. History. Speed.</span>
         <h1>
@@ -2073,6 +2061,18 @@
                 <strong id="heroLeaderboardCount">0</strong>
                 <span>On Board</span>
             </div>
+        </div>
+    </section>
+
+    <section class="card" id="authCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Get Started</span>
+                <h2>Sign In to Play</h2>
+            </div>
+        </div>
+        <div id="googleAuthWrap">
+            <div id="googleButton"></div>
         </div>
     </section>
 
@@ -3818,9 +3818,10 @@
         });
         google.accounts.id.renderButton(elements.googleButton, {
             theme: 'outline',
-            size: 'medium',
+            size: 'large',
             text: 'signin_with',
             shape: 'pill',
+            width: Math.min(window.innerWidth - 72, 390),
         });
     }
 
