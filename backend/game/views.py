@@ -459,7 +459,7 @@ def join_match(match, player):
 
     if match.player1_id == player.id:
         return None, Response(
-            {"error": "You created this match. Have another player join with the invite code from their phone."},
+            {"error": "You created this match. Have another player join with the invite code from their device."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -656,7 +656,7 @@ class StartMatchView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Finish it or cancel it before opening another room.",
+                message="You already have an active match. Finish it or cancel it before opening another room.",
                 result='active_match_exists',
             )
         black_card = ensure_black_card_for_user(request.user)
@@ -669,12 +669,18 @@ class StartMatchView(APIView):
             selected_categories = [c for c in selected_categories if c in ALL_CATEGORIES]
             if not selected_categories:
                 selected_categories = ALL_CATEGORIES
-        match = Match.objects.create(
-            player1=request.user,
-            invite_code=generate_invite_code(),
-            required_opponent=required_opponent,
-            categories=selected_categories,
-        )
+        create_kwargs = {
+            'player1': request.user,
+            'invite_code': generate_invite_code(),
+            'required_opponent': required_opponent,
+        }
+        try:
+            create_kwargs['categories'] = selected_categories
+            match = Match.objects.create(**create_kwargs)
+        except Exception:
+            # Fallback if categories column doesn't exist yet
+            create_kwargs.pop('categories', None)
+            match = Match.objects.create(**create_kwargs)
         message = "Match created. Share the code so another player can join."
         if required_opponent:
             message = (
@@ -707,7 +713,7 @@ class JoinMatchByCodeView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                message="You already have an active match. Leave or cancel it before joining another room.",
                 result='active_match_exists',
             )
 
@@ -801,7 +807,7 @@ class JoinMatchView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                message="You already have an active match. Leave or cancel it before joining another room.",
                 result='active_match_exists',
             )
 

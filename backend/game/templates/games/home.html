@@ -84,7 +84,7 @@
         }
 
         main {
-            width: min(100%, 470px);
+            width: min(100%, 600px);
             min-height: 100vh;
             min-height: 100dvh;
             margin: 0 auto;
@@ -605,6 +605,11 @@
             margin-top: 12px;
         }
 
+        .identity-row > .secondary-button {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
         .identity-card,
         .score-card,
         .leaderboard-item,
@@ -845,7 +850,7 @@
             bottom: 7%;
             transform: translateX(-50%);
             z-index: 3;
-            width: 36%;
+            width: 52%;
             height: 8%;
             display: flex;
             align-items: center;
@@ -1059,6 +1064,9 @@
             display: block;
             font-size: 20px;
             letter-spacing: 0.04em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .code-card {
@@ -1969,7 +1977,7 @@
             }
 
             .wallet-card-owner {
-                width: 36%;
+                width: 52%;
                 font-size: clamp(9px, 2.8vw, 14px);
             }
 
@@ -1979,6 +1987,58 @@
 
             .wallet-card-taken strong {
                 font-size: 18px;
+            }
+        }
+
+        /* Landscape on short screens (phone turned sideways) */
+        @media (orientation: landscape) and (max-height: 500px) {
+            main {
+                min-height: auto;
+                padding-top: calc(12px + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                gap: 12px;
+            }
+
+            .hero {
+                padding: 16px 18px 14px;
+            }
+
+            .hero h1 {
+                margin-top: 8px;
+            }
+
+            .brand-line {
+                font-size: clamp(28px, 8vw, 42px);
+            }
+
+            .hero-copy {
+                margin-top: 8px;
+            }
+
+            .hero-stats {
+                margin-top: 10px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            .primary-button,
+            .accent-button {
+                min-height: 46px;
+            }
+
+            .buzz-button {
+                min-height: 56px;
+            }
+
+            .wallet-card-art {
+                max-height: 180px;
+            }
+
+            .score-card {
+                min-height: 100px;
             }
         }
     </style>
@@ -2005,7 +2065,7 @@
             </div>
             <div class="hero-stat">
                 <strong>2</strong>
-                <span>Phones</span>
+                <span>Players</span>
             </div>
             <div class="hero-stat">
                 <strong id="heroLeaderboardCount">0</strong>
@@ -2023,7 +2083,7 @@
             <span class="pill" id="statusMode">Lobby</span>
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
-            Sign in on this phone, then create a match or join one with a code.
+            Sign in to create a match or join one with a code.
         </div>
     </section>
 
@@ -2036,7 +2096,7 @@
             <span class="pill" id="authModeChip">Google</span>
         </div>
         <p class="section-copy">
-            Each player uses their own phone and their own account. Sign in with Google to get started.
+            Each player uses their own device and their own account. Sign in with Google to get started.
         </p>
 
         <form class="hidden" id="googleUsernameForm">
@@ -2060,7 +2120,7 @@
     <section class="card hidden" id="profileCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Your Phone</span>
+                <span class="eyebrow">Your Session</span>
                 <h2>Player Session</h2>
             </div>
         </div>
@@ -2230,7 +2290,6 @@
         </div>
 
         <div class="action-row hidden" id="backToLobbyRow" style="margin-top:16px;">
-            <button class="primary-button hidden" id="rematchButton" type="button">Rematch</button>
             <button class="secondary-button" id="backToLobbyButton" type="button" style="flex:1;">Back to Lobby</button>
         </div>
     </section>
@@ -2422,7 +2481,6 @@
         historyCountChip: document.getElementById('historyCountChip'),
         p1ProgressFill: document.getElementById('p1ProgressFill'),
         p2ProgressFill: document.getElementById('p2ProgressFill'),
-        rematchButton: document.getElementById('rematchButton'),
         roundBadge: document.getElementById('roundBadge'),
         categoryPicker: document.getElementById('categoryPicker'),
     };
@@ -3266,7 +3324,7 @@
         setAnimatedVisibility(elements.heroSection, !inArena);
         // Keep status card visible always so error/success messages are seen
         setAnimatedVisibility(elements.profileCard, isAuthed && !inArena);
-        setAnimatedVisibility(elements.lobbyCard, isAuthed && !hasMatch);
+        setAnimatedVisibility(elements.lobbyCard, isAuthed && (!hasMatch || isCompleted));
         setAnimatedVisibility(elements.historyCard, isAuthed && !inArena);
         setAnimatedVisibility(elements.leaderboardCard, !inArena);
 
@@ -3551,7 +3609,7 @@
             elements.turnMessage.textContent = `${winnerName} took the match and claimed ${loserName}'s black card.`;
         } else if (match.current_buzzer) {
             elements.turnMessage.textContent = isCurrentBuzzer
-                ? 'You locked the buzzer. Pick the answer from your phone now.'
+                ? 'You locked the buzzer. Pick the answer now.'
                 : `${match.current_buzzer.username} buzzed first. Waiting on their answer.`;
         } else if (match.locked_out_player) {
             elements.turnMessage.textContent = state.currentUser && match.locked_out_player.id === state.currentUser.id
@@ -3805,6 +3863,10 @@
     }
 
     async function createMatch() {
+        if (!state.currentUser) {
+            showStatus('Sign in first to create a match.', 'error');
+            return;
+        }
         setButtonLoading(elements.createMatchButton, true, 'Opening Room');
         try {
             const categories = getSelectedCategories();
@@ -3823,7 +3885,8 @@
                 payload.result === 'active_match_exists' ? 'info' : 'success'
             );
         } catch (error) {
-            showStatus(error.message, 'error');
+            console.error('Create match error:', error);
+            showStatus(error.message || 'Could not create match. Try again.', 'error');
         } finally {
             setButtonLoading(elements.createMatchButton, false);
         }
@@ -4137,7 +4200,7 @@
         renderVisibility();
         renderProfile();
         renderMatch();
-        showStatus('Logged out on this phone.', 'info');
+        showStatus('Logged out.', 'info');
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
