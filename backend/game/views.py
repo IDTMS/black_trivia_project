@@ -363,7 +363,7 @@ def join_match(match, player):
 
     if match.player1_id == player.id:
         return None, Response(
-            {"error": "You created this match. Have another player join with the invite code from their phone."},
+            {"error": "You created this match. Have another player join with the invite code from their device."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -554,7 +554,7 @@ class StartMatchView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Finish it or cancel it before opening another room.",
+                message="You already have an active match. Finish it or cancel it before opening another room.",
                 result='active_match_exists',
             )
         black_card = ensure_black_card_for_user(request.user)
@@ -596,7 +596,7 @@ class JoinMatchByCodeView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                message="You already have an active match. Leave or cancel it before joining another room.",
                 result='active_match_exists',
             )
 
@@ -690,7 +690,7 @@ class JoinMatchView(APIView):
             return serialize_match(
                 request,
                 existing_match,
-                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                message="You already have an active match. Leave or cancel it before joining another room.",
                 result='active_match_exists',
             )
 
