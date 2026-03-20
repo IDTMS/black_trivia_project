@@ -84,7 +84,7 @@
         }
 
         main {
-            width: min(100%, 470px);
+            width: min(100%, 600px);
             min-height: 100vh;
             min-height: 100dvh;
             margin: 0 auto;
@@ -1989,6 +1989,58 @@
                 font-size: 18px;
             }
         }
+
+        /* Landscape on short screens (phone turned sideways) */
+        @media (orientation: landscape) and (max-height: 500px) {
+            main {
+                min-height: auto;
+                padding-top: calc(12px + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                gap: 12px;
+            }
+
+            .hero {
+                padding: 16px 18px 14px;
+            }
+
+            .hero h1 {
+                margin-top: 8px;
+            }
+
+            .brand-line {
+                font-size: clamp(28px, 8vw, 42px);
+            }
+
+            .hero-copy {
+                margin-top: 8px;
+            }
+
+            .hero-stats {
+                margin-top: 10px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            .primary-button,
+            .accent-button {
+                min-height: 46px;
+            }
+
+            .buzz-button {
+                min-height: 56px;
+            }
+
+            .wallet-card-art {
+                max-height: 180px;
+            }
+
+            .score-card {
+                min-height: 100px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2013,7 +2065,7 @@
             </div>
             <div class="hero-stat">
                 <strong>2</strong>
-                <span>Phones</span>
+                <span>Players</span>
             </div>
             <div class="hero-stat">
                 <strong id="heroLeaderboardCount">0</strong>
@@ -2031,7 +2083,7 @@
             <span class="pill" id="statusMode">Lobby</span>
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
-            Sign in on this phone, then create a match or join one with a code.
+            Sign in to create a match or join one with a code.
         </div>
     </section>
 
@@ -2044,7 +2096,7 @@
             <span class="pill" id="authModeChip">Google</span>
         </div>
         <p class="section-copy">
-            Each player uses their own phone and their own account. Sign in with Google to get started.
+            Each player uses their own device and their own account. Sign in with Google to get started.
         </p>
 
         <form class="hidden" id="googleUsernameForm">
@@ -2068,7 +2120,7 @@
     <section class="card hidden" id="profileCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Your Phone</span>
+                <span class="eyebrow">Your Session</span>
                 <h2>Player Session</h2>
             </div>
         </div>
@@ -3557,7 +3609,7 @@
             elements.turnMessage.textContent = `${winnerName} took the match and claimed ${loserName}'s black card.`;
         } else if (match.current_buzzer) {
             elements.turnMessage.textContent = isCurrentBuzzer
-                ? 'You locked the buzzer. Pick the answer from your phone now.'
+                ? 'You locked the buzzer. Pick the answer now.'
                 : `${match.current_buzzer.username} buzzed first. Waiting on their answer.`;
         } else if (match.locked_out_player) {
             elements.turnMessage.textContent = state.currentUser && match.locked_out_player.id === state.currentUser.id
@@ -4148,7 +4200,7 @@
         renderVisibility();
         renderProfile();
         renderMatch();
-        showStatus('Logged out on this phone.', 'info');
+        showStatus('Logged out.', 'info');
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
