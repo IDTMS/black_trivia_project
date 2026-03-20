@@ -98,7 +98,6 @@ class MatchStateSerializer(serializers.ModelSerializer):
     loser = UserSummarySerializer(read_only=True)
     current_buzzer = UserSummarySerializer(read_only=True)
     locked_out_player = UserSummarySerializer(read_only=True)
-    final_question_player = UserSummarySerializer(read_only=True)
     required_opponent = UserSummarySerializer(read_only=True)
     current_question = MatchQuestionSerializer(read_only=True)
     status = serializers.SerializerMethodField()
@@ -123,10 +122,7 @@ class MatchStateSerializer(serializers.ModelSerializer):
             'loser',
             'current_buzzer',
             'locked_out_player',
-            'final_question_player',
             'required_opponent',
-            'final_question_active',
-            'card_saved',
             'current_question',
             'question_deadline',
             'question_time_limit_seconds',
@@ -260,7 +256,7 @@ class MatchHistorySerializer(serializers.ModelSerializer):
         model = Match
         fields = (
             'id', 'player1', 'player2', 'player1_score', 'player2_score',
-            'winner', 'loser', 'card_saved', 'timestamp',
+            'winner', 'loser', 'timestamp',
         )
         read_only_fields = fields
 

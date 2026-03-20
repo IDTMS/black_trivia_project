@@ -93,6 +93,17 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(len(response.data['invite_code']), 6)
         self.assertEqual(Match.objects.count(), 1)
 
+    def test_create_match_returns_existing_active_match_instead_of_creating_duplicate(self):
+        self.client.force_authenticate(user=self.player1)
+        first_response = self.client.post('/api/matches/', {}, format='json')
+
+        second_response = self.client.post('/api/matches/', {}, format='json')
+
+        self.assertEqual(second_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_response.data['id'], first_response.data['id'])
+        self.assertEqual(second_response.data['result'], 'active_match_exists')
+        self.assertEqual(Match.objects.count(), 1)
+
     def test_host_can_cancel_waiting_match(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
@@ -159,6 +170,34 @@ class MatchFlowTests(APITestCase):
         leaderboard = Leaderboard.objects.get(user=self.player2)
         self.assertEqual(leaderboard.points, 10)
 
+    def test_join_by_code_returns_existing_active_match_if_user_is_already_in_another_room(self):
+        self.client.force_authenticate(user=self.player2)
+        existing_match_response = self.client.post('/api/matches/', {}, format='json')
+        existing_match_id = existing_match_response.data['id']
+
+        self.client.force_authenticate(user=self.player1)
+        target_match_response = self.client.post('/api/matches/', {}, format='json')
+        target_invite_code = target_match_response.data['invite_code']
+        target_match_id = target_match_response.data['id']
+
+        self.client.force_authenticate(user=self.player2)
+        join_response = self.client.post(
+            '/api/matches/join/',
+            {'invite_code': target_invite_code},
+            format='json',
+        )
+
+        self.assertEqual(join_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(join_response.data['id'], existing_match_id)
+        self.assertEqual(join_response.data['result'], 'active_match_exists')
+
+        existing_match = Match.objects.get(id=existing_match_id)
+        target_match = Match.objects.get(id=target_match_id)
+        self.assertEqual(existing_match.player1_id, self.player2.id)
+        self.assertIsNone(existing_match.player2_id)
+        self.assertEqual(target_match.player1_id, self.player1.id)
+        self.assertIsNone(target_match.player2_id)
+
     def test_wrong_answer_opens_steal_and_applies_penalty(self):
         self.client.force_authenticate(user=self.player1)
         create_response = self.client.post('/api/matches/', {}, format='json')
@@ -216,6 +255,9 @@ class MatchFlowTests(APITestCase):
         self.assertEqual(refresh_response.data['status'], 'completed')
         self.assertEqual(refresh_response.data['winner']['id'], self.player1.id)
         self.assertEqual(refresh_response.data['loser']['id'], self.player2.id)
+        self.assertNotIn('final_question_active', refresh_response.data)
+        self.assertNotIn('final_question_player', refresh_response.data)
+        self.assertNotIn('card_saved', refresh_response.data)
 
         match.refresh_from_db()
         self.assertEqual(match.winner_id, self.player1.id)

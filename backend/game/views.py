@@ -393,6 +393,52 @@ def get_match_for_user(pk, user):
     ).first()
 
 
+def get_incomplete_match_for_user(user, exclude_match_id=None):
+    reset_expired_black_cards()
+    queryset = Match.objects.filter(
+        models.Q(player1=user) | models.Q(player2=user),
+        winner__isnull=True,
+    )
+    if exclude_match_id is not None:
+        queryset = queryset.exclude(pk=exclude_match_id)
+
+    select_related = queryset.select_related(
+        'player1',
+        'player2',
+        'winner',
+        'loser',
+        'current_buzzer',
+        'locked_out_player',
+        'final_question_player',
+        'required_opponent',
+        'current_question',
+    ).order_by('-timestamp')
+
+    matches = list(select_related)
+    for match in matches:
+        resolve_question_timeout(match)
+        maybe_finalize_match(match)
+
+    return queryset.select_related(
+        'player1',
+        'player2',
+        'winner',
+        'loser',
+        'current_buzzer',
+        'locked_out_player',
+        'final_question_player',
+        'required_opponent',
+        'current_question',
+    ).order_by(
+        models.Case(
+            models.When(player2__isnull=False, then=models.Value(0)),
+            default=models.Value(1),
+            output_field=models.IntegerField(),
+        ),
+        '-timestamp',
+    ).first()
+
+
 def join_match(match, player):
     reset_expired_black_cards()
     player_black_card = ensure_black_card_for_user(player)
@@ -605,6 +651,14 @@ class StartMatchView(APIView):
 
     def post(self, request):
         reset_expired_black_cards()
+        existing_match = get_incomplete_match_for_user(request.user)
+        if existing_match:
+            return serialize_match(
+                request,
+                existing_match,
+                message="You already have an active match on this phone. Finish it or cancel it before opening another room.",
+                result='active_match_exists',
+            )
         black_card = ensure_black_card_for_user(request.user)
         required_opponent = black_card.current_holder if black_card.current_holder_id != request.user.id else None
         # Accept optional category selection
@@ -647,6 +701,15 @@ class JoinMatchByCodeView(APIView):
             match = Match.objects.get(invite_code=invite_code)
         except Match.DoesNotExist:
             return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        existing_match = get_incomplete_match_for_user(request.user, exclude_match_id=match.id)
+        if existing_match:
+            return serialize_match(
+                request,
+                existing_match,
+                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                result='active_match_exists',
+            )
 
         match, error_response = join_match(match, request.user)
         if error_response:
@@ -732,6 +795,15 @@ class JoinMatchView(APIView):
             match = Match.objects.get(pk=pk)
         except Match.DoesNotExist:
             return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        existing_match = get_incomplete_match_for_user(request.user, exclude_match_id=match.id)
+        if existing_match:
+            return serialize_match(
+                request,
+                existing_match,
+                message="You already have an active match on this phone. Leave or cancel it before joining another room.",
+                result='active_match_exists',
+            )
 
         match, error_response = join_match(match, request.user)
         if error_response:
