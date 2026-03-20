@@ -420,8 +420,32 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .top-auth-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 0;
+        }
+
+        .top-auth-bar #googleButton {
+            min-width: 0;
+        }
+
+        .top-auth-bar #googleUsernameForm {
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .top-auth-bar #googleUsernameForm:not(.hidden) ~ .google-wrap {
+            display: none;
+        }
+
         .google-wrap {
-            margin-top: 10px;
+            margin-top: 0;
             display: grid;
             gap: 10px;
         }
@@ -2045,6 +2069,23 @@
 </head>
 <body>
 <main>
+    <div class="top-auth-bar" id="authCard">
+        <div class="google-wrap" id="googleAuthWrap">
+            <div id="googleButton"></div>
+        </div>
+        <form class="hidden" id="googleUsernameForm">
+            <label class="field">
+                <span>Google Email</span>
+                <input id="googleEmail" type="email" autocomplete="email" disabled>
+            </label>
+            <label class="field">
+                <span>Pick Your Username</span>
+                <input id="googleUsername" type="text" placeholder="Choose your username" autocomplete="username">
+            </label>
+            <button class="primary-button" type="submit">Finish Setup</button>
+        </form>
+    </div>
+
     <section class="hero">
         <div class="topline">
             <span class="badge badge-live">Live</span>
@@ -2084,36 +2125,6 @@
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
             Sign in to create a match or join one with a code.
-        </div>
-    </section>
-
-    <section class="card" id="authCard">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Access</span>
-                <h2>Enter The Game</h2>
-            </div>
-            <span class="pill" id="authModeChip">Google</span>
-        </div>
-        <p class="section-copy">
-            Each player uses their own device and their own account. Sign in with Google to get started.
-        </p>
-
-        <form class="hidden" id="googleUsernameForm">
-            <label class="field">
-                <span>Google Email</span>
-                <input id="googleEmail" type="email" autocomplete="email" disabled>
-            </label>
-            <label class="field">
-                <span>Pick Your Username</span>
-                <input id="googleUsername" type="text" placeholder="Choose your Black Card username" autocomplete="username">
-            </label>
-            <button class="primary-button" type="submit">Finish Setup</button>
-        </form>
-
-        <div class="google-wrap" id="googleAuthWrap">
-            <p class="section-copy" style="margin-bottom:12px;">Sign in with Google to verify your account. First-time players pick a username after sign-in.</p>
-            <div id="googleButton"></div>
         </div>
     </section>
 
@@ -3825,10 +3836,9 @@
         });
         google.accounts.id.renderButton(elements.googleButton, {
             theme: 'outline',
-            size: 'large',
-            text: 'continue_with',
+            size: 'medium',
+            text: 'signin_with',
             shape: 'pill',
-            width: Math.min(window.innerWidth - 72, 390),
         });
     }
 
