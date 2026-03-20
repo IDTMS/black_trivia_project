@@ -1432,6 +1432,85 @@
             100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.5); }
         }
 
+        /* Category picker chips */
+        .category-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .cat-chip {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-soft);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            min-height: auto;
+        }
+
+        .cat-chip.active {
+            border-color: rgba(212, 175, 90, 0.5);
+            background: rgba(212, 175, 90, 0.14);
+            color: var(--gold);
+            box-shadow: 0 0 12px rgba(212, 175, 90, 0.1);
+        }
+
+        /* Round badge */
+        .round-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            transition: all 0.4s ease;
+        }
+
+        .round-badge.round-opening {
+            border: 1px solid rgba(120, 192, 145, 0.3);
+            background: rgba(120, 192, 145, 0.1);
+            color: var(--success);
+        }
+
+        .round-badge.round-heating {
+            border: 1px solid rgba(212, 175, 90, 0.3);
+            background: rgba(212, 175, 90, 0.1);
+            color: var(--gold);
+        }
+
+        .round-badge.round-final {
+            border: 1px solid rgba(239, 71, 111, 0.3);
+            background: rgba(239, 71, 111, 0.12);
+            color: var(--danger);
+        }
+
+        .round-badge.round-matchpoint {
+            border: 1px solid rgba(239, 71, 111, 0.5);
+            background: rgba(239, 71, 111, 0.2);
+            color: #ffd9df;
+            animation: matchPointPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes matchPointPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 71, 111, 0); }
+            50% { box-shadow: 0 0 20px 4px rgba(239, 71, 111, 0.25); }
+        }
+
+        /* Match Point screen tint */
+        body.match-point::before {
+            background: rgba(165, 27, 47, 0.6) !important;
+            opacity: 0.3 !important;
+            animation: ambientBreath 4s ease-in-out infinite !important;
+        }
+
         /* VS badge between scores */
         .vs-badge {
             display: flex;
@@ -1648,7 +1727,18 @@
         <div class="split-grid">
             <div class="card" style="padding:16px;">
                 <span class="label">Host Match</span>
-                <p class="section-copy" style="margin-top:8px;">Create a room on this phone and send the code to your opponent.</p>
+                <p class="section-copy" style="margin-top:8px;">Pick your categories, then create the room.</p>
+                <div class="category-picker" id="categoryPicker" style="margin-top:12px;">
+                    <button type="button" class="cat-chip active" data-cat="history">History</button>
+                    <button type="button" class="cat-chip active" data-cat="black_culture">Black Culture</button>
+                    <button type="button" class="cat-chip active" data-cat="hip_hop">Hip-Hop</button>
+                    <button type="button" class="cat-chip active" data-cat="sports">Sports</button>
+                    <button type="button" class="cat-chip active" data-cat="film_tv">Film & TV</button>
+                    <button type="button" class="cat-chip active" data-cat="science">Science</button>
+                    <button type="button" class="cat-chip active" data-cat="food_culture">Food</button>
+                    <button type="button" class="cat-chip active" data-cat="literature">Literature</button>
+                    <button type="button" class="cat-chip active" data-cat="current_events">Current Events</button>
+                </div>
                 <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
             </div>
             <div class="card" style="padding:16px;">
@@ -1672,6 +1762,7 @@
             </div>
             <span class="pill" id="matchStatusChip">Waiting</span>
         </div>
+        <span class="round-badge round-opening hidden" id="roundBadge">Opening Round</span>
 
         <div class="code-card" id="codeCard">
             <span class="label">Invite Code</span>
@@ -1918,6 +2009,8 @@
         p1ProgressFill: document.getElementById('p1ProgressFill'),
         p2ProgressFill: document.getElementById('p2ProgressFill'),
         rematchButton: document.getElementById('rematchButton'),
+        roundBadge: document.getElementById('roundBadge'),
+        categoryPicker: document.getElementById('categoryPicker'),
     };
 
     /* ── Score pop-up ─────────────────────────── */
@@ -2325,9 +2418,11 @@
         if (!state.activeMatchId) {
             return;
         }
+        // Poll faster (1s) during live matches for better responsiveness
+        const interval = state.activeMatch && state.activeMatch.status === 'live' ? 1000 : 2000;
         state.pollHandle = window.setInterval(() => {
             loadMatch(state.activeMatchId, false);
-        }, 2000);
+        }, interval);
     }
 
     function stopPolling() {
@@ -2807,6 +2902,21 @@
         elements.backToLobbyRow.classList.toggle('hidden', !(isWaiting || isCompleted));
         elements.rematchButton.classList.toggle('hidden', !isCompleted);
 
+        // Round badge
+        const roundName = match.round_name;
+        if (roundName && !isCompleted && !isWaiting) {
+            elements.roundBadge.textContent = roundName;
+            elements.roundBadge.classList.remove('hidden', 'round-opening', 'round-heating', 'round-final', 'round-matchpoint');
+            if (roundName === 'Match Point') elements.roundBadge.classList.add('round-matchpoint');
+            else if (roundName === 'Final Stretch') elements.roundBadge.classList.add('round-final');
+            else if (roundName === 'Heating Up') elements.roundBadge.classList.add('round-heating');
+            else elements.roundBadge.classList.add('round-opening');
+            document.body.classList.toggle('match-point', roundName === 'Match Point');
+        } else {
+            elements.roundBadge.classList.add('hidden');
+            document.body.classList.remove('match-point');
+        }
+
         elements.answerChoices.innerHTML = '';
         if (match.current_question && Array.isArray(match.current_question.choices)) {
             match.current_question.choices.forEach((choice) => {
@@ -2874,6 +2984,8 @@
                 playSound('joined');
                 haptic('heavy');
                 showStatus(`${payload.player2 ? payload.player2.username : 'Opponent'} joined the match!`, 'success');
+                // Restart polling at faster live interval
+                startPolling();
             }
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
@@ -3025,9 +3137,28 @@
         document.head.appendChild(script);
     }
 
+    /* ── Category picker ───────────────────── */
+    elements.categoryPicker.addEventListener('click', (e) => {
+        const chip = e.target.closest('.cat-chip');
+        if (!chip) return;
+        chip.classList.toggle('active');
+        // Ensure at least one is selected
+        const active = elements.categoryPicker.querySelectorAll('.cat-chip.active');
+        if (active.length === 0) chip.classList.add('active');
+    });
+
+    function getSelectedCategories() {
+        const chips = elements.categoryPicker.querySelectorAll('.cat-chip.active');
+        return Array.from(chips).map(c => c.dataset.cat);
+    }
+
     async function createMatch() {
         try {
-            const payload = await request('/api/matches/', {method: 'POST'});
+            const categories = getSelectedCategories();
+            const payload = await request('/api/matches/', {
+                method: 'POST',
+                body: JSON.stringify({ categories }),
+            });
             state.activeMatch = payload;
             setActiveMatchId(payload.id);
             renderVisibility();
@@ -3071,14 +3202,21 @@
             return;
         }
 
+        // Optimistic buzz: instantly disable button and show feedback
+        elements.buzzButton.disabled = true;
+        elements.buzzButton.textContent = 'BUZZING...';
+        playSound('buzz');
+        haptic('heavy');
+
         try {
             const payload = await request(`/api/matches/${state.activeMatchId}/buzz/`, {method: 'POST'});
             state.activeMatch = payload;
             renderMatch();
-            playSound('buzz');
-            haptic('heavy');
             showStatus(extractMessage(payload, 'Buzz registered.'), 'success');
         } catch (error) {
+            // Revert optimistic state
+            elements.buzzButton.disabled = false;
+            elements.buzzButton.textContent = 'BUZZ IN';
             showStatus(error.message, 'error');
         }
     }
@@ -3388,6 +3526,61 @@
     if (state.accessToken) {
         fetchCurrentUser();
     }
+
+    /* ── Service Worker + Push Notifications ──── */
+    async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return null;
+        try {
+            const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            return reg;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function subscribeToPush(reg) {
+        if (!('PushManager' in window) || !reg) return;
+        try {
+            // Get VAPID public key from server
+            const vapidResp = await fetch('/api/push/vapid-key/');
+            if (!vapidResp.ok) return;
+            const { public_key } = await vapidResp.json();
+            if (!public_key) return;
+
+            const existing = await reg.pushManager.getSubscription();
+            if (existing) return; // Already subscribed
+
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(public_key),
+            });
+
+            // Send subscription to server
+            if (state.accessToken) {
+                await request('/api/push/subscribe/', {
+                    method: 'POST',
+                    body: JSON.stringify(subscription.toJSON()),
+                });
+            }
+        } catch (e) {
+            // Push not supported or denied - that's fine
+        }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    registerServiceWorker().then((reg) => {
+        if (reg && state.accessToken) subscribeToPush(reg);
+    });
 </script>
 </body>
 </html>

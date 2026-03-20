@@ -106,6 +106,7 @@ class MatchStateSerializer(serializers.ModelSerializer):
     question_deadline = serializers.SerializerMethodField()
     question_time_limit_seconds = serializers.SerializerMethodField()
     target_score = serializers.SerializerMethodField()
+    round_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
@@ -130,6 +131,8 @@ class MatchStateSerializer(serializers.ModelSerializer):
             'question_deadline',
             'question_time_limit_seconds',
             'target_score',
+            'round_name',
+            'categories',
             'timestamp',
         )
         read_only_fields = fields
@@ -163,6 +166,18 @@ class MatchStateSerializer(serializers.ModelSerializer):
 
     def get_target_score(self, obj):
         return MATCH_TARGET_SCORE
+
+    def get_round_name(self, obj):
+        if obj.winner_id or not obj.player2_id:
+            return None
+        max_score = max(obj.player1_score, obj.player2_score)
+        if max_score >= 45:
+            return 'Match Point'
+        if max_score >= 30:
+            return 'Final Stretch'
+        if max_score >= 15:
+            return 'Heating Up'
+        return 'Opening Round'
 
 
 class SubmitMatchResultSerializer(serializers.ModelSerializer):
