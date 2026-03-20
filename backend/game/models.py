@@ -83,6 +83,7 @@ class Match(models.Model):
     player2_score = models.IntegerField(default=0)
     final_question_active = models.BooleanField(default=False)
     card_saved = models.BooleanField(default=False)
+    categories = models.JSONField(default=list, blank=True)
     question_started_at = models.DateTimeField(null=True, blank=True)
     current_question = models.ForeignKey(
         'Question',
@@ -105,6 +106,17 @@ class Leaderboard(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Wins: {self.wins}, Points: {self.points}"
+
+
+class PushSubscription(models.Model):
+    user = models.ForeignKey(User, related_name='push_subscriptions', on_delete=models.CASCADE)
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Push sub for {self.user.username}"
 
 
 class BlackCard(models.Model):

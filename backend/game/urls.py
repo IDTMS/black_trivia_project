@@ -4,6 +4,7 @@ from .views import (
     CurrentUserView,
     GoogleAuthView,
     MatchHistoryView,
+    PushSubscribeView,
     RegisterView,
     QuestionListCreateView,
     QuestionRetrieveUpdateDestroyView,
@@ -17,6 +18,7 @@ from .views import (
     ChooseCategoryView,
     LeaderboardListView,
     UserStatusView,
+    VapidKeyView,
     home,
     dashboard,
 )
@@ -48,6 +50,8 @@ urlpatterns = [
     path('leaderboard/', LeaderboardListView.as_view(), name='leaderboard'),
     path('matches/history/', MatchHistoryView.as_view(), name='match-history'),
     path('user/status/', UserStatusView.as_view(), name='user-status'),
+    path('push/vapid-key/', VapidKeyView.as_view(), name='vapid-key'),
+    path('push/subscribe/', PushSubscribeView.as_view(), name='push-subscribe'),
 
     # Dashboard and Home Pages
     path('dashboard/', dashboard, name='dashboard'),

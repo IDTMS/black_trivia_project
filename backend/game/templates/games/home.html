@@ -73,12 +73,14 @@
             top: -120px;
             left: -120px;
             background: rgba(124, 18, 35, 0.5);
+            animation: ambientBreath 8s ease-in-out infinite;
         }
 
         body::after {
             right: -110px;
             bottom: 8%;
             background: rgba(212, 175, 90, 0.18);
+            animation: ambientBreath 10s ease-in-out infinite 3s;
         }
 
         main {
@@ -124,18 +126,20 @@
             border-radius: var(--radius);
             border: 1px solid var(--panel-border);
             background:
-                linear-gradient(180deg, rgba(15, 15, 16, 0.98), rgba(7, 7, 8, 0.99)),
-                linear-gradient(140deg, rgba(212, 175, 90, 0.02), transparent 38%);
-            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 0 0 1px rgba(212, 175, 90, 0.04);
+                linear-gradient(180deg, rgba(15, 15, 16, 0.72), rgba(7, 7, 8, 0.78)),
+                linear-gradient(140deg, rgba(212, 175, 90, 0.04), transparent 38%);
+            backdrop-filter: blur(24px) saturate(1.3);
+            -webkit-backdrop-filter: blur(24px) saturate(1.3);
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 0 0 1px rgba(212, 175, 90, 0.06);
         }
 
         .hero {
             padding: 24px 22px 22px;
             background:
-                radial-gradient(circle at 12% 16%, rgba(122, 17, 35, 0.16), transparent 24%),
-                radial-gradient(circle at 90% 14%, rgba(212, 175, 90, 0.12), transparent 18%),
-                radial-gradient(circle at 84% 88%, rgba(122, 17, 35, 0.1), transparent 24%),
-                linear-gradient(160deg, rgba(15, 15, 17, 0.98), rgba(5, 5, 6, 0.99) 74%);
+                radial-gradient(circle at 12% 16%, rgba(122, 17, 35, 0.2), transparent 24%),
+                radial-gradient(circle at 90% 14%, rgba(212, 175, 90, 0.14), transparent 18%),
+                radial-gradient(circle at 84% 88%, rgba(122, 17, 35, 0.12), transparent 24%),
+                linear-gradient(160deg, rgba(15, 15, 17, 0.72), rgba(5, 5, 6, 0.80) 74%);
         }
 
         .hero::before,
@@ -1526,34 +1530,15 @@
             display: none !important;
         }
 
-        .confetti-layer {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 70;
+        /* Sections use a fade transition instead of hard hide */
+        section.section-fade {
+            transition: opacity 0.35s ease, transform 0.35s ease;
         }
 
-        .confetti-piece {
-            position: fixed;
-            top: -24px;
-            width: 10px;
-            height: 18px;
-            border-radius: 3px;
+        section.section-out {
             opacity: 0;
-            animation: confettiFall 1400ms linear forwards;
-        }
-
-        .confetti-piece.gold {
-            background: linear-gradient(180deg, #ffe083 0%, #d4af5a 100%);
-        }
-
-        .confetti-piece.red {
-            background: linear-gradient(180deg, #ff6f91 0%, #c1121f 100%);
-        }
-
-        .confetti-piece.ivory {
-            background: linear-gradient(180deg, #f7f0e6 0%, #d7cfc2 100%);
+            transform: translateY(8px);
+            pointer-events: none;
         }
 
         @keyframes goldSweep {
@@ -1703,6 +1688,237 @@
                 transform: translateY(-12px) scale(1.15);
                 opacity: 1;
             }
+        }
+
+        /* Breathing ambient orbs */
+        @keyframes ambientBreath {
+            0%, 100% { opacity: 0.18; transform: translate(0, 0) scale(1); }
+            50% { opacity: 0.30; transform: translate(12px, -10px) scale(1.1); }
+        }
+
+        /* Massive pulsing buzz button */
+        #buzzButton {
+            min-height: 82px;
+            font-size: 20px;
+            letter-spacing: 0.2em;
+            border-radius: 26px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #buzzButton:not(:disabled) {
+            animation: buzzPulse 2.2s ease-in-out infinite;
+        }
+
+        #buzzButton::before {
+            content: "";
+            position: absolute;
+            inset: -50% -30%;
+            background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, 0.08) 48%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.08) 52%, transparent 62%);
+            transform: translateX(-70%) rotate(8deg);
+            pointer-events: none;
+        }
+
+        #buzzButton:not(:disabled)::before {
+            animation: buzzSweep 3s linear infinite;
+        }
+
+        @keyframes buzzPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(165, 27, 47, 0.4), 0 20px 38px rgba(193, 18, 31, 0.18); }
+            50% { box-shadow: 0 0 32px 10px rgba(165, 27, 47, 0.22), 0 24px 44px rgba(193, 18, 31, 0.28); }
+        }
+
+        @keyframes buzzSweep {
+            0% { transform: translateX(-70%) rotate(8deg); }
+            100% { transform: translateX(70%) rotate(8deg); }
+        }
+
+        /* Score progress bars */
+        .score-progress {
+            margin-top: 8px;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .score-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-progress-fill.fill-gold {
+            background: linear-gradient(90deg, #f7e6b6 0%, #d4af5a 62%, #8e681b 100%);
+            box-shadow: 0 0 12px rgba(212, 175, 90, 0.3);
+        }
+
+        .score-progress-fill.fill-red {
+            background: linear-gradient(90deg, #ffcf9f 0%, #c84856 100%);
+            box-shadow: 0 0 12px rgba(200, 72, 86, 0.3);
+        }
+
+        /* Answer feedback */
+        .answer-button.is-correct {
+            border-color: rgba(120, 192, 145, 0.6) !important;
+            background: rgba(120, 192, 145, 0.18) !important;
+            color: #def7e6 !important;
+            box-shadow: 0 0 20px rgba(120, 192, 145, 0.15);
+        }
+
+        .answer-button.is-wrong {
+            border-color: rgba(239, 71, 111, 0.6) !important;
+            background: rgba(239, 71, 111, 0.18) !important;
+            color: #ffd9df !important;
+            box-shadow: 0 0 20px rgba(239, 71, 111, 0.15);
+        }
+
+        .answer-button.is-dimmed {
+            opacity: 0.4;
+        }
+
+        /* Score pop-up */
+        .score-pop {
+            position: fixed;
+            left: 50%;
+            top: 40%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            animation: scorePopUp 1.4s ease-out forwards;
+        }
+
+        .score-pop.pop-positive { color: var(--success); }
+        .score-pop.pop-negative { color: var(--danger); }
+
+        @keyframes scorePopUp {
+            0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+            60% { opacity: 1; transform: translateX(-50%) translateY(-40px) scale(1.2); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-80px) scale(0.9); }
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9998;
+            overflow: hidden;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            top: -10px;
+            width: 10px;
+            height: 10px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.5); }
+        }
+
+        /* Category picker chips */
+        .category-picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .cat-chip {
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-soft);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            min-height: auto;
+        }
+
+        .cat-chip.active {
+            border-color: rgba(212, 175, 90, 0.5);
+            background: rgba(212, 175, 90, 0.14);
+            color: var(--gold);
+            box-shadow: 0 0 12px rgba(212, 175, 90, 0.1);
+        }
+
+        /* Round badge */
+        .round-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            transition: all 0.4s ease;
+        }
+
+        .round-badge.round-opening {
+            border: 1px solid rgba(120, 192, 145, 0.3);
+            background: rgba(120, 192, 145, 0.1);
+            color: var(--success);
+        }
+
+        .round-badge.round-heating {
+            border: 1px solid rgba(212, 175, 90, 0.3);
+            background: rgba(212, 175, 90, 0.1);
+            color: var(--gold);
+        }
+
+        .round-badge.round-final {
+            border: 1px solid rgba(239, 71, 111, 0.3);
+            background: rgba(239, 71, 111, 0.12);
+            color: var(--danger);
+        }
+
+        .round-badge.round-matchpoint {
+            border: 1px solid rgba(239, 71, 111, 0.5);
+            background: rgba(239, 71, 111, 0.2);
+            color: #ffd9df;
+            animation: matchPointPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes matchPointPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 71, 111, 0); }
+            50% { box-shadow: 0 0 20px 4px rgba(239, 71, 111, 0.25); }
+        }
+
+        /* Match Point screen tint */
+        body.match-point::before {
+            background: rgba(165, 27, 47, 0.6) !important;
+            opacity: 0.3 !important;
+            animation: ambientBreath 4s ease-in-out infinite !important;
+        }
+
+        /* VS badge between scores */
+        .vs-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, rgba(111, 15, 29, 0.7), rgba(80, 10, 20, 0.9));
+            border: 2px solid rgba(212, 175, 90, 0.3);
+            color: var(--gold);
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(111, 15, 29, 0.3);
         }
 
         @media (max-width: 420px) {
@@ -1912,7 +2128,18 @@
         <div class="split-grid">
             <div class="card" style="padding:16px;">
                 <span class="label">Host Match</span>
-                <p class="section-copy" style="margin-top:8px;">Create a room on this phone and send the code to your opponent.</p>
+                <p class="section-copy" style="margin-top:8px;">Pick your categories, then create the room.</p>
+                <div class="category-picker" id="categoryPicker" style="margin-top:12px;">
+                    <button type="button" class="cat-chip active" data-cat="history">History</button>
+                    <button type="button" class="cat-chip active" data-cat="black_culture">Black Culture</button>
+                    <button type="button" class="cat-chip active" data-cat="hip_hop">Hip-Hop</button>
+                    <button type="button" class="cat-chip active" data-cat="sports">Sports</button>
+                    <button type="button" class="cat-chip active" data-cat="film_tv">Film & TV</button>
+                    <button type="button" class="cat-chip active" data-cat="science">Science</button>
+                    <button type="button" class="cat-chip active" data-cat="food_culture">Food</button>
+                    <button type="button" class="cat-chip active" data-cat="literature">Literature</button>
+                    <button type="button" class="cat-chip active" data-cat="current_events">Current Events</button>
+                </div>
                 <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
             </div>
             <div class="card" style="padding:16px;">
@@ -1936,6 +2163,7 @@
             </div>
             <span class="pill" id="matchStatusChip">Waiting</span>
         </div>
+        <span class="round-badge round-opening hidden" id="roundBadge">Opening Round</span>
 
         <div class="code-card" id="codeCard">
             <span class="label">Invite Code</span>
@@ -1956,30 +2184,15 @@
                     <span class="score-target">Road To 50</span>
                 </div>
                 <strong id="player1Name">Waiting...</strong>
-                <div class="score-card-status">
-                    <span id="player1Score">0 pts</span>
-                    <span class="streak-badge hidden" id="player1Streak">2X Streak</span>
-                </div>
-                <div class="score-progress">
-                    <div class="score-progress-fill" id="player1ProgressFill"></div>
-                </div>
-                <div class="score-delta-stack" id="player1ScoreDelta"></div>
+                <span id="player1Score">0 pts</span>
+                <div class="score-progress"><div class="score-progress-fill fill-gold" id="p1ProgressFill" style="width:0%"></div></div>
             </div>
-            <div class="score-versus" aria-hidden="true">VS</div>
-            <div class="score-card score-card--player2" id="player2ScoreCard">
-                <div class="score-card-head">
-                    <span class="label">Player 2</span>
-                    <span class="score-target">Road To 50</span>
-                </div>
+            <span class="vs-badge">VS</span>
+            <div class="score-card" id="player2ScoreCard">
+                <span class="label">Player 2</span>
                 <strong id="player2Name">Open Seat</strong>
-                <div class="score-card-status">
-                    <span id="player2Score">0 pts</span>
-                    <span class="streak-badge hidden" id="player2Streak">2X Streak</span>
-                </div>
-                <div class="score-progress">
-                    <div class="score-progress-fill" id="player2ProgressFill"></div>
-                </div>
-                <div class="score-delta-stack" id="player2ScoreDelta"></div>
+                <span id="player2Score">0 pts</span>
+                <div class="score-progress"><div class="score-progress-fill fill-red" id="p2ProgressFill" style="width:0%"></div></div>
             </div>
         </div>
 
@@ -2017,7 +2230,8 @@
         </div>
 
         <div class="action-row hidden" id="backToLobbyRow" style="margin-top:16px;">
-            <button class="secondary-button" id="backToLobbyButton" type="button" style="width:100%;">Back to Lobby</button>
+            <button class="primary-button hidden" id="rematchButton" type="button">Rematch</button>
+            <button class="secondary-button" id="backToLobbyButton" type="button" style="flex:1;">Back to Lobby</button>
         </div>
     </section>
 
@@ -2206,8 +2420,55 @@
         historyCard: document.getElementById('historyCard'),
         historyList: document.getElementById('historyList'),
         historyCountChip: document.getElementById('historyCountChip'),
-        confettiLayer: document.getElementById('confettiLayer'),
+        p1ProgressFill: document.getElementById('p1ProgressFill'),
+        p2ProgressFill: document.getElementById('p2ProgressFill'),
+        rematchButton: document.getElementById('rematchButton'),
+        roundBadge: document.getElementById('roundBadge'),
+        categoryPicker: document.getElementById('categoryPicker'),
     };
+
+    /* ── Score pop-up ─────────────────────────── */
+    function showScorePop(text, positive) {
+        const el = document.createElement('div');
+        el.className = `score-pop ${positive ? 'pop-positive' : 'pop-negative'}`;
+        el.textContent = text;
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+    }
+
+    /* ── Confetti burst ───────────────────────── */
+    function burstConfetti() {
+        const container = document.createElement('div');
+        container.className = 'confetti-container';
+        document.body.appendChild(container);
+        const colors = ['#d4af5a', '#f5dd9b', '#6f0f1d', '#a51b2f', '#78c091', '#ef476f', '#f4efe5'];
+        for (let i = 0; i < 60; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = `${Math.random() * 100}%`;
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            piece.style.width = `${6 + Math.random() * 8}px`;
+            piece.style.height = `${6 + Math.random() * 8}px`;
+            piece.style.animationDelay = `${Math.random() * 0.8}s`;
+            piece.style.animationDuration = `${2 + Math.random() * 2}s`;
+            container.appendChild(piece);
+        }
+        setTimeout(() => container.remove(), 5000);
+    }
+
+    /* ── Haptic feedback ──────────────────────── */
+    function haptic(style) {
+        if (navigator.vibrate) {
+            if (style === 'heavy') navigator.vibrate([30, 20, 50]);
+            else if (style === 'light') navigator.vibrate(10);
+            else navigator.vibrate(15);
+        }
+    }
+
+    /* ── Track previous scores for pop-ups ────── */
+    let prevP1Score = 0;
+    let prevP2Score = 0;
 
     function setStoredTokens(accessToken, refreshToken) {
         state.accessToken = accessToken || '';
@@ -2670,6 +2931,10 @@
             playTone(now + 0.22, 784, 0.16, 'triangle', 0.045);
             playTone(now + 0.36, 1047, 0.24, 'triangle', 0.05);
         }
+        if (name === 'joined') {
+            playTone(now, 440, 0.1, 'triangle', 0.035);
+            playTone(now + 0.12, 554, 0.12, 'triangle', 0.04);
+        }
     }
 
     function sanitizeFileName(value) {
@@ -2823,9 +3088,11 @@
         if (!state.activeMatchId) {
             return;
         }
+        // Poll faster (1s) during live matches for better responsiveness
+        const interval = state.activeMatch && state.activeMatch.status === 'live' ? 1000 : 2000;
         state.pollHandle = window.setInterval(() => {
             loadMatch(state.activeMatchId, false);
-        }, 2000);
+        }, interval);
     }
 
     function stopPolling() {
@@ -3220,6 +3487,25 @@
         elements.player1ProgressFill.style.width = `${Math.max(0, Math.min(100, (Math.max(match.player1_score, 0) / targetScore) * 100))}%`;
         elements.player2ProgressFill.style.width = `${Math.max(0, Math.min(100, (Math.max(match.player2_score, 0) / targetScore) * 100))}%`;
 
+        // Progress bars toward target score
+        const target = match.target_score || 50;
+        elements.p1ProgressFill.style.width = `${Math.min(100, (match.player1_score / target) * 100)}%`;
+        elements.p2ProgressFill.style.width = `${Math.min(100, (match.player2_score / target) * 100)}%`;
+
+        // Score pop-ups on change
+        if (match.player1_score !== prevP1Score && prevP1Score !== 0) {
+            const diff = match.player1_score - prevP1Score;
+            showScorePop(`${diff > 0 ? '+' : ''}${diff}`, diff > 0);
+            haptic(diff > 0 ? 'light' : 'heavy');
+        }
+        if (match.player2_score !== prevP2Score && prevP2Score !== 0) {
+            const diff = match.player2_score - prevP2Score;
+            showScorePop(`${diff > 0 ? '+' : ''}${diff}`, diff > 0);
+            haptic(diff > 0 ? 'light' : 'heavy');
+        }
+        prevP1Score = match.player1_score;
+        prevP2Score = match.player2_score;
+
         const leader = match.player1_score === match.player2_score
             ? null
             : match.player1_score > match.player2_score
@@ -3292,7 +3578,23 @@
         setAnimatedVisibility(elements.questionCard, matchStarted);
 
         elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Back to Lobby';
-        setAnimatedVisibility(elements.backToLobbyRow, isWaiting || isCompleted);
+        elements.backToLobbyRow.classList.toggle('hidden', !(isWaiting || isCompleted));
+        elements.rematchButton.classList.toggle('hidden', !isCompleted);
+
+        // Round badge
+        const roundName = match.round_name;
+        if (roundName && !isCompleted && !isWaiting) {
+            elements.roundBadge.textContent = roundName;
+            elements.roundBadge.classList.remove('hidden', 'round-opening', 'round-heating', 'round-final', 'round-matchpoint');
+            if (roundName === 'Match Point') elements.roundBadge.classList.add('round-matchpoint');
+            else if (roundName === 'Final Stretch') elements.roundBadge.classList.add('round-final');
+            else if (roundName === 'Heating Up') elements.roundBadge.classList.add('round-heating');
+            else elements.roundBadge.classList.add('round-opening');
+            document.body.classList.toggle('match-point', roundName === 'Match Point');
+        } else {
+            elements.roundBadge.classList.add('hidden');
+            document.body.classList.remove('match-point');
+        }
 
         elements.answerChoices.innerHTML = '';
         const showAnswerChoices = Boolean(match.current_question && (!isCompleted || state.completedQuestionExpanded));
@@ -3366,8 +3668,19 @@
             if (!previousMatch || previousMatch.id !== payload.id || previousMatch.status !== payload.status) {
                 state.completedQuestionExpanded = false;
             }
-            applyMatchPayload(payload);
-            if (announce && !joinedNow) {
+            // Detect opponent joining (waiting → live)
+            if (previousMatch && previousMatch.status === 'waiting' && payload.status === 'live') {
+                playSound('joined');
+                haptic('heavy');
+                showStatus(`${payload.player2 ? payload.player2.username : 'Opponent'} joined the match!`, 'success');
+                // Restart polling at faster live interval
+                startPolling();
+            }
+            state.activeMatch = payload;
+            setActiveMatchId(payload.id);
+            renderVisibility();
+            renderMatch();
+            if (announce) {
                 showStatus(extractMessage(payload, 'Match updated.'), 'success');
             }
         } catch (error) {
@@ -3476,11 +3789,33 @@
         document.head.appendChild(script);
     }
 
+    /* ── Category picker ───────────────────── */
+    elements.categoryPicker.addEventListener('click', (e) => {
+        const chip = e.target.closest('.cat-chip');
+        if (!chip) return;
+        chip.classList.toggle('active');
+        // Ensure at least one is selected
+        const active = elements.categoryPicker.querySelectorAll('.cat-chip.active');
+        if (active.length === 0) chip.classList.add('active');
+    });
+
+    function getSelectedCategories() {
+        const chips = elements.categoryPicker.querySelectorAll('.cat-chip.active');
+        return Array.from(chips).map(c => c.dataset.cat);
+    }
+
     async function createMatch() {
         setButtonLoading(elements.createMatchButton, true, 'Opening Room');
         try {
-            const payload = await request('/api/matches/', {method: 'POST'});
-            applyMatchPayload(payload);
+            const categories = getSelectedCategories();
+            const payload = await request('/api/matches/', {
+                method: 'POST',
+                body: JSON.stringify({ categories }),
+            });
+            state.activeMatch = payload;
+            setActiveMatchId(payload.id);
+            renderVisibility();
+            renderMatch();
             renderProfile();
             startPolling();
             showStatus(
@@ -3529,14 +3864,21 @@
             return;
         }
 
-        setButtonLoading(elements.buzzButton, true, 'Buzzing');
+        // Optimistic buzz: instantly disable button and show feedback
+        elements.buzzButton.disabled = true;
+        elements.buzzButton.textContent = 'BUZZING...';
+        playSound('buzz');
+        haptic('heavy');
+
         try {
             const payload = await request(`/api/matches/${state.activeMatchId}/buzz/`, {method: 'POST'});
-            applyMatchPayload(payload);
-            triggerHaptic([18]);
-            playSound('buzz');
+            state.activeMatch = payload;
+            renderMatch();
             showStatus(extractMessage(payload, 'Buzz registered.'), 'success');
         } catch (error) {
+            // Revert optimistic state
+            elements.buzzButton.disabled = false;
+            elements.buzzButton.textContent = 'BUZZ IN';
             showStatus(error.message, 'error');
         } finally {
             setButtonLoading(elements.buzzButton, false);
@@ -3553,13 +3895,36 @@
                 method: 'POST',
                 body: JSON.stringify({answer}),
             });
-            applyMatchPayload(payload);
+            // Flash answer feedback before re-rendering
+            const answerButtons = elements.answerChoices.querySelectorAll('.answer-button');
+            const correctAnswer = payload.correct_answer || '';
+            if (payload.result === 'correct') {
+                answerButtons.forEach(btn => {
+                    if (btn.textContent === answer) btn.classList.add('is-correct');
+                    else btn.classList.add('is-dimmed');
+                });
+                haptic('light');
+            } else if (payload.result === 'wrong' || payload.result === 'steal_open') {
+                answerButtons.forEach(btn => {
+                    if (btn.textContent === answer) btn.classList.add('is-wrong');
+                    else if (correctAnswer && btn.textContent === correctAnswer) btn.classList.add('is-correct');
+                    else btn.classList.add('is-dimmed');
+                });
+                haptic('heavy');
+            }
+
+            // Brief delay so user sees the feedback flash
+            await new Promise(r => setTimeout(r, 600));
+
+            state.activeMatch = payload;
+            renderMatch();
             await refreshLeaderboard();
             if (payload.result === 'correct') {
                 playSound('correct');
-                triggerHaptic([14, 30, 14]);
-            } else if (payload.result === 'match_finished') {
-                playSound(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? 'victory' : 'wrong');
+            } else if (payload.result === 'match_finished' || payload.result === 'card_lost') {
+                const isWin = state.currentUser && payload.winner && payload.winner.id === state.currentUser.id;
+                playSound(isWin ? 'victory' : 'wrong');
+                if (isWin) burstConfetti();
                 await fetchCurrentUser();
                 triggerHaptic(state.currentUser && payload.winner && payload.winner.id === state.currentUser.id ? [22, 28, 22, 40, 44] : [60]);
             } else if (payload.result === 'steal_open' || payload.result === 'double_miss') {
@@ -3809,28 +4174,20 @@
         state.activeMatch = null;
         setActiveMatchId('');
         stopPolling();
-        resetArenaEffects();
+        prevP1Score = 0;
+        prevP2Score = 0;
         renderMatch();
         showStatus('Back in the lobby.', 'info');
     });
     elements.rematchButton.addEventListener('click', async () => {
-        setButtonLoading(elements.rematchButton, true, 'Opening');
-        try {
-            const payload = await request('/api/matches/', {method: 'POST'});
-            applyMatchPayload(payload);
-            renderProfile();
-            startPolling();
-            showStatus(
-                payload.result === 'active_match_exists'
-                    ? extractMessage(payload, 'You already have an active match on this phone.')
-                    : 'Rematch room opened. Share the code and run it back.',
-                payload.result === 'active_match_exists' ? 'info' : 'success'
-            );
-        } catch (error) {
-            showStatus(error.message, 'error');
-        } finally {
-            setButtonLoading(elements.rematchButton, false);
-        }
+        // Clear current match and create a new one
+        state.activeMatch = null;
+        setActiveMatchId('');
+        stopPolling();
+        prevP1Score = 0;
+        prevP2Score = 0;
+        renderMatch();
+        await createMatch();
     });
     elements.downloadCardButton.addEventListener('click', downloadVictoryCard);
     elements.shareCardButton.addEventListener('click', shareVictoryCard);
@@ -3871,6 +4228,61 @@
     if (state.accessToken) {
         fetchCurrentUser();
     }
+
+    /* ── Service Worker + Push Notifications ──── */
+    async function registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return null;
+        try {
+            const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            return reg;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function subscribeToPush(reg) {
+        if (!('PushManager' in window) || !reg) return;
+        try {
+            // Get VAPID public key from server
+            const vapidResp = await fetch('/api/push/vapid-key/');
+            if (!vapidResp.ok) return;
+            const { public_key } = await vapidResp.json();
+            if (!public_key) return;
+
+            const existing = await reg.pushManager.getSubscription();
+            if (existing) return; // Already subscribed
+
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(public_key),
+            });
+
+            // Send subscription to server
+            if (state.accessToken) {
+                await request('/api/push/subscribe/', {
+                    method: 'POST',
+                    body: JSON.stringify(subscription.toJSON()),
+                });
+            }
+        } catch (e) {
+            // Push not supported or denied - that's fine
+        }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    registerServiceWorker().then((reg) => {
+        if (reg && state.accessToken) subscribeToPush(reg);
+    });
 </script>
 </body>
 </html>
