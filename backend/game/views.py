@@ -669,12 +669,18 @@ class StartMatchView(APIView):
             selected_categories = [c for c in selected_categories if c in ALL_CATEGORIES]
             if not selected_categories:
                 selected_categories = ALL_CATEGORIES
-        match = Match.objects.create(
-            player1=request.user,
-            invite_code=generate_invite_code(),
-            required_opponent=required_opponent,
-            categories=selected_categories,
-        )
+        create_kwargs = {
+            'player1': request.user,
+            'invite_code': generate_invite_code(),
+            'required_opponent': required_opponent,
+        }
+        try:
+            create_kwargs['categories'] = selected_categories
+            match = Match.objects.create(**create_kwargs)
+        except Exception:
+            # Fallback if categories column doesn't exist yet
+            create_kwargs.pop('categories', None)
+            match = Match.objects.create(**create_kwargs)
         message = "Match created. Share the code so another player can join."
         if required_opponent:
             message = (
