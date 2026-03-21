@@ -1765,6 +1765,49 @@
                 font-size: 18px;
             }
         }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            main {
+                min-height: auto;
+                padding-top: calc(12px + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                gap: 12px;
+            }
+
+            .hero {
+                padding: 16px 18px 14px;
+            }
+
+            .brand-line {
+                font-size: clamp(28px, 8vw, 42px);
+            }
+
+            .hero-stats {
+                margin-top: 10px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            .primary-button,
+            .accent-button {
+                min-height: 46px;
+            }
+
+            .buzz-button {
+                min-height: 56px;
+            }
+
+            .wallet-card-art {
+                max-height: 180px;
+            }
+
+            .score-card {
+                min-height: 100px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1789,7 +1832,7 @@
             </div>
             <div class="hero-stat">
                 <strong>2</strong>
-                <span>Phones</span>
+                <span>Players</span>
             </div>
             <div class="hero-stat">
                 <strong id="heroLeaderboardCount">0</strong>
@@ -1807,7 +1850,7 @@
             <span class="pill" id="statusMode">Lobby</span>
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
-            Sign in on this phone, then create a match or join one with a code.
+            Sign in to create a match or join one with a code.
         </div>
     </section>
 
@@ -1820,7 +1863,7 @@
             <span class="pill" id="authModeChip">Google</span>
         </div>
         <p class="section-copy">
-            Each player uses their own phone and their own account. Sign in with Google to get started.
+            Each player uses their own device and their own account. Sign in with Google to get started.
         </p>
 
         <form class="hidden" id="googleUsernameForm">
@@ -1844,7 +1887,7 @@
     <section class="card hidden" id="profileCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Your Phone</span>
+                <span class="eyebrow">Your Session</span>
                 <h2>Player Session</h2>
             </div>
         </div>
@@ -1912,7 +1955,7 @@
         <div class="split-grid">
             <div class="card" style="padding:16px;">
                 <span class="label">Host Match</span>
-                <p class="section-copy" style="margin-top:8px;">Create a room on this phone and send the code to your opponent.</p>
+                <p class="section-copy" style="margin-top:8px;">Create a room and send the code to your opponent.</p>
                 <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
             </div>
             <div class="card" style="padding:16px;">
@@ -3265,7 +3308,7 @@
             elements.turnMessage.textContent = `${winnerName} took the match and claimed ${loserName}'s black card.`;
         } else if (match.current_buzzer) {
             elements.turnMessage.textContent = isCurrentBuzzer
-                ? 'You locked the buzzer. Pick the answer from your phone now.'
+                ? 'You locked the buzzer. Pick the answer now.'
                 : `${match.current_buzzer.username} buzzed first. Waiting on their answer.`;
         } else if (match.locked_out_player) {
             elements.turnMessage.textContent = state.currentUser && match.locked_out_player.id === state.currentUser.id
@@ -3772,7 +3815,7 @@
         renderVisibility();
         renderProfile();
         renderMatch();
-        showStatus('Logged out on this phone.', 'info');
+        showStatus('Logged out.', 'info');
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
@@ -3822,7 +3865,7 @@
             startPolling();
             showStatus(
                 payload.result === 'active_match_exists'
-                    ? extractMessage(payload, 'You already have an active match on this phone.')
+                    ? extractMessage(payload, 'You already have an active match.')
                     : 'Rematch room opened. Share the code and run it back.',
                 payload.result === 'active_match_exists' ? 'info' : 'success'
             );
