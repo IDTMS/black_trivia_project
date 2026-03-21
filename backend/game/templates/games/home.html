@@ -420,6 +420,33 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .auth-shell {
+            display: grid;
+            gap: 12px;
+        }
+
+        .auth-copy {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .auth-inline-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 24px;
+        }
+
+        .auth-inline-status .subtle {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .google-button-slot {
+            min-height: 46px;
+        }
+
 
 
         .field {
@@ -2071,8 +2098,17 @@
                 <h2>Sign In to Play</h2>
             </div>
         </div>
-        <div id="googleAuthWrap">
-            <div id="googleButton"></div>
+        <div id="googleAuthWrap" class="auth-shell">
+            <p class="section-copy auth-copy">Use Google to verify your account, then choose your Black Card username before you step into the arena.</p>
+            <div class="auth-inline-status">
+                <span class="badge">Secure Entry</span>
+                <span class="subtle" id="googleAuthMessage">Loading Google sign-in…</span>
+            </div>
+            <button class="primary-button" id="googleFallbackButton" type="button">Loading Google Sign-In</button>
+            <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry Sign-In</button>
+            <div class="google-button-slot hidden" id="googleButtonSlot">
+                <div id="googleButton"></div>
+            </div>
         </div>
     </section>
 
@@ -2369,6 +2405,8 @@
         victoryCardOwner: '',
         victoryCardPromise: null,
         victoryBaseImagePromise: null,
+        googleScriptRequested: false,
+        googleSignInReady: false,
         streaks: {player1: 0, player2: 0},
         answerRevealTimer: null,
         lastCelebratedMatchId: '',
@@ -2405,6 +2443,10 @@
         googleEmail: document.getElementById('googleEmail'),
         googleUsername: document.getElementById('googleUsername'),
         googleAuthWrap: document.getElementById('googleAuthWrap'),
+        googleAuthMessage: document.getElementById('googleAuthMessage'),
+        googleFallbackButton: document.getElementById('googleFallbackButton'),
+        googleRetryButton: document.getElementById('googleRetryButton'),
+        googleButtonSlot: document.getElementById('googleButtonSlot'),
         googleButton: document.getElementById('googleButton'),
         logoutButton: document.getElementById('logoutButton'),
         createMatchButton: document.getElementById('createMatchButton'),
@@ -2899,6 +2941,46 @@
         elements.googleUsername.value = '';
         elements.googleUsernameCard.classList.add('hidden');
         elements.googleAuthWrap.classList.remove('hidden');
+        setGoogleAuthState(state.googleSignInReady ? 'ready' : (googleClientId ? 'loading' : 'unavailable'));
+    }
+
+    function setGoogleAuthState(mode, message = '') {
+        if (!elements.googleAuthWrap) return;
+
+        const defaultMessages = {
+            loading: 'Loading Google sign-in…',
+            ready: 'Choose your Google account to continue.',
+            error: 'Google sign-in failed to load. Retry in a moment.',
+            unavailable: 'Google sign-in is unavailable right now.',
+        };
+
+        elements.googleAuthMessage.textContent = message || defaultMessages[mode] || '';
+        elements.googleButtonSlot.classList.toggle('hidden', mode !== 'ready');
+        elements.googleFallbackButton.classList.toggle('hidden', mode === 'ready');
+        elements.googleRetryButton.classList.toggle('hidden', mode !== 'error');
+        elements.googleFallbackButton.classList.remove('is-loading');
+        elements.googleFallbackButton.disabled = false;
+
+        if (mode === 'loading') {
+            elements.googleFallbackButton.textContent = 'Loading Google Sign-In';
+            elements.googleFallbackButton.classList.add('is-loading');
+            elements.googleFallbackButton.disabled = true;
+            return;
+        }
+
+        if (mode === 'unavailable') {
+            elements.googleFallbackButton.textContent = 'Google Sign-In Unavailable';
+            elements.googleFallbackButton.disabled = true;
+            return;
+        }
+
+        if (mode === 'error') {
+            elements.googleFallbackButton.textContent = 'Google Sign-In Unavailable';
+            elements.googleFallbackButton.disabled = true;
+            return;
+        }
+
+        elements.googleFallbackButton.textContent = 'Continue with Google';
     }
 
     let audioContext = null;
@@ -3808,35 +3890,80 @@
 
     function initializeGoogleSignIn() {
         if (!googleClientId || !window.google || !window.google.accounts || !window.google.accounts.id) {
+            state.googleSignInReady = false;
+            setGoogleAuthState('error', 'Google sign-in is unavailable on this device right now.');
             return;
         }
 
-        window.handleGoogleCredentialResponse = handleGoogleCredentialResponse;
-        google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: handleGoogleCredentialResponse,
-        });
-        google.accounts.id.renderButton(elements.googleButton, {
-            theme: 'outline',
-            size: 'large',
-            text: 'signin_with',
-            shape: 'pill',
-            width: Math.min(window.innerWidth - 72, 390),
-        });
+        try {
+            window.handleGoogleCredentialResponse = handleGoogleCredentialResponse;
+            google.accounts.id.initialize({
+                client_id: googleClientId,
+                callback: handleGoogleCredentialResponse,
+            });
+            elements.googleButton.innerHTML = '';
+            google.accounts.id.renderButton(elements.googleButton, {
+                theme: 'outline',
+                size: 'large',
+                text: 'signin_with',
+                shape: 'pill',
+                width: Math.min(window.innerWidth - 72, 390),
+            });
+            state.googleSignInReady = true;
+            setGoogleAuthState('ready');
+        } catch (error) {
+            state.googleSignInReady = false;
+            setGoogleAuthState('error', 'Google sign-in could not be rendered right now.');
+            showStatus('Google sign-in could not be rendered right now.', 'error');
+        }
     }
 
-    function loadGoogleScript() {
+    function loadGoogleScript(forceReload = false) {
         if (!googleClientId) {
-            elements.googleAuthWrap.innerHTML = '<span class="badge">Sign-in unavailable</span>';
-            showStatus('Google sign-in is not configured right now.', 'error');
+            state.googleSignInReady = false;
+            setGoogleAuthState('unavailable');
             return;
         }
 
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            initializeGoogleSignIn();
+            return;
+        }
+
+        if (state.googleScriptRequested && !forceReload) {
+            setGoogleAuthState('loading');
+            return;
+        }
+
+        const existingScript = document.getElementById('googleIdentityScript');
+        if (existingScript && forceReload) {
+            existingScript.remove();
+        }
+
+        if (existingScript && !forceReload) {
+            setGoogleAuthState('loading');
+            return;
+        }
+
+        state.googleScriptRequested = true;
+        state.googleSignInReady = false;
+        setGoogleAuthState('loading');
+
         const script = document.createElement('script');
+        script.id = 'googleIdentityScript';
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
         script.defer = true;
-        script.onload = initializeGoogleSignIn;
+        script.onload = () => {
+            state.googleScriptRequested = false;
+            initializeGoogleSignIn();
+        };
+        script.onerror = () => {
+            state.googleScriptRequested = false;
+            state.googleSignInReady = false;
+            setGoogleAuthState('error');
+            showStatus('Google sign-in failed to load. Retry in a moment.', 'error');
+        };
         document.head.appendChild(script);
     }
 
@@ -4197,6 +4324,8 @@
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
+    elements.googleFallbackButton.addEventListener('click', () => loadGoogleScript(true));
+    elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
     elements.logoutButton.addEventListener('click', logout);
     elements.createMatchButton.addEventListener('click', createMatch);
     elements.joinForm.addEventListener('submit', joinByCode);
