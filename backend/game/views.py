@@ -299,6 +299,16 @@ def get_match_for_user(pk, user):
 
 def get_incomplete_match_for_user(user, exclude_match_id=None):
     reset_expired_black_cards()
+
+    # Auto-cancel stale waiting matches (no opponent joined within 30 minutes)
+    stale_cutoff = timezone.now() - timedelta(minutes=30)
+    Match.objects.filter(
+        player1=user,
+        player2__isnull=True,
+        winner__isnull=True,
+        timestamp__lt=stale_cutoff,
+    ).delete()
+
     queryset = Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
         winner__isnull=True,
@@ -323,7 +333,13 @@ def get_incomplete_match_for_user(user, exclude_match_id=None):
         resolve_question_timeout(match)
         maybe_finalize_match(match)
 
-    return queryset.select_related(
+    # Re-query to exclude matches that were just finalized (winner set)
+    return Match.objects.filter(
+        models.Q(player1=user) | models.Q(player2=user),
+        winner__isnull=True,
+    ).exclude(
+        pk__in=[m.pk for m in matches if m.winner_id is not None]
+    ).select_related(
         'player1',
         'player2',
         'winner',
