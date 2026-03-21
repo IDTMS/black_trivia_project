@@ -358,6 +358,7 @@
         }
 
         .choice-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
             margin-top: 14px;
         }
@@ -493,7 +494,7 @@
             color: var(--text);
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            text-align: left;
+            text-align: center;
         }
 
         .accent-button {
@@ -1705,6 +1706,7 @@
             }
         }
 
+        /* ── Small phones (≤420px) ── */
         @media (max-width: 420px) {
             main {
                 padding-inline: 14px;
@@ -1766,20 +1768,198 @@
             }
         }
 
-        @media (orientation: landscape) and (max-height: 500px) {
+        /* ── Tablet and small desktop (≥680px) ── */
+        @media (min-width: 680px) {
             main {
+                width: min(100%, 680px);
+                padding: calc(28px + env(safe-area-inset-top, 0px)) 24px calc(48px + env(safe-area-inset-bottom, 0px));
+                gap: 20px;
+            }
+
+            body.in-arena main {
+                width: min(100%, 780px);
+            }
+
+            .hero {
+                padding: 32px 28px 28px;
+            }
+
+            .brand-line {
+                font-size: clamp(48px, 8vw, 64px);
+            }
+
+            .hero-copy {
+                font-size: 16px;
+            }
+
+            .hero-stats {
+                gap: 12px;
+            }
+
+            .hero-stat {
+                padding: 14px 16px;
+            }
+
+            .card {
+                padding: 22px;
+            }
+
+            .section-head h2 {
+                font-size: 26px;
+            }
+
+            .section-copy {
+                font-size: 15px;
+            }
+
+            .split-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+
+            .social-actions {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .identity-row {
+                gap: 14px;
+            }
+
+            .code-value {
+                font-size: 40px;
+            }
+
+            .question-card h3 {
+                font-size: clamp(28px, 5vw, 42px);
+            }
+
+            .victory-copy h3 {
+                font-size: 32px;
+            }
+
+            .wallet-title-main,
+            .wallet-title-accent {
+                font-size: clamp(36px, 7vw, 52px);
+            }
+        }
+
+        /* ── Desktop (≥1024px) ── */
+        @media (min-width: 1024px) {
+            main {
+                width: min(100%, 860px);
+                gap: 24px;
+            }
+
+            body.in-arena main {
+                width: min(100%, 920px);
+            }
+
+            .hero {
+                padding: 40px 36px 34px;
+            }
+
+            .brand-line {
+                font-size: clamp(56px, 6vw, 72px);
+            }
+
+            .hero-copy {
+                font-size: 17px;
+                max-width: 32rem;
+            }
+
+            .hero-stat strong {
+                font-size: 30px;
+            }
+
+            .card {
+                padding: 26px;
+            }
+
+            .section-head h2 {
+                font-size: 28px;
+            }
+
+            .primary-button,
+            .accent-button {
+                min-height: 62px;
+                font-size: 16px;
+            }
+
+            .field input {
+                min-height: 64px;
+            }
+
+            .score-card {
+                min-height: 148px;
+            }
+
+            .score-card strong {
+                font-size: 24px;
+            }
+
+            .buzz-button {
+                min-height: 96px;
+                font-size: clamp(24px, 4vw, 30px);
+            }
+
+            .leaderboard-item {
+                padding: 18px;
+            }
+
+            .wallet-card-owner {
+                font-size: clamp(12px, 1.8vw, 18px);
+            }
+        }
+
+        /* ── Wide desktop (≥1280px) ── */
+        @media (min-width: 1280px) {
+            main {
+                width: min(100%, 960px);
+            }
+
+            body.in-arena main {
+                width: min(100%, 1040px);
+            }
+
+            body.in-arena .arena-layout {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                align-items: start;
+            }
+        }
+
+        /* ── Landscape orientation (phones & small tablets) ── */
+        @media (orientation: landscape) and (max-height: 600px) {
+            main {
+                width: min(100%, 780px);
                 min-height: auto;
                 padding-top: calc(12px + env(safe-area-inset-top, 0px));
                 padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
                 gap: 12px;
             }
 
+            body.in-arena main {
+                width: min(100%, 880px);
+            }
+
             .hero {
-                padding: 16px 18px 14px;
+                padding: 16px 20px 14px;
+            }
+
+            .hero h1 {
+                display: flex;
+                gap: 12px;
+                align-items: baseline;
             }
 
             .brand-line {
-                font-size: clamp(28px, 8vw, 42px);
+                font-size: clamp(28px, 6vw, 42px);
+            }
+
+            .hero-copy {
+                margin-top: 8px;
+                font-size: 13px;
             }
 
             .hero-stats {
@@ -1787,25 +1967,120 @@
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
+            .hero-stat {
+                padding: 8px 12px;
+            }
+
+            .hero-stat strong {
+                font-size: 20px;
+            }
+
             .card {
                 padding: 14px;
+            }
+
+            .section-head h2 {
+                font-size: 20px;
             }
 
             .primary-button,
             .accent-button {
                 min-height: 46px;
+                font-size: 14px;
+            }
+
+            .tab-button,
+            .ghost-button,
+            .secondary-button,
+            .answer-button {
+                min-height: 44px;
+            }
+
+            .field input {
+                min-height: 48px;
+            }
+
+            .split-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .score-row {
+                gap: 10px;
+            }
+
+            .score-card {
+                min-height: 100px;
             }
 
             .buzz-button {
                 min-height: 56px;
+                font-size: 18px;
+            }
+
+            .question-card h3 {
+                font-size: clamp(20px, 4vw, 30px);
+            }
+
+            .choice-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
             }
 
             .wallet-card-art {
                 max-height: 180px;
             }
 
-            .score-card {
-                min-height: 100px;
+            .wallet-shell {
+                padding: 14px;
+            }
+
+            .wallet-title-main,
+            .wallet-title-accent {
+                font-size: clamp(24px, 6vw, 36px);
+            }
+
+            .vault-panel {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .victory-shell {
+                padding: 14px;
+            }
+
+            .victory-copy h3 {
+                font-size: 22px;
+            }
+
+            .victory-art-wrap {
+                margin-top: 12px;
+            }
+
+            body.in-arena #matchCard {
+                min-height: auto;
+                padding: 16px;
+            }
+        }
+
+        /* ── Landscape arena two-column layout ── */
+        @media (orientation: landscape) and (min-width: 700px) and (max-height: 600px) {
+            .score-row {
+                flex-direction: row;
+            }
+
+            .score-versus {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 48px;
+                height: 48px;
+            }
+
+            .answer-button {
+                min-height: 42px;
+                font-size: 13px;
             }
         }
     </style>
@@ -1844,26 +2119,26 @@
     <section class="card" id="statusCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Live Status</span>
-                <h2>Game Feed</h2>
+                <span class="eyebrow">Arena</span>
+                <h2>What's Happening</h2>
             </div>
             <span class="pill" id="statusMode">Lobby</span>
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
-            Sign in to create a match or join one with a code.
+            Sign in to start a match or jump into one with a code.
         </div>
     </section>
 
     <section class="card" id="authCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Access</span>
-                <h2>Enter The Game</h2>
+                <span class="eyebrow">Step Up</span>
+                <h2>Get In The Game</h2>
             </div>
             <span class="pill" id="authModeChip">Google</span>
         </div>
         <p class="section-copy">
-            Each player uses their own device and their own account. Sign in with Google to get started.
+            Every player needs their own account. Sign in with Google and get on the board.
         </p>
 
         <form class="hidden" id="googleUsernameForm">
@@ -1879,7 +2154,7 @@
         </form>
 
         <div class="google-wrap" id="googleAuthWrap">
-            <p class="section-copy" style="margin-bottom:12px;">Sign in with Google to verify your account. First-time players pick a username after sign-in.</p>
+            <p class="section-copy" style="margin-bottom:12px;">Sign in with Google to lock in your spot. First-time players pick a username after sign-in.</p>
             <div id="googleButton"></div>
         </div>
     </section>
@@ -1887,38 +2162,38 @@
     <section class="card hidden" id="profileCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Your Session</span>
-                <h2>Player Session</h2>
+                <span class="eyebrow">Your Card</span>
+                <h2>Player Profile</h2>
             </div>
         </div>
         <span class="hidden" id="playerRoleChip"></span>
         <div class="identity-row">
             <div class="identity-card">
-                <span class="label">Logged In As</span>
+                <span class="label">Playing As</span>
                 <strong id="currentUsername">-</strong>
                 <p class="subtle" id="currentEmail">-</p>
             </div>
-            <button class="secondary-button" id="logoutButton" type="button">Logout</button>
+            <button class="secondary-button" id="logoutButton" type="button">Sign Out</button>
         </div>
         <div class="vault-panel">
             <div class="wallet-shell" id="walletShell">
                 <div class="wallet-topline">
-                    <span class="wallet-pill">Member Vault</span>
+                    <span class="wallet-pill">Your Vault</span>
                     <span class="wallet-pill" id="walletStatePill">Secured</span>
                 </div>
                 <p class="wallet-copy" id="walletHeroCopy">
-                    Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.
+                    Your name is etched in gold. Keep the card, build the vault, and make somebody else play for theirs.
                 </p>
                 <div class="wallet-card-stage">
                     <div class="wallet-card-frame is-secured" id="walletCardFrame">
-                        <span class="wallet-card-chip" id="walletCardChip">In Wallet</span>
+                        <span class="wallet-card-chip" id="walletCardChip">In Vault</span>
                         <div class="wallet-card-art" id="walletCardArt">
                             <img class="wallet-card-image" id="walletCardImage" src="/assets/blackcard.png" alt="Black Card collectible artwork" loading="lazy">
                             <span class="wallet-card-owner" id="walletCardOwner"></span>
                             <div class="wallet-card-taken hidden" id="walletCardTaken">
                                 <span>Card Taken</span>
                                 <strong id="walletCardTakenBy">Held by -</strong>
-                                <p>Beat the holder before the daily reset if you want your black card back.</p>
+                                <p>Beat them before the daily reset to take your card back.</p>
                             </div>
                         </div>
                         <div class="wallet-card-glow" aria-hidden="true"></div>
@@ -1929,12 +2204,12 @@
                 <div class="wallet-vault-head">
                     <div>
                         <span class="label">Card Status</span>
-                        <p class="section-copy" id="walletStatus">Your black card is in your wallet.</p>
+                        <p class="section-copy" id="walletStatus">Your black card is safe in the vault.</p>
                     </div>
                     <span class="tag" id="walletVaultChip">Vault</span>
                 </div>
                 <div>
-                    <span class="label">Wallet</span>
+                    <span class="label">Captured Cards</span>
                     <div class="vault-list" id="walletList"></div>
                 </div>
             </div>
@@ -1944,25 +2219,25 @@
     <section class="card hidden" id="lobbyCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Lobby</span>
-                <h2>Create Or Join</h2>
+                <span class="eyebrow">Ready Up</span>
+                <h2>Find Your Opponent</h2>
             </div>
             <span class="tag" id="lobbyStateChip">No Active Match</span>
         </div>
         <p class="section-copy">
-            Host a room and share the six-character code, or enter a code from another player to jump into their match.
+            Open a room and send the code, or punch in someone else's code to pull up on them.
         </p>
         <div class="split-grid">
             <div class="card" style="padding:16px;">
-                <span class="label">Host Match</span>
-                <p class="section-copy" style="margin-top:8px;">Create a room and send the code to your opponent.</p>
+                <span class="label">Start A Match</span>
+                <p class="section-copy" style="margin-top:8px;">Open a room and send the code to whoever you want smoke with.</p>
                 <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
             </div>
             <div class="card" style="padding:16px;">
-                <span class="label">Join With Code</span>
+                <span class="label">Got A Code?</span>
                 <form id="joinForm" style="margin-top:10px;">
                     <label class="field">
-                        <span>Invite Code</span>
+                        <span>Match Code</span>
                         <input id="inviteCodeInput" type="text" maxlength="6" placeholder="ABC123" autocomplete="off" required>
                     </label>
                     <button class="secondary-button" type="submit">Join Match</button>
@@ -1981,22 +2256,22 @@
         </div>
 
         <div class="code-card" id="codeCard">
-            <span class="label">Invite Code</span>
+            <span class="label">Match Code</span>
             <strong class="code-value" id="inviteCodeDisplay">------</strong>
             <p class="section-copy" id="waitingMessage" style="margin-top:8px;">
-                Send the code above to your opponent. The match starts when they join.
+                Send this code to whoever you're playing. It's on when they join.
             </p>
             <div class="action-row">
                 <button class="secondary-button" id="copyCodeButton" type="button">Copy Code</button>
-                <button class="ghost-button" id="shareCodeButton" type="button">Share Code</button>
+                <button class="ghost-button" id="shareCodeButton" type="button">Send It</button>
             </div>
         </div>
 
         <div class="score-row hidden" id="scoreRow">
             <div class="score-card score-card--player1" id="player1ScoreCard">
                 <div class="score-card-head">
-                    <span class="label">Player 1</span>
-                    <span class="score-target">Road To 50</span>
+                    <span class="label">Host</span>
+                    <span class="score-target">First to 50</span>
                 </div>
                 <strong id="player1Name">Waiting...</strong>
                 <div class="score-card-status">
@@ -2011,8 +2286,8 @@
             <div class="score-versus" aria-hidden="true">VS</div>
             <div class="score-card score-card--player2" id="player2ScoreCard">
                 <div class="score-card-head">
-                    <span class="label">Player 2</span>
-                    <span class="score-target">Road To 50</span>
+                    <span class="label">Challenger</span>
+                    <span class="score-target">First to 50</span>
                 </div>
                 <strong id="player2Name">Open Seat</strong>
                 <div class="score-card-status">
@@ -2041,9 +2316,9 @@
                     <div class="timer-fill" id="questionTimerFill"></div>
                 </div>
             </div>
-            <h3 id="questionText">Waiting for both players to join.</h3>
+            <h3 id="questionText">Waiting for your opponent to pull up.</h3>
             <p class="section-copy" id="turnMessage" style="margin-top:10px;">
-                The question appears once both players are in the room.
+                Questions drop once both players are in the room.
             </p>
             <div class="answer-reveal hidden" id="answerReveal"></div>
             <div class="action-row" id="matchActionRow">
@@ -2081,9 +2356,9 @@
                 <span class="sparkle"></span>
             </div>
             <div class="victory-copy">
-                <span class="label">Endgame Reward</span>
+                <span class="label">The Spoils</span>
                 <h3 id="victoryHeadline">A black card has been claimed.</h3>
-                <p id="victorySummary">Finish the match and the winning player will capture the defeated player's black card.</p>
+                <p id="victorySummary">Winner takes the loser's black card. That's how it goes.</p>
             </div>
 
             <div class="victory-art-wrap" id="victoryArtWrap">
@@ -2107,7 +2382,7 @@
     <section class="card hidden" id="historyCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Past Matches</span>
+                <span class="eyebrow">Your Record</span>
                 <h2>Match History</h2>
             </div>
             <span class="tag" id="historyCountChip">0</span>
@@ -2118,10 +2393,10 @@
     <section class="card" id="leaderboardCard">
         <div class="section-head">
             <div>
-                <span class="eyebrow">Top Players</span>
+                <span class="eyebrow">Rankings</span>
                 <h2>Leaderboard</h2>
             </div>
-            <span class="tag">Public</span>
+            <span class="tag">Global</span>
         </div>
         <div class="leaderboard-list" id="leaderboardList"></div>
     </section>
@@ -2553,7 +2828,7 @@
         playSound('join');
         triggerHaptic([18, 32, 18]);
         triggerArenaFlash();
-        showStatus(`${opponentName} joined the arena.`, 'success');
+        showStatus(`${opponentName} pulled up. Let's go.`, 'success');
     }
 
     function updateArenaEffects(previousMatch, nextMatch) {
@@ -2724,7 +2999,7 @@
     }
 
     function getBlackCardShareText(ownerName) {
-        return `I took ${ownerName}'s Black Card on Black Card. It's in my vault now.`;
+        return `I took ${ownerName}'s Black Card. It's in my vault now. Pull up if you want yours back.`;
     }
 
     function getVictoryContext(match) {
@@ -2849,8 +3124,8 @@
             ? `You took ${victory.ownerName}'s black card.`
             : `${victory.winnerName} took ${victory.ownerName}'s black card.`;
         elements.victorySummary.textContent = victory.isWinner
-            ? `${victory.ownerName}'s name is stamped on the card. Download it, share it, and let everybody know whose black card is in your vault.`
-            : `That black card now sits in ${victory.winnerName}'s vault. Run it back and take one next time.`;
+            ? `${victory.ownerName}'s name is on the card. Download it, share it, and let everybody know.`
+            : `That card is in ${victory.winnerName}'s vault now. Run it back and take one next time.`;
         elements.victoryStamp.textContent = victory.isWinner ? 'Vaulted' : 'Claimed';
         elements.victoryArtWrap.classList.toggle('is-winner', victory.isWinner);
         elements.victoryActions.classList.toggle('hidden', !victory.isWinner);
@@ -3050,7 +3325,7 @@
         setAnimatedVisibility(elements.matchCard, isAuthed && hasMatch);
         setAnimatedVisibility(elements.victoryCard, isAuthed && isCompleted);
 
-        elements.statusMode.textContent = inArena ? 'Match Live' : (isAuthed ? 'Signed In' : 'Lobby');
+        elements.statusMode.textContent = inArena ? 'Live' : (isAuthed ? 'Ready' : 'Lobby');
     }
 
     function renderProfile() {
@@ -3061,16 +3336,16 @@
             elements.walletShell.classList.remove('is-captured');
             elements.walletStatePill.textContent = 'Secured';
             elements.walletStatePill.classList.remove('is-alert');
-            elements.walletHeroCopy.textContent = 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
+            elements.walletHeroCopy.textContent = 'Your name is etched in gold. Keep the card, build the vault, and make somebody else play for theirs.';
             elements.walletCardFrame.classList.add('is-secured');
             elements.walletCardFrame.classList.remove('is-captured');
-            elements.walletCardChip.textContent = 'In Wallet';
+            elements.walletCardChip.textContent = 'In Vault';
             elements.walletCardChip.classList.remove('is-alert');
             elements.walletCardOwner.textContent = '';
             elements.walletCardTaken.classList.add('hidden');
             elements.walletCardTakenBy.textContent = 'Held by -';
             fitCardName(elements.walletCardOwner);
-            elements.walletStatus.textContent = 'Your black card is in your wallet.';
+            elements.walletStatus.textContent = 'Your black card is safe in the vault.';
             elements.walletVaultChip.textContent = 'Vault';
             elements.walletList.innerHTML = '';
             return;
@@ -3088,11 +3363,11 @@
         elements.walletStatePill.textContent = isCaptured ? 'Captured' : 'Secured';
         elements.walletStatePill.classList.toggle('is-alert', isCaptured);
         elements.walletHeroCopy.textContent = isCaptured
-            ? `${state.currentUser.card_holder} is holding your name right now. Beat them before the reset and take the card back.`
-            : 'Your name is still etched in gold. Keep the card close, build the vault, and make somebody else play for theirs.';
+            ? `${state.currentUser.card_holder} has your name right now. Beat them before the reset and take it back.`
+            : 'Your name is etched in gold. Keep the card, build the vault, and make somebody else play for theirs.';
         elements.walletCardFrame.classList.toggle('is-secured', !isCaptured);
         elements.walletCardFrame.classList.toggle('is-captured', isCaptured);
-        elements.walletCardChip.textContent = isCaptured ? 'Card Out' : 'In Wallet';
+        elements.walletCardChip.textContent = isCaptured ? 'Taken' : 'In Vault';
         elements.walletCardChip.classList.toggle('is-alert', isCaptured);
         elements.walletVaultChip.textContent = capturedCount ? `Vault ${capturedCount}` : 'Vault';
         elements.walletCardTaken.classList.toggle('hidden', !isCaptured);
@@ -3101,9 +3376,9 @@
             : 'Held by -';
 
         if (state.currentUser.card_holder) {
-            elements.walletStatus.textContent = `${state.currentUser.card_holder} currently holds your black card. Beat them before the reset if you want it back today.`;
+            elements.walletStatus.textContent = `${state.currentUser.card_holder} has your black card. Beat them before the reset to take it back.`;
         } else {
-            elements.walletStatus.textContent = 'Your black card is in your wallet.';
+            elements.walletStatus.textContent = 'Your black card is safe in the vault.';
         }
 
         elements.walletList.innerHTML = '';
@@ -3141,7 +3416,7 @@
         if (!entries.length) {
             const empty = document.createElement('div');
             empty.className = 'leaderboard-item';
-            empty.innerHTML = '<div><strong>No scores yet</strong><span>Play the first match to set the board.</span></div>';
+            empty.innerHTML = '<div><strong>No one on the board yet</strong><span>Win a match to put your name up.</span></div>';
             elements.leaderboardList.appendChild(empty);
             return;
         }
@@ -3172,7 +3447,7 @@
         if (!matches.length) {
             const empty = document.createElement('div');
             empty.className = 'leaderboard-item';
-            empty.innerHTML = '<div><strong>No matches yet</strong><span>Play your first match to see history here.</span></div>';
+            empty.innerHTML = '<div><strong>No matches played yet</strong><span>Your wins and losses show up here.</span></div>';
             elements.historyList.appendChild(empty);
             return;
         }
@@ -3213,7 +3488,7 @@
             state.completedQuestionExpanded = false;
             stopQuestionTimer();
             resetArenaEffects();
-            elements.lobbyStateChip.textContent = 'No Active Match';
+            elements.lobbyStateChip.textContent = 'Open';
             setAnimatedVisibility(elements.scoreRow, false);
             setAnimatedVisibility(elements.questionCard, false);
             setAnimatedVisibility(elements.backToLobbyRow, false);
@@ -3242,19 +3517,19 @@
         const targetScore = match.target_score || 50;
 
         elements.lobbyStateChip.textContent = match.status === 'waiting'
-            ? 'Waiting For Opponent'
+            ? 'Waiting On Opponent'
             : isCompleted
-                ? 'Recent Match'
+                ? 'Last Match'
                 : `Match ${match.status}`;
-        elements.matchEyebrow.textContent = isCompleted ? 'Match Summary' : 'Active Match';
+        elements.matchEyebrow.textContent = isCompleted ? 'Final Score' : 'In The Arena';
         elements.matchTitle.textContent = match.status === 'waiting'
-            ? 'Waiting for Opponent'
+            ? 'Waiting on Opponent'
             : isCompleted
-                ? 'Match Complete'
+                ? 'Match Over'
                 : 'Question Is Live';
-        elements.matchStatusChip.textContent = match.status === 'waiting' ? 'Share Code'
+        elements.matchStatusChip.textContent = match.status === 'waiting' ? 'Send Code'
             : match.status === 'live' ? 'Live'
-            : match.status === 'completed' ? 'Done' : match.status;
+            : match.status === 'completed' ? 'Final' : match.status;
         elements.inviteCodeDisplay.textContent = match.invite_code || '------';
         elements.player1Name.textContent = match.player1 ? match.player1.username : 'Host';
         elements.player2Name.textContent = match.player2 ? match.player2.username : 'Open Seat';
@@ -3284,8 +3559,8 @@
             elements.questionCategory.textContent = 'Waiting';
             elements.questionDifficulty.textContent = 'Pending';
             elements.questionText.textContent = isCompleted
-                ? 'The match recap is ready.'
-                : 'The room will load a question once both players are in.';
+                ? 'That\'s game.'
+                : 'Questions drop once both players are in the room.';
             elements.completedQuestionPrompt.textContent = '';
         }
 
@@ -3300,25 +3575,25 @@
             const waitMsg = isPlayer1 && match.required_opponent
                 ? `Your card is held by ${match.required_opponent.username}. Only they can join this revenge match.`
                 : isPlayer1
-                    ? `Send the code above to your opponent. First to ${targetScore} wins the match and the black card.`
-                : 'Waiting for the host to bring in another player.';
+                    ? `Send the code to your opponent. First to ${targetScore} takes the black card.`
+                : 'Waiting on the host to let someone in.';
             elements.turnMessage.textContent = waitMsg;
             elements.waitingMessage.textContent = waitMsg;
         } else if (isCompleted) {
-            elements.turnMessage.textContent = `${winnerName} took the match and claimed ${loserName}'s black card.`;
+            elements.turnMessage.textContent = `${winnerName} closed it out and took ${loserName}'s black card.`;
         } else if (match.current_buzzer) {
             elements.turnMessage.textContent = isCurrentBuzzer
-                ? 'You locked the buzzer. Pick the answer now.'
+                ? 'You got the buzzer. Pick your answer.'
                 : `${match.current_buzzer.username} buzzed first. Waiting on their answer.`;
         } else if (match.locked_out_player) {
             elements.turnMessage.textContent = state.currentUser && match.locked_out_player.id === state.currentUser.id
-                ? 'You missed and took a penalty. Your opponent can steal this question now.'
-                : `${match.locked_out_player.username} missed. Steal the question now.`;
+                ? 'You missed. Your opponent can steal this one.'
+                : `${match.locked_out_player.username} missed. Steal it.`;
         } else {
-            elements.turnMessage.textContent = `The question is live. First buzz wins the answer. First to ${targetScore} wins the match and the black card.`;
+            elements.turnMessage.textContent = `Question is live. Buzz in first. First to ${targetScore} takes the black card.`;
         }
 
-        elements.questionLabel.textContent = isCompleted ? 'Match Recap' : 'Question';
+        elements.questionLabel.textContent = isCompleted ? 'Final Result' : 'Question';
         elements.questionMeta.classList.toggle('hidden', isCompleted && !state.completedQuestionExpanded);
         setAnimatedVisibility(elements.matchActionRow, !isCompleted);
         setAnimatedVisibility(elements.completedMatchActions, isCompleted);
@@ -3334,7 +3609,7 @@
         setAnimatedVisibility(elements.scoreRow, matchStarted);
         setAnimatedVisibility(elements.questionCard, matchStarted);
 
-        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Back to Lobby';
+        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Leave Arena';
         setAnimatedVisibility(elements.backToLobbyRow, isWaiting || isCompleted);
 
         elements.answerChoices.innerHTML = '';
@@ -3454,7 +3729,7 @@
         setStoredTokens(payload.access, payload.refresh);
         state.currentUser = payload.user;
         await fetchCurrentUser();
-        showStatus(`Welcome in, ${payload.user.username}.`, 'success');
+        showStatus(`${payload.user.username} is in the building.`, 'success');
     }
 
     async function handleGoogleUsername(event) {
@@ -3648,7 +3923,7 @@
 
         setButtonLoading(elements.shareCodeButton, true, 'Sharing');
         try {
-            const shareText = `Join my Black Card match. First to ${state.activeMatch.target_score || 50} wins. Code: ${state.activeMatch.invite_code}`;
+            const shareText = `Pull up to my Black Card match. First to ${state.activeMatch.target_score || 50} takes the card. Code: ${state.activeMatch.invite_code}`;
             if (navigator.share) {
                 await navigator.share({
                     title: 'Black Card Match Invite',
@@ -3815,7 +4090,7 @@
         renderVisibility();
         renderProfile();
         renderMatch();
-        showStatus('Logged out.', 'info');
+        showStatus('You\'re out. Sign back in to play.', 'info');
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
@@ -3840,7 +4115,7 @@
                 resetArenaEffects();
                 renderVisibility();
                 renderMatch();
-                showStatus('Match canceled. Back in the lobby.', 'info');
+                showStatus('Match canceled. You\'re back in the lobby.', 'info');
             } catch (error) {
                 showStatus(error.message, 'error');
             } finally {
@@ -3854,7 +4129,7 @@
         stopPolling();
         resetArenaEffects();
         renderMatch();
-        showStatus('Back in the lobby.', 'info');
+        showStatus('You left the arena.', 'info');
     });
     elements.rematchButton.addEventListener('click', async () => {
         setButtonLoading(elements.rematchButton, true, 'Opening');
@@ -3866,7 +4141,7 @@
             showStatus(
                 payload.result === 'active_match_exists'
                     ? extractMessage(payload, 'You already have an active match.')
-                    : 'Rematch room opened. Share the code and run it back.',
+                    : 'Rematch room is open. Send the code and run it back.',
                 payload.result === 'active_match_exists' ? 'info' : 'success'
             );
         } catch (error) {
