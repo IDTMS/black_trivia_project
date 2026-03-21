@@ -8,7 +8,7 @@ from pathlib import Path
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import BlackCard, Leaderboard, Match, PushSubscription, Question, MATCH_TARGET_SCORE, QUESTION_TIME_LIMIT_SECONDS
+from .models import BlackCard, Leaderboard, Match, Question, MATCH_TARGET_SCORE, QUESTION_TIME_LIMIT_SECONDS
 from .serializers import (
     CurrentUserSerializer,
     LeaderboardSerializer,
@@ -44,79 +44,13 @@ def health(request):
     return JsonResponse({"status": "ok"})
 
 
-def service_worker(request):
-    sw_content = """
-'use strict';
-
-const CACHE_NAME = 'blackcard-v2';
-const PRECACHE_URLS = ['/', '/assets/blackcard.png'];
-
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting())
-    );
-});
-
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-        ).then(() => self.clients.claim())
-    );
-});
-
-self.addEventListener('fetch', (event) => {
-    if (event.request.method !== 'GET') return;
-    const url = new URL(event.request.url);
-    if (url.pathname.startsWith('/api/')) return;
-    event.respondWith(
-        caches.match(event.request).then((cached) => {
-            const fetched = fetch(event.request).then((response) => {
-                if (response && response.status === 200 && response.type === 'basic') {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-                }
-                return response;
-            }).catch(() => cached);
-            return cached || fetched;
-        })
-    );
-});
-
-self.addEventListener('push', (event) => {
-    let data = { title: 'Black Card', body: 'Something happened in your match.' };
-    try { data = event.data.json(); } catch (e) {}
-    event.waitUntil(
-        self.registration.showNotification(data.title || 'Black Card', {
-            body: data.body || '',
-            icon: '/assets/blackcard.png',
-            badge: '/assets/blackcard.png',
-            vibrate: [100, 50, 100],
-            data: data.url ? { url: data.url } : {},
-        })
-    );
-});
-
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    const url = event.notification.data && event.notification.data.url ? event.notification.data.url : '/';
-    event.waitUntil(clients.openWindow(url));
-});
-"""
-    return HttpResponse(sw_content.strip(), content_type='application/javascript')
-
-
-
 def manifest(request):
     data = {
         "name": "Black Card",
         "short_name": "Black Card",
         "description": "1v1 Culture Trivia — Prove your blackness or lose your card.",
         "start_url": "/",
-        "id": "/",
-        "scope": "/",
         "display": "standalone",
-        "orientation": "portrait",
         "background_color": "#030303",
         "theme_color": "#0b0b0b",
         "icons": [
@@ -124,7 +58,6 @@ def manifest(request):
                 "src": "/assets/blackcard.png",
                 "sizes": "1008x1024",
                 "type": "image/png",
-                "purpose": "any",
             }
         ],
     }
@@ -149,35 +82,13 @@ def generate_invite_code():
             return invite_code
 
 
-ALL_CATEGORIES = [c[0] for c in Question.CATEGORY_CHOICES]
-
-
-def get_round_info(match):
-    """Return round name and difficulty filter based on max score."""
-    max_score = max(match.player1_score, match.player2_score)
-    if max_score >= 45:
-        return 'Match Point', ['hard']
-    if max_score >= 30:
-        return 'Final Stretch', ['medium', 'hard']
-    if max_score >= 15:
-        return 'Heating Up', ['medium']
-    return 'Opening Round', ['easy', 'medium']
-
-
-def pick_random_question(category=None, categories=None, difficulties=None):
+def pick_random_question(category=None):
     questions = Question.objects.all()
     if category:
         questions = questions.filter(category=category)
-    elif categories:
-        questions = questions.filter(category__in=categories)
-    if difficulties:
-        questions = questions.filter(difficulty__in=difficulties)
 
     count = questions.count()
     if count == 0:
-        # Fallback: try without difficulty filter
-        if difficulties:
-            return pick_random_question(category=category, categories=categories, difficulties=None)
         return None
 
     random_index = random.randint(0, count - 1)
@@ -222,13 +133,6 @@ def get_match_winner_and_loser(match):
     if match.player1_score > match.player2_score:
         return match.player1, match.player2
     return match.player2, match.player1
-
-
-def pick_match_question(match):
-    """Pick a question using the match's categories and round-appropriate difficulty."""
-    cats = match.categories if match.categories else ALL_CATEGORIES
-    _, difficulties = get_round_info(match)
-    return pick_random_question(categories=cats, difficulties=difficulties)
 
 
 def set_match_question(match, question):
@@ -293,7 +197,7 @@ def resolve_question_timeout(match):
         match.current_buzzer = None
         if match.locked_out_player_id and match.locked_out_player_id != timed_out_user.id:
             match.locked_out_player = None
-            set_match_question(match, pick_match_question(match))
+            set_match_question(match, pick_random_question())
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
             maybe_finalize_match(match)
             return
@@ -306,7 +210,7 @@ def resolve_question_timeout(match):
 
     match.current_buzzer = None
     match.locked_out_player = None
-    set_match_question(match, pick_match_question(match))
+    set_match_question(match, pick_random_question())
     match.save(update_fields=['current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
     maybe_finalize_match(match)
 
@@ -453,7 +357,7 @@ def join_match(match, player):
 
     if match.player2_id == player.id:
         if not match.current_question_id:
-            set_match_question(match, pick_match_question(match))
+            set_match_question(match, pick_random_question())
             match.save(update_fields=['current_question', 'question_started_at'])
         return match, None
 
@@ -482,14 +386,8 @@ def join_match(match, player):
         )
 
     match.player2 = player
-    # Notify host that opponent joined
-    send_push_to_user(
-        match.player1,
-        'Opponent Joined!',
-        f'{player.username} joined your match. Game on!',
-    )
     if not match.current_question_id:
-        question = pick_match_question(match)
+        question = pick_random_question()
         if not question:
             return None, Response(
                 {"error": "No questions available."},
@@ -661,26 +559,11 @@ class StartMatchView(APIView):
             )
         black_card = ensure_black_card_for_user(request.user)
         required_opponent = black_card.current_holder if black_card.current_holder_id != request.user.id else None
-        # Accept optional category selection
-        selected_categories = request.data.get('categories', [])
-        if not selected_categories or not isinstance(selected_categories, list):
-            selected_categories = ALL_CATEGORIES
-        else:
-            selected_categories = [c for c in selected_categories if c in ALL_CATEGORIES]
-            if not selected_categories:
-                selected_categories = ALL_CATEGORIES
-        create_kwargs = {
-            'player1': request.user,
-            'invite_code': generate_invite_code(),
-            'required_opponent': required_opponent,
-        }
-        try:
-            create_kwargs['categories'] = selected_categories
-            match = Match.objects.create(**create_kwargs)
-        except Exception:
-            # Fallback if categories column doesn't exist yet
-            create_kwargs.pop('categories', None)
-            match = Match.objects.create(**create_kwargs)
+        match = Match.objects.create(
+            player1=request.user,
+            invite_code=generate_invite_code(),
+            required_opponent=required_opponent,
+        )
         message = "Match created. Share the code so another player can join."
         if required_opponent:
             message = (
@@ -854,8 +737,7 @@ class AnswerQuestionView(APIView):
             return Response({"error": "Answer is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         question = match.current_question
-        correct_answer_text = question.correct_answer.strip()
-        is_correct = answer.casefold() == correct_answer_text.casefold()
+        is_correct = answer.casefold() == question.correct_answer.strip().casefold()
 
         if match.current_buzzer_id != request.user.id:
             return Response({"error": "You did not buzz first."}, status=status.HTTP_403_FORBIDDEN)
@@ -885,7 +767,7 @@ class AnswerQuestionView(APIView):
                     result='match_finished',
                 )
 
-            set_match_question(match, pick_match_question(match))
+            set_match_question(match, pick_random_question())
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
             return serialize_match(
                 request,
@@ -916,14 +798,14 @@ class AnswerQuestionView(APIView):
                     result='match_finished',
                 )
 
-            set_match_question(match, pick_match_question(match))
+            set_match_question(match, pick_random_question())
             match.save(update_fields=[score_field, 'current_buzzer', 'locked_out_player', 'current_question', 'question_started_at'])
             return serialize_match(
                 request,
                 match,
                 message=f"Wrong answer. -{penalty} points. Both players missed, so a new question is live.",
                 result='double_miss',
-                correct_answer=correct_answer_text,
+                correct_answer=question.correct_answer,
             )
 
         match.locked_out_player = request.user
@@ -1002,66 +884,3 @@ class UserStatusView(APIView):
         user = request.user
         data = {'black_card_active': user.black_card_active}
         return Response(data, status=status.HTTP_200_OK)
-
-
-class VapidKeyView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        public_key = os.getenv('VAPID_PUBLIC_KEY', '')
-        return Response({'public_key': public_key})
-
-
-class PushSubscribeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        endpoint = request.data.get('endpoint', '')
-        keys = request.data.get('keys', {})
-        p256dh = keys.get('p256dh', '')
-        auth = keys.get('auth', '')
-
-        if not endpoint or not p256dh or not auth:
-            return Response({'error': 'Invalid subscription data.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        PushSubscription.objects.update_or_create(
-            endpoint=endpoint,
-            defaults={
-                'user': request.user,
-                'p256dh': p256dh,
-                'auth': auth,
-            },
-        )
-        return Response({'message': 'Subscribed to push notifications.'})
-
-
-def send_push_to_user(user, title, body, url='/'):
-    """Send push notification to all of a user's subscriptions. Silently fails."""
-    vapid_private_key = os.getenv('VAPID_PRIVATE_KEY', '')
-    vapid_email = os.getenv('VAPID_EMAIL', '')
-    if not vapid_private_key or not vapid_email:
-        return
-
-    try:
-        from pywebpush import webpush, WebPushException
-    except ImportError:
-        return
-
-    import json
-    payload = json.dumps({'title': title, 'body': body, 'url': url})
-    subs = PushSubscription.objects.filter(user=user)
-
-    for sub in subs:
-        try:
-            webpush(
-                subscription_info={
-                    'endpoint': sub.endpoint,
-                    'keys': {'p256dh': sub.p256dh, 'auth': sub.auth},
-                },
-                data=payload,
-                vapid_private_key=vapid_private_key,
-                vapid_claims={'sub': f'mailto:{vapid_email}'},
-            )
-        except Exception:
-            # Subscription may be expired — clean it up
-            sub.delete()
