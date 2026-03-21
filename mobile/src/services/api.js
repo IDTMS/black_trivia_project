@@ -58,6 +58,11 @@ export const getQuestionsByCategory = (category) =>
 // Matches
 export const startMatch = () => api.post(ENDPOINTS.matches);
 
+export const getMatch = (matchId) => api.get(`${ENDPOINTS.matches}${matchId}/`);
+
+export const joinMatchByCode = (inviteCode) =>
+  api.post(`${ENDPOINTS.matches}join/`, { invite_code: inviteCode });
+
 export const joinMatch = (matchId) => api.post(ENDPOINTS.joinMatch(matchId));
 
 export const buzz = (matchId) => api.post(ENDPOINTS.buzz(matchId));
@@ -70,6 +75,9 @@ export const chooseCategory = (matchId, category) =>
 
 export const submitMatchResult = (matchId, winnerId) =>
   api.patch(`${ENDPOINTS.matches}${matchId}/`, { winner_id: winnerId });
+
+export const cancelMatch = (matchId) =>
+  api.delete(`${ENDPOINTS.matches}${matchId}/`);
 
 // Leaderboard
 export const getLeaderboard = () => api.get(ENDPOINTS.leaderboard);
