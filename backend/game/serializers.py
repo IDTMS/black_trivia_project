@@ -176,6 +176,12 @@ class MatchStateSerializer(serializers.ModelSerializer):
             return 'Heating Up'
         return 'Opening Round'
 
+    def get_categories(self, obj):
+        categories = getattr(obj, 'categories', None)
+        if not categories:
+            return []
+        return categories
+
 
 class SubmitMatchResultSerializer(serializers.ModelSerializer):
     winner_id = serializers.IntegerField(write_only=True)

@@ -3,10 +3,15 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.db.utils import ProgrammingError
+from django.http import HttpResponse
+from django.test import RequestFactory, SimpleTestCase
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITransactionTestCase, APITestCase
 
+from backend.runtime_bootstrap import RuntimeBootstrapMiddleware
 from .data.load_questions import load_questions
 from .data.questions_data import DEPRECATED_QUESTION_TEXTS, questions as bundled_questions
 from .models import BlackCard, Leaderboard, Match, Question, MATCH_TARGET_SCORE, QUESTION_TIME_LIMIT_SECONDS
@@ -504,6 +509,82 @@ class MatchFlowTests(APITestCase):
         black_card = BlackCard.objects.get(owner=self.player2)
         self.assertEqual(black_card.current_holder_id, self.player1.id)
 
+class SchemaRepairIntegrationTests(APITransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        self.player1 = User.objects.create_user(
+            username='repair_player_one',
+            email='repair1@example.com',
+            password='StrongPass123!',
+        )
+        Leaderboard.objects.create(user=self.player1)
+        BlackCard.objects.create(owner=self.player1, current_holder=self.player1)
+
+    @patch.dict(os.environ, {'VERCEL': '1'})
+    def test_create_match_repairs_missing_match_column_on_runtime(self):
+        RuntimeBootstrapMiddleware._ready = False
+        required_opponent_field = Match._meta.get_field('required_opponent')
+        table_name = Match._meta.db_table
+
+        with connection.schema_editor() as schema_editor:
+            schema_editor.remove_field(Match, required_opponent_field)
+
+        with connection.cursor() as cursor:
+            columns_before = {
+                column.name for column in connection.introspection.get_table_description(cursor, table_name)
+            }
+        self.assertNotIn(required_opponent_field.column, columns_before)
+
+        self.client.force_authenticate(user=self.player1)
+        response = self.client.post('/api/matches/', {}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['status'], 'waiting')
+
+        with connection.cursor() as cursor:
+            columns_after = {
+                column.name for column in connection.introspection.get_table_description(cursor, table_name)
+            }
+        self.assertIn(required_opponent_field.column, columns_after)
+
+
+class RuntimeBootstrapMiddlewareTests(SimpleTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        RuntimeBootstrapMiddleware._ready = False
+
+    def test_retries_once_after_retryable_schema_error(self):
+        attempts = {'count': 0}
+
+        def get_response(request):
+            attempts['count'] += 1
+            if attempts['count'] == 1:
+                raise ProgrammingError('column game_match.required_opponent_id does not exist')
+            return HttpResponse('ok')
+
+        middleware = RuntimeBootstrapMiddleware(get_response)
+        request = self.factory.post('/api/matches/')
+
+        with patch.object(RuntimeBootstrapMiddleware, 'ensure_runtime_ready') as ensure_runtime_ready_mock:
+            response = middleware(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ensure_runtime_ready_mock.assert_called_once_with(force=True)
+        self.assertEqual(attempts['count'], 2)
+
+    def test_does_not_retry_non_schema_database_error(self):
+        def get_response(request):
+            raise ProgrammingError('permission denied for relation game_match')
+
+        middleware = RuntimeBootstrapMiddleware(get_response)
+        request = self.factory.post('/api/matches/')
+
+        with patch.object(RuntimeBootstrapMiddleware, 'ensure_runtime_ready') as ensure_runtime_ready_mock:
+            with self.assertRaises(ProgrammingError):
+                middleware(request)
+
+        ensure_runtime_ready_mock.assert_not_called()
 
 class GoogleAuthTests(APITestCase):
     @patch.dict(os.environ, {'GOOGLE_CLIENT_ID': 'test-google-client-id'})
