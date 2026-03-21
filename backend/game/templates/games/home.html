@@ -1770,6 +1770,33 @@
 
         /* ── Tablet and small desktop (≥680px) ── */
         @media (min-width: 680px) {
+            body {
+                background:
+                    radial-gradient(circle at 14% 10%, rgba(126, 15, 33, 0.22), transparent 32%),
+                    radial-gradient(circle at 86% 12%, rgba(212, 175, 90, 0.14), transparent 26%),
+                    radial-gradient(circle at 50% 80%, rgba(212, 175, 90, 0.08), transparent 38%),
+                    radial-gradient(circle at 50% 40%, rgba(126, 15, 33, 0.06), transparent 44%),
+                    linear-gradient(180deg, #09090a 0%, #040405 48%, #020202 100%);
+            }
+
+            body::before,
+            body::after {
+                width: 480px;
+                height: 480px;
+                filter: blur(160px);
+                opacity: 0.22;
+            }
+
+            body::before {
+                top: -160px;
+                left: -100px;
+            }
+
+            body::after {
+                right: -80px;
+                bottom: 6%;
+            }
+
             main {
                 width: min(100%, 680px);
                 padding: calc(28px + env(safe-area-inset-top, 0px)) 24px calc(48px + env(safe-area-inset-bottom, 0px));
@@ -1845,6 +1872,34 @@
 
         /* ── Desktop (≥1024px) ── */
         @media (min-width: 1024px) {
+            body {
+                background:
+                    radial-gradient(circle at 10% 8%, rgba(126, 15, 33, 0.24), transparent 36%),
+                    radial-gradient(circle at 90% 10%, rgba(212, 175, 90, 0.16), transparent 30%),
+                    radial-gradient(circle at 50% 70%, rgba(212, 175, 90, 0.1), transparent 42%),
+                    radial-gradient(circle at 30% 50%, rgba(126, 15, 33, 0.08), transparent 36%),
+                    radial-gradient(circle at 70% 90%, rgba(126, 15, 33, 0.06), transparent 28%),
+                    linear-gradient(180deg, #09090a 0%, #040405 48%, #020202 100%);
+            }
+
+            body::before,
+            body::after {
+                width: 600px;
+                height: 600px;
+                filter: blur(200px);
+                opacity: 0.26;
+            }
+
+            body::before {
+                top: -180px;
+                left: -60px;
+            }
+
+            body::after {
+                right: -40px;
+                bottom: 4%;
+            }
+
             main {
                 width: min(100%, 860px);
                 gap: 24px;
