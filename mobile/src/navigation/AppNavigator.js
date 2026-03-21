@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import GameScreen from '../screens/GameScreen';
+import MatchScreen from '../screens/MatchScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { useAuth } from '../context/AuthContext';
@@ -69,6 +70,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="Game"
             component={GameScreen}
+            options={{ gestureEnabled: false }}
+          />
+          <Stack.Screen
+            name="Match"
+            component={MatchScreen}
             options={{ gestureEnabled: false }}
           />
         </>
