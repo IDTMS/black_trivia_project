@@ -6,12 +6,11 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
-import { getLeaderboard, startMatch } from '../services/api';
+import { getLeaderboard } from '../services/api';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -41,13 +40,8 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('Game', { mode: 'solo' });
   };
 
-  const handleStartMatch = async () => {
-    try {
-      const res = await startMatch();
-      navigation.navigate('Game', { mode: 'match', matchId: res.data.id });
-    } catch (error) {
-      Alert.alert('No opponents', 'No available players to match with right now.');
-    }
+  const handleStartMatch = () => {
+    navigation.navigate('Match', { initialMode: 'create' });
   };
 
   const getRankEmoji = (index) => {
