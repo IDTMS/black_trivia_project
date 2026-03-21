@@ -395,6 +395,19 @@ def get_match_for_user(pk, user):
 
 def get_incomplete_match_for_user(user, exclude_match_id=None):
     reset_expired_black_cards()
+
+    # Auto-cancel stale waiting matches (no opponent joined within 30 minutes)
+    try:
+        stale_cutoff = timezone.now() - timedelta(minutes=30)
+        Match.objects.filter(
+            player1=user,
+            player2__isnull=True,
+            winner__isnull=True,
+            timestamp__lt=stale_cutoff,
+        ).delete()
+    except Exception:
+        pass
+
     queryset = Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
         winner__isnull=True,
@@ -416,10 +429,22 @@ def get_incomplete_match_for_user(user, exclude_match_id=None):
 
     matches = list(select_related)
     for match in matches:
-        resolve_question_timeout(match)
-        maybe_finalize_match(match)
+        try:
+            resolve_question_timeout(match)
+            maybe_finalize_match(match)
+        except Exception:
+            pass
 
-    return queryset.select_related(
+    # Re-query to exclude matches that were just finalized (winner set)
+    finalized_ids = [m.pk for m in matches if m.winner_id is not None]
+    if exclude_match_id is not None:
+        finalized_ids.append(exclude_match_id)
+    return Match.objects.filter(
+        models.Q(player1=user) | models.Q(player2=user),
+        winner__isnull=True,
+    ).exclude(
+        pk__in=finalized_ids,
+    ).select_related(
         'player1',
         'player2',
         'winner',
@@ -650,49 +675,56 @@ class StartMatchView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        reset_expired_black_cards()
-        existing_match = get_incomplete_match_for_user(request.user)
-        if existing_match:
+        import traceback
+        try:
+            reset_expired_black_cards()
+            existing_match = get_incomplete_match_for_user(request.user)
+            if existing_match:
+                return serialize_match(
+                    request,
+                    existing_match,
+                    message="You already have an active match. Finish it or cancel it before opening another room.",
+                    result='active_match_exists',
+                )
+            black_card = ensure_black_card_for_user(request.user)
+            required_opponent = black_card.current_holder if black_card.current_holder_id != request.user.id else None
+            # Accept optional category selection
+            selected_categories = request.data.get('categories', [])
+            if not selected_categories or not isinstance(selected_categories, list):
+                selected_categories = ALL_CATEGORIES
+            else:
+                selected_categories = [c for c in selected_categories if c in ALL_CATEGORIES]
+                if not selected_categories:
+                    selected_categories = ALL_CATEGORIES
+            create_kwargs = {
+                'player1': request.user,
+                'invite_code': generate_invite_code(),
+                'required_opponent': required_opponent,
+            }
+            try:
+                create_kwargs['categories'] = selected_categories
+                match = Match.objects.create(**create_kwargs)
+            except Exception:
+                # Fallback if categories column doesn't exist yet
+                create_kwargs.pop('categories', None)
+                match = Match.objects.create(**create_kwargs)
+            message = "Match created. Share the code so another player can join."
+            if required_opponent:
+                message = (
+                    f"Your black card is held by {required_opponent.username}. "
+                    f"Only they can accept this challenge until the next reset."
+                )
             return serialize_match(
                 request,
-                existing_match,
-                message="You already have an active match. Finish it or cancel it before opening another room.",
-                result='active_match_exists',
+                match,
+                status_code=status.HTTP_201_CREATED,
+                message=message,
             )
-        black_card = ensure_black_card_for_user(request.user)
-        required_opponent = black_card.current_holder if black_card.current_holder_id != request.user.id else None
-        # Accept optional category selection
-        selected_categories = request.data.get('categories', [])
-        if not selected_categories or not isinstance(selected_categories, list):
-            selected_categories = ALL_CATEGORIES
-        else:
-            selected_categories = [c for c in selected_categories if c in ALL_CATEGORIES]
-            if not selected_categories:
-                selected_categories = ALL_CATEGORIES
-        create_kwargs = {
-            'player1': request.user,
-            'invite_code': generate_invite_code(),
-            'required_opponent': required_opponent,
-        }
-        try:
-            create_kwargs['categories'] = selected_categories
-            match = Match.objects.create(**create_kwargs)
         except Exception:
-            # Fallback if categories column doesn't exist yet
-            create_kwargs.pop('categories', None)
-            match = Match.objects.create(**create_kwargs)
-        message = "Match created. Share the code so another player can join."
-        if required_opponent:
-            message = (
-                f"Your black card is held by {required_opponent.username}. "
-                f"Only they can accept this challenge until the next reset."
+            return Response(
+                {"error": f"Match creation failed: {traceback.format_exc()}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        return serialize_match(
-            request,
-            match,
-            status_code=status.HTTP_201_CREATED,
-            message=message,
-        )
 
 
 class JoinMatchByCodeView(APIView):
