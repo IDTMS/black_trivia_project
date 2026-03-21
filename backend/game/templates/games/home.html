@@ -1980,7 +1980,6 @@
             }
         }
 
-        /* Landscape on short screens (phone turned sideways) */
         @media (orientation: landscape) and (max-height: 500px) {
             main {
                 min-height: auto;
@@ -1993,16 +1992,8 @@
                 padding: 16px 18px 14px;
             }
 
-            .hero h1 {
-                margin-top: 8px;
-            }
-
             .brand-line {
                 font-size: clamp(28px, 8vw, 42px);
-            }
-
-            .hero-copy {
-                margin-top: 8px;
             }
 
             .hero-stats {
@@ -2109,6 +2100,36 @@
         </div>
     </section>
 
+    <section class="card" id="authCard">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Access</span>
+                <h2>Enter The Game</h2>
+            </div>
+            <span class="pill" id="authModeChip">Google</span>
+        </div>
+        <p class="section-copy">
+            Each player uses their own device and their own account. Sign in with Google to get started.
+        </p>
+
+        <form class="hidden" id="googleUsernameForm">
+            <label class="field">
+                <span>Google Email</span>
+                <input id="googleEmail" type="email" autocomplete="email" disabled>
+            </label>
+            <label class="field">
+                <span>Pick Your Username</span>
+                <input id="googleUsername" type="text" placeholder="Choose your Black Card username" autocomplete="username">
+            </label>
+            <button class="primary-button" type="submit">Finish Setup</button>
+        </form>
+
+        <div class="google-wrap" id="googleAuthWrap">
+            <p class="section-copy" style="margin-bottom:12px;">Sign in with Google to verify your account. First-time players pick a username after sign-in.</p>
+            <div id="googleButton"></div>
+        </div>
+    </section>
+
     <section class="card hidden" id="profileCard">
         <div class="section-head">
             <div>
@@ -2180,18 +2201,7 @@
         <div class="split-grid">
             <div class="card" style="padding:16px;">
                 <span class="label">Host Match</span>
-                <p class="section-copy" style="margin-top:8px;">Pick your categories, then create the room.</p>
-                <div class="category-picker" id="categoryPicker" style="margin-top:12px;">
-                    <button type="button" class="cat-chip active" data-cat="history">History</button>
-                    <button type="button" class="cat-chip active" data-cat="black_culture">Black Culture</button>
-                    <button type="button" class="cat-chip active" data-cat="hip_hop">Hip-Hop</button>
-                    <button type="button" class="cat-chip active" data-cat="sports">Sports</button>
-                    <button type="button" class="cat-chip active" data-cat="film_tv">Film & TV</button>
-                    <button type="button" class="cat-chip active" data-cat="science">Science</button>
-                    <button type="button" class="cat-chip active" data-cat="food_culture">Food</button>
-                    <button type="button" class="cat-chip active" data-cat="literature">Literature</button>
-                    <button type="button" class="cat-chip active" data-cat="current_events">Current Events</button>
-                </div>
+                <p class="section-copy" style="margin-top:8px;">Create a room and send the code to your opponent.</p>
                 <button class="primary-button" id="createMatchButton" type="button" style="margin-top:14px;">Create Match</button>
             </div>
             <div class="card" style="padding:16px;">
@@ -4236,14 +4246,23 @@
         showStatus('Back in the lobby.', 'info');
     });
     elements.rematchButton.addEventListener('click', async () => {
-        // Clear current match and create a new one
-        state.activeMatch = null;
-        setActiveMatchId('');
-        stopPolling();
-        prevP1Score = 0;
-        prevP2Score = 0;
-        renderMatch();
-        await createMatch();
+        setButtonLoading(elements.rematchButton, true, 'Opening');
+        try {
+            const payload = await request('/api/matches/', {method: 'POST'});
+            applyMatchPayload(payload);
+            renderProfile();
+            startPolling();
+            showStatus(
+                payload.result === 'active_match_exists'
+                    ? extractMessage(payload, 'You already have an active match.')
+                    : 'Rematch room opened. Share the code and run it back.',
+                payload.result === 'active_match_exists' ? 'info' : 'success'
+            );
+        } catch (error) {
+            showStatus(error.message, 'error');
+        } finally {
+            setButtonLoading(elements.rematchButton, false);
+        }
     });
     elements.downloadCardButton.addEventListener('click', downloadVictoryCard);
     elements.shareCardButton.addEventListener('click', shareVictoryCard);
