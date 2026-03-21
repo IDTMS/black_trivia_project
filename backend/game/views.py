@@ -301,13 +301,16 @@ def get_incomplete_match_for_user(user, exclude_match_id=None):
     reset_expired_black_cards()
 
     # Auto-cancel stale waiting matches (no opponent joined within 30 minutes)
-    stale_cutoff = timezone.now() - timedelta(minutes=30)
-    Match.objects.filter(
-        player1=user,
-        player2__isnull=True,
-        winner__isnull=True,
-        timestamp__lt=stale_cutoff,
-    ).delete()
+    try:
+        stale_cutoff = timezone.now() - timedelta(minutes=30)
+        Match.objects.filter(
+            player1=user,
+            player2__isnull=True,
+            winner__isnull=True,
+            timestamp__lt=stale_cutoff,
+        ).delete()
+    except Exception:
+        pass
 
     queryset = Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
@@ -330,15 +333,21 @@ def get_incomplete_match_for_user(user, exclude_match_id=None):
 
     matches = list(select_related)
     for match in matches:
-        resolve_question_timeout(match)
-        maybe_finalize_match(match)
+        try:
+            resolve_question_timeout(match)
+            maybe_finalize_match(match)
+        except Exception:
+            pass
 
     # Re-query to exclude matches that were just finalized (winner set)
+    finalized_ids = [m.pk for m in matches if m.winner_id is not None]
+    if exclude_match_id is not None:
+        finalized_ids.append(exclude_match_id)
     return Match.objects.filter(
         models.Q(player1=user) | models.Q(player2=user),
         winner__isnull=True,
     ).exclude(
-        pk__in=[m.pk for m in matches if m.winner_id is not None]
+        pk__in=finalized_ids,
     ).select_related(
         'player1',
         'player2',
