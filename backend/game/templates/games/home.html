@@ -2462,8 +2462,8 @@
         player2Name: document.getElementById('player2Name'),
         player1Score: document.getElementById('player1Score'),
         player2Score: document.getElementById('player2Score'),
-        player1ProgressFill: document.getElementById('player1ProgressFill'),
-        player2ProgressFill: document.getElementById('player2ProgressFill'),
+        player1ProgressFill: document.getElementById('p1ProgressFill'),
+        player2ProgressFill: document.getElementById('p2ProgressFill'),
         player1ScoreDelta: document.getElementById('player1ScoreDelta'),
         player2ScoreDelta: document.getElementById('player2ScoreDelta'),
         player1Streak: document.getElementById('player1Streak'),
@@ -2518,6 +2518,7 @@
         p2ProgressFill: document.getElementById('p2ProgressFill'),
         roundBadge: document.getElementById('roundBadge'),
         categoryPicker: document.getElementById('categoryPicker'),
+        confettiLayer: document.getElementById('confettiLayer'),
     };
 
     /* ── Score pop-up ─────────────────────────── */
@@ -3240,6 +3241,7 @@
     }
 
     function fitCardName(el) {
+        if (!el) return;
         el.style.fontSize = '';
         requestAnimationFrame(() => {
             const maxWidth = el.clientWidth;
