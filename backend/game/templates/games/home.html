@@ -420,7 +420,17 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .google-wrap {
+            margin-top: 10px;
+            display: grid;
+            gap: 10px;
+        }
 
+        .google-wrap p {
+            color: var(--text-soft);
+            font-size: 13px;
+            line-height: 1.45;
+        }
 
         .field {
             display: grid;
@@ -2055,38 +2065,6 @@
         </div>
     </section>
 
-    <section class="card" id="authCard">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Get Started</span>
-                <h2>Sign In to Play</h2>
-            </div>
-        </div>
-        <div id="googleAuthWrap">
-            <div id="googleButton"></div>
-        </div>
-    </section>
-
-    <section class="card hidden" id="googleUsernameCard">
-        <form id="googleUsernameForm">
-            <div class="section-head">
-                <div>
-                    <span class="eyebrow">Almost There</span>
-                    <h2>Pick Your Username</h2>
-                </div>
-            </div>
-            <label class="field">
-                <span>Google Email</span>
-                <input id="googleEmail" type="email" autocomplete="email" disabled>
-            </label>
-            <label class="field">
-                <span>Username</span>
-                <input id="googleUsername" type="text" placeholder="Choose your username" autocomplete="username">
-            </label>
-            <button class="primary-button" type="submit">Finish Setup</button>
-        </form>
-    </section>
-
     <section class="card" id="statusCard">
         <div class="section-head">
             <div>
@@ -2411,7 +2389,6 @@
         walletVaultChip: document.getElementById('walletVaultChip'),
         walletList: document.getElementById('walletList'),
         googleUsernameForm: document.getElementById('googleUsernameForm'),
-        googleUsernameCard: document.getElementById('googleUsernameCard'),
         googleEmail: document.getElementById('googleEmail'),
         googleUsername: document.getElementById('googleUsername'),
         googleAuthWrap: document.getElementById('googleAuthWrap'),
@@ -2907,7 +2884,7 @@
         state.pendingGoogleEmail = '';
         elements.googleEmail.value = '';
         elements.googleUsername.value = '';
-        elements.googleUsernameCard.classList.add('hidden');
+        elements.googleUsernameForm.classList.add('hidden');
         elements.googleAuthWrap.classList.remove('hidden');
     }
 
@@ -3775,7 +3752,7 @@
             state.pendingGoogleEmail = payload.email || '';
             elements.googleEmail.value = payload.email || '';
             elements.googleUsername.value = payload.suggested_username || '';
-            elements.googleUsernameCard.classList.remove('hidden');
+            elements.googleUsernameForm.classList.remove('hidden');
             elements.googleAuthWrap.classList.add('hidden');
             showStatus(extractMessage(payload, 'Almost there — pick a username to finish sign-in.'), 'info');
             return;
@@ -3829,7 +3806,7 @@
         google.accounts.id.renderButton(elements.googleButton, {
             theme: 'outline',
             size: 'large',
-            text: 'signin_with',
+            text: 'continue_with',
             shape: 'pill',
             width: Math.min(window.innerWidth - 72, 390),
         });
@@ -3837,7 +3814,7 @@
 
     function loadGoogleScript() {
         if (!googleClientId) {
-            elements.googleAuthWrap.innerHTML = '<span class="badge">Sign-in unavailable</span>';
+            elements.googleAuthWrap.innerHTML = '<p class="section-copy">Google sign-in is unavailable right now. Try again later.</p>';
             showStatus('Google sign-in is not configured right now.', 'error');
             return;
         }
