@@ -1,19 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Alert,
-  ActivityIndicator,
+  View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { getRandomQuestion } from '../services/api';
+import {
+  fadeOutAmbient,
+  playCorrect,
+  playDefeat,
+  playVictory,
+  playWrong,
+} from '../utils/soundEngine';
 
 const TOTAL_QUESTIONS = 10;
-const QUESTION_TIME = 15; // seconds per question
+const QUESTION_TIME = 15;
+
+const getTimerColor = (timeLeft) => {
+  if (timeLeft > 10) return COLORS.green;
+  if (timeLeft > 5) return COLORS.goldLight;
+  return COLORS.red;
+};
 
 const GameScreen = ({ navigation, route }) => {
   const mode = route?.params?.mode || 'solo';
@@ -29,72 +45,171 @@ const GameScreen = ({ navigation, route }) => {
   const [bestStreak, setBestStreak] = useState(0);
   const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const cardShift = useRef(new Animated.Value(18)).current;
+  const answersOpacity = useRef(new Animated.Value(0)).current;
+  const answersShift = useRef(new Animated.Value(18)).current;
+  const timerScale = useRef(new Animated.Value(1)).current;
+  const feedbackOpacity = useRef(new Animated.Value(0)).current;
+  const pulseLoopRef = useRef(null);
   const timerRef = useRef(null);
+  const scoreRef = useRef(0);
 
-  useEffect(() => {
-    fetchQuestion();
-    return () => clearInterval(timerRef.current);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fadeOutAmbient(450, true).catch(() => {});
+      return undefined;
+    }, [])
+  );
 
-  useEffect(() => {
-    if (question && selectedAnswer === null) {
-      setTimeLeft(QUESTION_TIME);
-      clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleTimeout();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [question]);
+  const animateQuestionIn = useCallback(() => {
+    cardOpacity.setValue(0);
+    cardShift.setValue(18);
+    answersOpacity.setValue(0);
+    answersShift.setValue(18);
 
-  const handleTimeout = () => {
-    setSelectedAnswer('__timeout__');
-    setIsCorrect(false);
-    setStreak(0);
-    setTimeout(() => advanceOrEnd(), 1500);
-  };
+    Animated.parallel([
+      Animated.timing(cardOpacity, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(cardShift, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(answersOpacity, {
+        toValue: 1,
+        duration: 340,
+        delay: 80,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(answersShift, {
+        toValue: 0,
+        duration: 340,
+        delay: 80,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [answersOpacity, answersShift, cardOpacity, cardShift]);
 
-  const fetchQuestion = async () => {
+  const fetchQuestion = useCallback(async () => {
     setLoading(true);
     setSelectedAnswer(null);
     setIsCorrect(null);
+    feedbackOpacity.setValue(0);
+
     try {
       const res = await getRandomQuestion();
       setQuestion(res.data);
-      animateIn();
-    } catch (error) {
+      animateQuestionIn();
+    } catch {
       Alert.alert('Error', 'Could not load question. Check your connection.');
       navigation.goBack();
     } finally {
       setLoading(false);
     }
+  }, [animateQuestionIn, feedbackOpacity, navigation]);
+
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  useEffect(() => {
+    fetchQuestion();
+    return () => {
+      clearInterval(timerRef.current);
+      if (pulseLoopRef.current) {
+        pulseLoopRef.current.stop();
+      }
+    };
+  }, [fetchQuestion]);
+
+  useEffect(() => {
+    if (!question || selectedAnswer !== null) {
+      clearInterval(timerRef.current);
+      return undefined;
+    }
+
+    setTimeLeft(QUESTION_TIME);
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          handleTimeout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timerRef.current);
+  }, [question, selectedAnswer]);
+
+  useEffect(() => {
+    if (pulseLoopRef.current) {
+      pulseLoopRef.current.stop();
+      pulseLoopRef.current = null;
+    }
+
+    if (!gameOver && timeLeft <= 5 && selectedAnswer === null) {
+      pulseLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(timerScale, {
+            toValue: 1.08,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+          Animated.timing(timerScale, {
+            toValue: 1,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoopRef.current.start();
+    } else {
+      timerScale.setValue(1);
+    }
+  }, [gameOver, selectedAnswer, timeLeft, timerScale]);
+
+  const revealFeedback = () => {
+    feedbackOpacity.setValue(0);
+    Animated.timing(feedbackOpacity, {
+      toValue: 1,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
   };
 
-  const animateIn = () => {
-    fadeAnim.setValue(0);
-    scaleAnim.setValue(0.95);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
+  const advanceOrEnd = useCallback((finalScore = scoreRef.current) => {
+    if (questionNum + 1 >= TOTAL_QUESTIONS) {
+      setGameOver(true);
+      if (finalScore >= 60) {
+        playVictory().catch(() => {});
+      } else {
+        playDefeat().catch(() => {});
+      }
+    } else {
+      setQuestionNum((prev) => prev + 1);
+      fetchQuestion();
+    }
+  }, [fetchQuestion, questionNum]);
+
+  const handleTimeout = useCallback(() => {
+    setSelectedAnswer('__timeout__');
+    setIsCorrect(false);
+    setStreak(0);
+    playWrong().catch(() => {});
+    revealFeedback();
+    setTimeout(() => advanceOrEnd(scoreRef.current), 1400);
+  }, [advanceOrEnd]);
 
   const handleAnswer = (choice) => {
     if (selectedAnswer !== null) return;
@@ -108,26 +223,22 @@ const GameScreen = ({ navigation, route }) => {
       const timeBonus = Math.max(0, timeLeft);
       const streakBonus = streak >= 3 ? 5 : 0;
       const points = 10 + timeBonus + streakBonus;
-      setScore((prev) => prev + points);
+      const nextScore = scoreRef.current + points;
+      scoreRef.current = nextScore;
+      setScore(nextScore);
       setStreak((prev) => {
-        const newStreak = prev + 1;
-        if (newStreak > bestStreak) setBestStreak(newStreak);
-        return newStreak;
+        const nextStreak = prev + 1;
+        setBestStreak((current) => Math.max(current, nextStreak));
+        return nextStreak;
       });
+      playCorrect().catch(() => {});
     } else {
       setStreak(0);
+      playWrong().catch(() => {});
     }
 
-    setTimeout(() => advanceOrEnd(), 1500);
-  };
-
-  const advanceOrEnd = () => {
-    if (questionNum + 1 >= TOTAL_QUESTIONS) {
-      setGameOver(true);
-    } else {
-      setQuestionNum((prev) => prev + 1);
-      fetchQuestion();
-    }
+    revealFeedback();
+    setTimeout(() => advanceOrEnd(scoreRef.current), 1400);
   };
 
   const getChoiceStyle = (choice) => {
@@ -144,87 +255,106 @@ const GameScreen = ({ navigation, route }) => {
     return styles.choiceTextDisabled;
   };
 
-  const getTimerColor = () => {
-    if (timeLeft > 10) return COLORS.green;
-    if (timeLeft > 5) return COLORS.gold;
-    return COLORS.red;
-  };
-
-  // Game Over screen
   if (gameOver) {
     const grade =
-      score >= 120 ? 'LEGENDARY' :
-      score >= 90 ? 'ELITE' :
-      score >= 60 ? 'SOLID' :
-      score >= 30 ? 'ROOKIE' : 'TRY AGAIN';
+      score >= 120 ? 'Legendary' :
+      score >= 90 ? 'Elite' :
+      score >= 60 ? 'Solid' :
+      score >= 30 ? 'Rookie' : 'Try Again';
 
     const gradeColor =
-      score >= 120 ? COLORS.gold :
+      score >= 120 ? COLORS.goldLight :
       score >= 90 ? COLORS.green :
-      score >= 60 ? COLORS.white :
-      COLORS.red;
+      score >= 60 ? COLORS.offWhite :
+      '#D77A73';
 
     return (
-      <View style={styles.gameOverContainer}>
-        <Text style={styles.gameOverLabel}>GAME OVER</Text>
-        <Text style={[styles.grade, { color: gradeColor }]}>{grade}</Text>
+      <View style={styles.screen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <View style={styles.resultShell}>
+          <Text style={styles.resultEyebrow}>Quick Play Complete</Text>
+          <Text style={[styles.resultGrade, { color: gradeColor }]}>{grade}</Text>
+          <Text style={styles.resultSubtitle}>
+            {mode === 'solo' ? 'Solo table closed.' : 'Round complete.'}
+          </Text>
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{score}</Text>
-            <Text style={styles.statLabel}>POINTS</Text>
+          <View style={styles.resultStatsRow}>
+            <View style={styles.resultStatCard}>
+              <Text style={styles.resultStatValue}>{score}</Text>
+              <Text style={styles.resultStatLabel}>Points</Text>
+            </View>
+            <View style={styles.resultStatCard}>
+              <Text style={styles.resultStatValue}>{bestStreak}</Text>
+              <Text style={styles.resultStatLabel}>Best Streak</Text>
+            </View>
           </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{bestStreak}</Text>
-            <Text style={styles.statLabel}>BEST STREAK</Text>
-          </View>
+
+          <TouchableOpacity
+            style={styles.goldButton}
+            onPress={() => {
+              setScore(0);
+              scoreRef.current = 0;
+              setQuestionNum(0);
+              setStreak(0);
+              setBestStreak(0);
+              setGameOver(false);
+              fetchQuestion();
+            }}
+            activeOpacity={0.88}
+          >
+            <Text style={styles.goldButtonText}>PLAY AGAIN</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.textButton} onPress={() => navigation.popToTop()}>
+            <Text style={styles.textButtonText}>Return to Start</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.playAgainButton}
-          onPress={() => {
-            setScore(0);
-            setQuestionNum(0);
-            setStreak(0);
-            setBestStreak(0);
-            setGameOver(false);
-            fetchQuestion();
-          }}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.playAgainText}>PLAY AGAIN</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.homeButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.homeButtonText}>BACK TO HOME</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
   if (loading && !question) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+      <View style={styles.loadingScreen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <ActivityIndicator size="large" color={COLORS.goldLight} />
         <Text style={styles.loadingText}>Loading question...</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={28} color={COLORS.white} />
-        </TouchableOpacity>
+  const timerColor = getTimerColor(timeLeft);
 
-        {/* Progress bar */}
+  return (
+    <View style={styles.screen}>
+      <LinearGradient colors={['#040404', '#130d10', '#050505']} style={StyleSheet.absoluteFill} />
+
+      <View style={styles.shell}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="close" size={28} color={COLORS.offWhite} />
+          </TouchableOpacity>
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerEyebrow}>Quick Play</Text>
+            <Text style={styles.headerScore}>{score} pts</Text>
+          </View>
+
+          <Animated.View style={{ transform: [{ scale: timerScale }] }}>
+            <LinearGradient
+              colors={['rgba(17,17,17,0.95)', 'rgba(32,18,18,0.95)']}
+              style={[styles.timerOrb, { borderColor: `${timerColor}66` }]}
+            >
+              <Text style={[styles.timerOrbText, { color: timerColor }]}>{timeLeft}s</Text>
+            </LinearGradient>
+          </Animated.View>
+        </View>
+
         <View style={styles.progressBarBg}>
-          <View
+          <LinearGradient
+            colors={['#7A1526', '#D3A54D', '#F5A623']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
             style={[
               styles.progressBarFill,
               { width: `${((questionNum + 1) / TOTAL_QUESTIONS) * 100}%` },
@@ -232,328 +362,359 @@ const GameScreen = ({ navigation, route }) => {
           />
         </View>
 
-        <Text style={styles.scoreText}>{score}</Text>
-      </View>
-
-      {/* Timer */}
-      <View style={styles.timerRow}>
-        <View style={[styles.timerBadge, { borderColor: getTimerColor() }]}>
-          <Text style={[styles.timerText, { color: getTimerColor() }]}>{timeLeft}s</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.questionCount}>
+            Question {questionNum + 1} / {TOTAL_QUESTIONS}
+          </Text>
+          {streak >= 2 ? (
+            <View style={styles.streakPill}>
+              <Text style={styles.streakText}>Streak {streak}</Text>
+            </View>
+          ) : null}
         </View>
-        <Text style={styles.questionCount}>
-          {questionNum + 1} / {TOTAL_QUESTIONS}
-        </Text>
-        {streak >= 2 && (
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakText}>🔥 {streak}</Text>
+
+        {question?.category ? (
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>
+              {question.category.replace('_', ' ').toUpperCase()}
+            </Text>
           </View>
-        )}
-      </View>
+        ) : null}
 
-      {/* Category badge */}
-      {question?.category && (
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>
-            {question.category.replace('_', ' ').toUpperCase()}
-          </Text>
-        </View>
-      )}
+        <Animated.View
+          style={[
+            styles.questionCard,
+            {
+              opacity: cardOpacity,
+              transform: [{ translateY: cardShift }],
+            },
+          ]}
+        >
+          <Text style={styles.questionText}>{question?.question_text}</Text>
+        </Animated.View>
 
-      {/* Question */}
-      <Animated.View
-        style={[
-          styles.questionCard,
-          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
-        ]}
-      >
-        <Text style={styles.questionText}>{question?.question_text}</Text>
-      </Animated.View>
-
-      {/* Answer choices */}
-      <View style={styles.choicesContainer}>
-        {question?.answer_choices?.map((choice, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.choiceButton, getChoiceStyle(choice)]}
-            onPress={() => handleAnswer(choice)}
-            disabled={selectedAnswer !== null}
-            activeOpacity={0.8}
+        {selectedAnswer !== null ? (
+          <Animated.View
+            style={[
+              styles.feedbackPill,
+              isCorrect ? styles.feedbackPillCorrect : styles.feedbackPillWrong,
+              { opacity: feedbackOpacity },
+            ]}
           >
-            <Text style={styles.choiceLetter}>
-              {String.fromCharCode(65 + index)}
+            <Text style={styles.feedbackPillText}>
+              {selectedAnswer === '__timeout__'
+                ? `Time's up. ${question.correct_answer}`
+                : isCorrect
+                  ? 'Correct'
+                  : `Wrong. ${question.correct_answer}`}
             </Text>
-            <Text style={[styles.choiceText, getChoiceTextStyle(choice)]}>
-              {choice}
-            </Text>
-            {selectedAnswer !== null && choice === question.correct_answer && (
-              <Ionicons name="checkmark-circle" size={24} color={COLORS.green} />
-            )}
-            {selectedAnswer === choice && !isCorrect && (
-              <Ionicons name="close-circle" size={24} color={COLORS.red} />
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
+          </Animated.View>
+        ) : null}
 
-      {/* Feedback */}
-      {selectedAnswer !== null && selectedAnswer !== '__timeout__' && (
-        <View style={styles.feedbackContainer}>
-          <Text style={[styles.feedbackText, { color: isCorrect ? COLORS.green : COLORS.red }]}>
-            {isCorrect ? '🎯 Correct!' : '❌ Wrong!'}
-          </Text>
-        </View>
-      )}
-      {selectedAnswer === '__timeout__' && (
-        <View style={styles.feedbackContainer}>
-          <Text style={[styles.feedbackText, { color: COLORS.red }]}>
-            ⏰ Time's up!
-          </Text>
-        </View>
-      )}
+        <Animated.View
+          style={[
+            styles.choicesContainer,
+            {
+              opacity: answersOpacity,
+              transform: [{ translateY: answersShift }],
+            },
+          ]}
+        >
+          {question?.answer_choices?.map((choice, index) => (
+            <TouchableOpacity
+              key={`${question.id}-${choice}`}
+              style={[styles.choiceButton, getChoiceStyle(choice)]}
+              onPress={() => handleAnswer(choice)}
+              disabled={selectedAnswer !== null}
+              activeOpacity={0.88}
+            >
+              <Text style={styles.choiceLetter}>{String.fromCharCode(65 + index)}</Text>
+              <Text style={[styles.choiceText, getChoiceTextStyle(choice)]}>{choice}</Text>
+              {selectedAnswer !== null && choice === question.correct_answer ? (
+                <Ionicons name="checkmark-circle" size={22} color={COLORS.goldLight} />
+              ) : null}
+              {selectedAnswer === choice && !isCorrect ? (
+                <Ionicons name="close-circle" size={22} color="#D77A73" />
+              ) : null}
+            </TouchableOpacity>
+          ))}
+        </Animated.View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.obsidian,
+  },
+  shell: {
+    flex: 1,
     paddingTop: 56,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.base,
-  },
-
-  // Top bar
-  topBar: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
+  headerCenter: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  headerEyebrow: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.xs,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    ...FONTS.medium,
+  },
+  headerScore: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.lg,
+    ...FONTS.bold,
+  },
   progressBarBg: {
-    flex: 1,
-    height: 6,
-    backgroundColor: COLORS.card,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
+    marginBottom: 16,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: COLORS.gold,
-    borderRadius: 3,
+    borderRadius: 999,
   },
-  scoreText: {
-    fontSize: SIZES.lg,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    minWidth: 40,
-    textAlign: 'right',
-  },
-
-  // Timer
-  timerRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 14,
   },
-  timerBadge: {
-    borderWidth: 2,
-    borderRadius: 20,
+  questionCount: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    ...FONTS.medium,
+  },
+  streakPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.18)',
+    backgroundColor: 'rgba(20, 15, 15, 0.78)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  streakText: {
+    color: COLORS.goldLight,
+    fontSize: SIZES.sm,
+    ...FONTS.medium,
+  },
+  categoryBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.16)',
+    backgroundColor: 'rgba(12, 12, 12, 0.92)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 14,
+  },
+  categoryText: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.xs,
+    letterSpacing: 1.4,
+    ...FONTS.medium,
+  },
+  timerOrb: {
+    minWidth: 72,
+    borderRadius: 22,
+    borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 4,
+    paddingVertical: 10,
+    alignItems: 'center',
   },
-  timerText: {
+  timerOrbText: {
     fontSize: SIZES.base,
     ...FONTS.bold,
   },
-  questionCount: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    ...FONTS.medium,
-  },
-  streakBadge: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  streakText: {
-    fontSize: SIZES.sm,
-    color: COLORS.gold,
-    ...FONTS.bold,
-  },
-
-  // Category
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.card,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 12,
-  },
-  categoryText: {
-    fontSize: SIZES.xs,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 1,
-  },
-
-  // Question
   questionCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radiusLg,
-    padding: 24,
-    marginBottom: 24,
-    minHeight: 120,
-    justifyContent: 'center',
+    borderRadius: 26,
+    padding: 22,
+    marginBottom: 14,
+    backgroundColor: 'rgba(10, 10, 10, 0.95)',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255, 200, 87, 0.12)',
   },
   questionText: {
-    fontSize: SIZES.xl,
-    color: COLORS.white,
-    ...FONTS.semiBold,
-    lineHeight: 30,
+    color: COLORS.offWhite,
+    fontSize: 28,
+    lineHeight: 38,
+    ...FONTS.bold,
   },
-
-  // Choices
+  feedbackPill: {
+    marginBottom: 14,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  feedbackPillCorrect: {
+    backgroundColor: 'rgba(211, 165, 77, 0.12)',
+    borderColor: 'rgba(211, 165, 77, 0.28)',
+  },
+  feedbackPillWrong: {
+    backgroundColor: 'rgba(122, 21, 38, 0.18)',
+    borderColor: 'rgba(122, 21, 38, 0.34)',
+  },
+  feedbackPillText: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.sm,
+    ...FONTS.medium,
+  },
   choicesContainer: {
     gap: 10,
   },
   choiceButton: {
+    minHeight: 64,
+    borderRadius: 18,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: SIZES.radius,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    gap: 14,
+    gap: 12,
+    borderWidth: 1,
   },
   choiceLetter: {
+    width: 18,
+    color: COLORS.goldLight,
     fontSize: SIZES.md,
-    color: COLORS.gold,
     ...FONTS.bold,
-    width: 24,
   },
   choiceText: {
     flex: 1,
     fontSize: SIZES.base,
+    ...FONTS.medium,
   },
   choiceDefault: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(10, 10, 10, 0.92)',
+    borderColor: 'rgba(255, 200, 87, 0.08)',
   },
   choiceCorrect: {
-    backgroundColor: COLORS.green + '20',
-    borderWidth: 1,
-    borderColor: COLORS.green,
+    backgroundColor: 'rgba(211, 165, 77, 0.12)',
+    borderColor: 'rgba(211, 165, 77, 0.34)',
   },
   choiceWrong: {
-    backgroundColor: COLORS.red + '20',
-    borderWidth: 1,
-    borderColor: COLORS.red,
+    backgroundColor: 'rgba(122, 21, 38, 0.18)',
+    borderColor: 'rgba(122, 21, 38, 0.34)',
   },
   choiceDisabled: {
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    opacity: 0.4,
+    backgroundColor: 'rgba(10, 10, 10, 0.7)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    opacity: 0.55,
   },
-  choiceTextDefault: { color: COLORS.white },
-  choiceTextCorrect: { color: COLORS.green, ...FONTS.semiBold },
-  choiceTextWrong: { color: COLORS.red, ...FONTS.semiBold },
-  choiceTextDisabled: { color: COLORS.textSecondary },
-
-  // Feedback
-  feedbackContainer: {
-    alignItems: 'center',
-    marginTop: 20,
+  choiceTextDefault: {
+    color: COLORS.offWhite,
   },
-  feedbackText: {
-    fontSize: SIZES.xl,
-    ...FONTS.bold,
+  choiceTextCorrect: {
+    color: COLORS.goldLight,
   },
-
-  // Game Over
-  gameOverContainer: {
+  choiceTextWrong: {
+    color: '#F3CAC6',
+  },
+  choiceTextDisabled: {
+    color: COLORS.textSecondary,
+  },
+  resultShell: {
     flex: 1,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
   },
-  gameOverLabel: {
-    fontSize: SIZES.lg,
-    color: COLORS.textSecondary,
-    ...FONTS.bold,
-    letterSpacing: 4,
-    marginBottom: 8,
-  },
-  grade: {
-    fontSize: 48,
-    ...FONTS.bold,
-    letterSpacing: 4,
-    marginBottom: 40,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 24,
-    marginBottom: 48,
-  },
-  statBox: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radiusLg,
-    paddingVertical: 24,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statValue: {
-    fontSize: SIZES.xxxl,
-    color: COLORS.gold,
-    ...FONTS.bold,
-  },
-  statLabel: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    ...FONTS.bold,
-    letterSpacing: 1,
-    marginTop: 4,
-  },
-  playAgainButton: {
-    backgroundColor: COLORS.gold,
-    borderRadius: SIZES.radius,
-    paddingVertical: 18,
-    paddingHorizontal: 48,
-    marginBottom: 16,
-  },
-  playAgainText: {
-    color: COLORS.black,
-    fontSize: SIZES.lg,
-    ...FONTS.bold,
-    letterSpacing: 2,
-  },
-  homeButton: {
-    paddingVertical: 12,
-  },
-  homeButtonText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.md,
+  resultEyebrow: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.sm,
+    letterSpacing: 2.4,
+    marginBottom: 10,
+    textTransform: 'uppercase',
     ...FONTS.medium,
-    letterSpacing: 1,
+  },
+  resultGrade: {
+    fontSize: 50,
+    lineHeight: 58,
+    marginBottom: 8,
+    textAlign: 'center',
+    ...FONTS.bold,
+  },
+  resultSubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
+    marginBottom: 24,
+  },
+  resultStatsRow: {
+    flexDirection: 'row',
+    gap: 14,
+    marginBottom: 22,
+  },
+  resultStatCard: {
+    minWidth: 124,
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.12)',
+    backgroundColor: 'rgba(10, 10, 10, 0.92)',
+    alignItems: 'center',
+  },
+  resultStatValue: {
+    color: COLORS.goldLight,
+    fontSize: SIZES.xxxl,
+    ...FONTS.bold,
+  },
+  resultStatLabel: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.xs,
+    letterSpacing: 1.6,
+    marginTop: 6,
+    textTransform: 'uppercase',
+    ...FONTS.medium,
+  },
+  goldButton: {
+    minWidth: 220,
+    minHeight: 56,
+    borderRadius: 18,
+    backgroundColor: COLORS.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goldButtonText: {
+    color: COLORS.black,
+    fontSize: SIZES.base,
+    letterSpacing: 2,
+    ...FONTS.bold,
+  },
+  textButton: {
+    marginTop: 14,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
+    ...FONTS.medium,
+  },
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: COLORS.obsidian,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 14,
+  },
+  loadingText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
   },
 });
 

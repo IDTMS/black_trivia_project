@@ -1,79 +1,257 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  Image,
   ScrollView,
   Share,
-  Clipboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
-import { useAuth } from '../context/AuthContext';
 import {
-  startMatch,
+  cancelMatch,
+  buzz as buzzApi,
   getMatch,
   joinMatchByCode,
-  buzz as buzzApi,
-  submitAnswer as submitAnswerApi,
-  cancelMatch,
   leaveMatch,
+  startMatch,
+  submitAnswer as submitAnswerApi,
 } from '../services/api';
+import {
+  fadeOutAmbient,
+  playConfirm,
+  playCorrect,
+  playDefeat,
+  playVictory,
+  playWrong,
+} from '../utils/soundEngine';
 
 const POLL_INTERVAL = 2000;
+const CARD_ART = require('../../assets/blackcard.png');
+
+const getParticipantId = (match, fallbackUserId) => {
+  if (!match) return fallbackUserId || null;
+  if (match.user_role === 'player1') return match.player1?.id || fallbackUserId || null;
+  if (match.user_role === 'player2') return match.player2?.id || fallbackUserId || null;
+  if (match.player1?.id === fallbackUserId) return fallbackUserId;
+  if (match.player2?.id === fallbackUserId) return fallbackUserId;
+  return fallbackUserId || null;
+};
+
+const getScoreForUser = (match, fallbackUserId) => {
+  const participantId = getParticipantId(match, fallbackUserId);
+  if (!match || !participantId) return 0;
+  if (participantId === match.player1?.id) return match.player1_score || 0;
+  if (participantId === match.player2?.id) return match.player2_score || 0;
+  return 0;
+};
+
+const getTimerColor = (timeLeft) => {
+  if (timeLeft > 10) return COLORS.green;
+  if (timeLeft > 5) return COLORS.goldLight;
+  return COLORS.red;
+};
+
+const ScoreMeter = ({ name, score, target, align = 'left' }) => {
+  const progress = Math.min(1, score / Math.max(1, target || 50));
+
+  return (
+    <View style={styles.scoreMeter}>
+      <View style={[styles.scoreMeterHeader, align === 'right' && styles.scoreMeterHeaderRight]}>
+        <Text style={styles.scoreMeterName} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.scoreMeterValue}>{score}</Text>
+      </View>
+      <View style={styles.scoreMeterTrack}>
+        <LinearGradient
+          colors={['#7A1526', '#D3A54D', '#F5A623']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[styles.scoreMeterFill, { width: `${progress * 100}%` }]}
+        />
+      </View>
+    </View>
+  );
+};
 
 const MatchScreen = ({ navigation, route }) => {
-  const { user } = useAuth();
   const initialMatchId = route?.params?.matchId;
-  const initialMode = route?.params?.initialMode || 'create'; // 'create' or 'join'
+  const initialMode = route?.params?.initialMode || 'create';
 
   const [match, setMatch] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(initialMatchId));
   const [actionLoading, setActionLoading] = useState(false);
   const [joinCode, setJoinCode] = useState('');
   const [phase, setPhase] = useState(initialMatchId ? 'loading' : initialMode);
-  // phases: 'create', 'join', 'loading', 'waiting', 'live', 'completed'
   const [timeLeft, setTimeLeft] = useState(15);
+  const [feedback, setFeedback] = useState(null);
 
   const pollRef = useRef(null);
   const timerRef = useRef(null);
+  const pulseLoopRef = useRef(null);
+  const feedbackTimeoutRef = useRef(null);
   const matchRef = useRef(null);
+  const questionAnim = useRef(new Animated.Value(0)).current;
+  const answersAnim = useRef(new Animated.Value(0)).current;
+  const feedbackAnim = useRef(new Animated.Value(0)).current;
+  const joinFlashAnim = useRef(new Animated.Value(0)).current;
+  const timerScale = useRef(new Animated.Value(1)).current;
+  const hasPlayedResultAudioRef = useRef(false);
 
-  // Keep matchRef in sync
+  useFocusEffect(
+    useCallback(() => {
+      fadeOutAmbient(500, true).catch(() => {});
+      return undefined;
+    }, [])
+  );
+
+  const animateQuestionIn = useCallback(() => {
+    questionAnim.setValue(0);
+    answersAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(questionAnim, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(answersAnim, {
+        toValue: 1,
+        duration: 360,
+        delay: 90,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [answersAnim, questionAnim]);
+
+  const showFeedback = useCallback(
+    (type, text) => {
+      setFeedback({ type, text });
+      feedbackAnim.setValue(0);
+
+      if (feedbackTimeoutRef.current) {
+        clearTimeout(feedbackTimeoutRef.current);
+      }
+
+      Animated.sequence([
+        Animated.timing(feedbackAnim, {
+          toValue: 1,
+          duration: 180,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.delay(1000),
+        Animated.timing(feedbackAnim, {
+          toValue: 0,
+          duration: 220,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          setFeedback(null);
+        }
+      });
+    },
+    [feedbackAnim]
+  );
+
+  const flashJoinCue = useCallback(() => {
+    joinFlashAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(joinFlashAnim, {
+        toValue: 1,
+        duration: 180,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(joinFlashAnim, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [joinFlashAnim]);
+
+  const applyMatchState = useCallback(
+    (nextMatch, source = 'poll') => {
+      const previousMatch = matchRef.current;
+      const participantId = getParticipantId(nextMatch);
+      const prevParticipantId = getParticipantId(previousMatch);
+
+      setMatch(nextMatch);
+
+      if (!previousMatch?.current_question?.id || previousMatch.current_question.id !== nextMatch?.current_question?.id) {
+        animateQuestionIn();
+      }
+
+      if (previousMatch && !previousMatch.player2 && nextMatch?.player2 && !nextMatch?.winner) {
+        flashJoinCue();
+        playConfirm().catch(() => {});
+      }
+
+      if (previousMatch && nextMatch) {
+        const previousScore = getScoreForUser(previousMatch, prevParticipantId);
+        const nextScore = getScoreForUser(nextMatch, participantId);
+
+        if (nextScore > previousScore) {
+          showFeedback('correct', `+${nextScore - previousScore} points`);
+          playCorrect().catch(() => {});
+        } else if (
+          source === 'answer' &&
+          previousMatch.current_buzzer?.id === participantId &&
+          nextMatch.locked_out_player?.id === participantId
+        ) {
+          showFeedback('wrong', 'Wrong answer');
+          playWrong().catch(() => {});
+        }
+      }
+
+      if (nextMatch?.winner && !hasPlayedResultAudioRef.current) {
+        hasPlayedResultAudioRef.current = true;
+        if (nextMatch.winner.id === participantId) {
+          playVictory().catch(() => {});
+        } else {
+          playDefeat().catch(() => {});
+        }
+      }
+
+      if (!nextMatch?.winner) {
+        hasPlayedResultAudioRef.current = false;
+      }
+    },
+    [animateQuestionIn, flashJoinCue, showFeedback]
+  );
+
   useEffect(() => {
     matchRef.current = match;
   }, [match]);
 
-  // Derive phase from match state
   useEffect(() => {
     if (!match) return;
     if (match.winner) {
       setPhase('completed');
-    } else if (match.player2) {
+      return;
+    }
+    if (match.player2) {
       setPhase('live');
-    } else {
-      setPhase('waiting');
+      return;
     }
+    setPhase('waiting');
   }, [match]);
-
-  // Poll for match updates
-  const pollMatch = useCallback(async (matchId) => {
-    try {
-      const res = await getMatch(matchId);
-      setMatch(res.data);
-    } catch {
-      // silent poll failure
-    }
-  }, []);
-
-  const startPolling = useCallback((matchId) => {
-    stopPolling();
-    pollRef.current = setInterval(() => pollMatch(matchId), POLL_INTERVAL);
-  }, [pollMatch]);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -82,13 +260,34 @@ const MatchScreen = ({ navigation, route }) => {
     }
   }, []);
 
-  // Timer for questions
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
+  const pollMatch = useCallback(
+    async (matchId) => {
+      try {
+        const res = await getMatch(matchId);
+        applyMatchState(res.data);
+      } catch {
+        // keep polling quiet
+      }
+    },
+    [applyMatchState]
+  );
 
-    if (!match || !match.question_deadline || match.winner) {
-      setTimeLeft(15);
-      return;
+  const startPolling = useCallback(
+    (matchId) => {
+      stopPolling();
+      pollRef.current = setInterval(() => pollMatch(matchId), POLL_INTERVAL);
+    },
+    [pollMatch, stopPolling]
+  );
+
+  useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    if (!match?.question_deadline || match?.winner) {
+      setTimeLeft(match?.question_time_limit_seconds || 15);
+      return undefined;
     }
 
     const tick = () => {
@@ -101,76 +300,134 @@ const MatchScreen = ({ navigation, route }) => {
     timerRef.current = setInterval(tick, 250);
 
     return () => clearInterval(timerRef.current);
-  }, [match?.question_deadline, match?.current_question?.id]);
+  }, [match?.question_deadline, match?.winner, match?.question_time_limit_seconds]);
 
-  // Initial load
   useEffect(() => {
-    if (initialMatchId) {
-      loadMatch(initialMatchId);
+    if (pulseLoopRef.current) {
+      pulseLoopRef.current.stop();
+      pulseLoopRef.current = null;
+    }
+
+    if (phase === 'live' && timeLeft <= 5 && !match?.winner) {
+      pulseLoopRef.current = Animated.loop(
+        Animated.sequence([
+          Animated.timing(timerScale, {
+            toValue: 1.08,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+          Animated.timing(timerScale, {
+            toValue: 1,
+            duration: 260,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoopRef.current.start();
     } else {
-      setLoading(false);
+      timerScale.setValue(1);
     }
 
     return () => {
+      if (pulseLoopRef.current) {
+        pulseLoopRef.current.stop();
+        pulseLoopRef.current = null;
+      }
+    };
+  }, [match?.winner, phase, timeLeft, timerScale]);
+
+  useEffect(() => {
+    return () => {
       stopPolling();
       if (timerRef.current) clearInterval(timerRef.current);
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+      if (pulseLoopRef.current) pulseLoopRef.current.stop();
     };
-  }, []);
+  }, [stopPolling]);
 
-  const loadMatch = async (matchId) => {
-    setLoading(true);
-    try {
-      const res = await getMatch(matchId);
-      setMatch(res.data);
-      startPolling(matchId);
-    } catch (error) {
-      Alert.alert('Error', 'Could not load match.');
-      navigation.goBack();
-    } finally {
+  useEffect(() => {
+    if (!initialMatchId) {
       setLoading(false);
+      return undefined;
     }
-  };
 
-  const showActiveMatchAlert = (matchData) => {
+    let active = true;
+
+    const loadInitialMatch = async () => {
+      try {
+        const res = await getMatch(initialMatchId);
+        if (!active) return;
+        applyMatchState(res.data, 'load');
+        startPolling(initialMatchId);
+      } catch {
+        if (active) {
+          Alert.alert('Error', 'Could not load match.');
+          navigation.goBack();
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadInitialMatch();
+
+    return () => {
+      active = false;
+      stopPolling();
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    };
+  }, [applyMatchState, initialMatchId, navigation, startPolling, stopPolling]);
+
+  const showActiveMatchAlert = useCallback((matchData) => {
     if (matchData?.result === 'active_match_exists' && matchData?.message) {
       Alert.alert('Active Match', matchData.message);
+      return true;
     }
-  };
+    return false;
+  }, []);
+
+  const resolveErrorMessage = (error, fallback) =>
+    error.response?.data?.message ||
+    error.response?.data?.detail ||
+    error.response?.data?.error ||
+    fallback;
 
   const handleCreateMatch = async () => {
     setActionLoading(true);
     try {
       const res = await startMatch();
-      setMatch(res.data);
+      applyMatchState(res.data, 'create');
       if (res.data?.id) {
         startPolling(res.data.id);
       }
       showActiveMatchAlert(res.data);
     } catch (error) {
-      const msg = error.response?.data?.detail || error.response?.data?.error || 'Could not create match.';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', resolveErrorMessage(error, 'Could not create match.'));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleJoinMatch = async () => {
-    const code = joinCode.trim().toUpperCase();
-    if (!code) {
+    const inviteCode = joinCode.trim().toUpperCase();
+    if (!inviteCode) {
       Alert.alert('Enter a code', 'Type the 6-character match code.');
       return;
     }
+
     setActionLoading(true);
     try {
-      const res = await joinMatchByCode(code);
-      setMatch(res.data);
+      const res = await joinMatchByCode(inviteCode);
+      applyMatchState(res.data, 'join');
       if (res.data?.id) {
         startPolling(res.data.id);
       }
       showActiveMatchAlert(res.data);
     } catch (error) {
-      const msg = error.response?.data?.detail || error.response?.data?.error || 'Could not join match.';
-      Alert.alert('Error', msg);
+      Alert.alert('Unable to Join', resolveErrorMessage(error, 'Could not join match.'));
     } finally {
       setActionLoading(false);
     }
@@ -181,10 +438,9 @@ const MatchScreen = ({ navigation, route }) => {
     setActionLoading(true);
     try {
       const res = await buzzApi(match.id);
-      setMatch(res.data);
+      applyMatchState(res.data, 'buzz');
     } catch (error) {
-      const msg = error.response?.data?.detail || error.response?.data?.error || 'Buzz failed.';
-      Alert.alert('Error', msg);
+      Alert.alert('Buzz Failed', resolveErrorMessage(error, 'Could not claim the buzzer.'));
     } finally {
       setActionLoading(false);
     }
@@ -195,10 +451,9 @@ const MatchScreen = ({ navigation, route }) => {
     setActionLoading(true);
     try {
       const res = await submitAnswerApi(match.id, null, answer);
-      setMatch(res.data);
+      applyMatchState(res.data, 'answer');
     } catch (error) {
-      const msg = error.response?.data?.detail || error.response?.data?.error || 'Answer failed.';
-      Alert.alert('Error', msg);
+      Alert.alert('Answer Failed', resolveErrorMessage(error, 'Could not submit answer.'));
     } finally {
       setActionLoading(false);
     }
@@ -209,19 +464,19 @@ const MatchScreen = ({ navigation, route }) => {
     try {
       await cancelMatch(match.id);
       stopPolling();
-      navigation.goBack();
-    } catch {
-      Alert.alert('Error', 'Could not cancel match.');
+      navigation.popToTop();
+    } catch (error) {
+      Alert.alert('Error', resolveErrorMessage(error, 'Could not cancel match.'));
     }
   };
 
   const handleCopyCode = async () => {
     if (!match?.invite_code) return;
     try {
-      Clipboard.setString(match.invite_code);
-      Alert.alert('Copied', `Code ${match.invite_code} copied.`);
+      await Clipboard.setStringAsync(match.invite_code);
+      Alert.alert('Copied', `${match.invite_code} is ready to send.`);
     } catch {
-      // fallback
+      Alert.alert('Copy Failed', 'Could not copy the match code on this device.');
     }
   };
 
@@ -229,18 +484,23 @@ const MatchScreen = ({ navigation, route }) => {
     if (!match?.invite_code) return;
     try {
       await Share.share({
-        message: `Pull up to my Black Card match. First to ${match.target_score || 50} takes the card. Code: ${match.invite_code}`,
+        message: `I opened a Black Card match. First to ${match.target_score || 50} takes the card. Code: ${match.invite_code}`,
       });
     } catch {
-      // user cancelled
+      // share sheet dismissed
     }
   };
+
+  const leaveAndReturn = useCallback(() => {
+    stopPolling();
+    navigation.popToTop();
+  }, [navigation, stopPolling]);
 
   const handleLeave = () => {
     if (match && match.player2 && !match.winner) {
       Alert.alert(
         'Leave Match?',
-        'You will forfeit the match and your opponent wins.',
+        'Leaving now forfeits the match and gives the card away.',
         [
           { text: 'Stay', style: 'cancel' },
           {
@@ -252,725 +512,901 @@ const MatchScreen = ({ navigation, route }) => {
               } catch {
                 // match may already be completed
               }
-              stopPolling();
-              navigation.goBack();
+              leaveAndReturn();
             },
           },
-        ],
+        ]
       );
       return;
     }
-    stopPolling();
-    navigation.goBack();
+
+    leaveAndReturn();
   };
 
   const handleRematch = async () => {
     setActionLoading(true);
     try {
       const res = await startMatch();
-      setMatch(res.data);
-      startPolling(res.data.id);
+      applyMatchState(res.data, 'rematch');
+      if (res.data?.id) {
+        startPolling(res.data.id);
+      }
+      showActiveMatchAlert(res.data);
     } catch (error) {
-      const msg = error.response?.data?.detail || error.response?.data?.error || 'Could not create rematch.';
-      Alert.alert('Error', msg);
+      Alert.alert('Error', resolveErrorMessage(error, 'Could not create rematch.'));
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Match responses tell us which side the current user is on.
-  const userRole = match?.user_role;
-  const isPlayer1 = userRole === 'player1';
-  const isPlayer2 = userRole === 'player2';
-  const isParticipant = isPlayer1 || isPlayer2;
-  const currentUserMatchId = isPlayer1 ? match?.player1?.id : isPlayer2 ? match?.player2?.id : user?.id;
-  const isBuzzer = currentUserMatchId && match?.current_buzzer?.id === currentUserMatchId;
-  const canBuzz = match?.status === 'live' && isParticipant && !match.current_buzzer;
+  const currentUserMatchId = getParticipantId(match);
+  const isBuzzer = Boolean(currentUserMatchId && match?.current_buzzer?.id === currentUserMatchId);
+  const canBuzz = match?.status === 'live' && Boolean(currentUserMatchId) && !match.current_buzzer;
   const canAnswer = match?.status === 'live' && isBuzzer;
 
-  const getTimerColor = () => {
-    if (timeLeft > 10) return COLORS.green;
-    if (timeLeft > 5) return COLORS.gold;
-    return COLORS.red;
-  };
+  const question = match?.current_question;
+  const targetScore = match?.target_score || 50;
+  const roundName = match?.round_name || 'Private Match';
+  const timerColor = getTimerColor(timeLeft);
+  const turnMessage = useMemo(() => {
+    if (!match) return '';
+    if (isBuzzer) return 'You have the buzzer. Lock it in.';
+    if (match.current_buzzer) return `${match.current_buzzer.username} has control.`;
+    if (match.locked_out_player?.id === currentUserMatchId) return 'You missed. Your opponent can steal.';
+    if (match.locked_out_player) return `${match.locked_out_player.username} missed. Take the steal.`;
+    return 'Buzz in first and control the round.';
+  }, [currentUserMatchId, isBuzzer, match]);
 
-  // ─── Lobby (create or join) ───
   if (phase === 'create' || phase === 'join') {
     return (
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={28} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.topTitle}>1v1 MATCH</Text>
-          <View style={{ width: 28 }} />
-        </View>
+      <View style={styles.screen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <View style={styles.shell}>
+          <View style={styles.navBar}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Ionicons name="arrow-back" size={26} color={COLORS.offWhite} />
+            </TouchableOpacity>
+            <Text style={styles.navTitle}>PRIVATE MATCH</Text>
+            <View style={{ width: 26 }} />
+          </View>
 
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tab, phase === 'create' && styles.tabActive]}
-            onPress={() => setPhase('create')}
-          >
-            <Text style={[styles.tabText, phase === 'create' && styles.tabTextActive]}>
-              START MATCH
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, phase === 'join' && styles.tabActive]}
-            onPress={() => setPhase('join')}
-          >
-            <Text style={[styles.tabText, phase === 'join' && styles.tabTextActive]}>
-              GOT A CODE?
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {phase === 'create' ? (
-          <View style={styles.lobbyContent}>
-            <Ionicons name="flash" size={48} color={COLORS.gold} style={{ alignSelf: 'center' }} />
-            <Text style={styles.lobbyTitle}>Open a Room</Text>
-            <Text style={styles.lobbyDesc}>
-              Create a match and send the code to whoever you want smoke with. First to 50 takes the black card.
-            </Text>
+          <View style={styles.tabRow}>
             <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleCreateMatch}
+              style={[styles.modeTab, phase === 'create' && styles.modeTabActive]}
+              onPress={() => setPhase('create')}
+            >
+              <Text style={[styles.modeTabText, phase === 'create' && styles.modeTabTextActive]}>
+                CREATE
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeTab, phase === 'join' && styles.modeTabActive]}
+              onPress={() => setPhase('join')}
+            >
+              <Text style={[styles.modeTabText, phase === 'join' && styles.modeTabTextActive]}>
+                JOIN
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <LinearGradient
+            colors={['rgba(19, 17, 19, 0.98)', 'rgba(11, 11, 11, 0.98)']}
+            style={styles.panel}
+          >
+            <Text style={styles.panelEyebrow}>
+              {phase === 'create' ? 'Open The Table' : 'Enter The Code'}
+            </Text>
+            <Text style={styles.panelTitle}>
+              {phase === 'create' ? 'Create a Black Card Match' : 'Join an Active Match'}
+            </Text>
+            <Text style={styles.panelCopy}>
+              {phase === 'create'
+                ? 'Open the room, share the code, and make the challenge official.'
+                : 'Enter the room code from the card holder and step into the arena.'}
+            </Text>
+
+            {phase === 'join' ? (
+              <TextInput
+                style={styles.codeInput}
+                value={joinCode}
+                onChangeText={setJoinCode}
+                placeholder="ABC123"
+                placeholderTextColor={COLORS.gray}
+                maxLength={6}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            ) : (
+              <View style={styles.createHintRow}>
+                <Ionicons name="sparkles-outline" size={18} color={COLORS.goldLight} />
+                <Text style={styles.createHintText}>First to 50 claims the card.</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.goldButton}
+              onPress={phase === 'create' ? handleCreateMatch : handleJoinMatch}
               disabled={actionLoading}
-              activeOpacity={0.85}
+              activeOpacity={0.88}
             >
               {actionLoading ? (
                 <ActivityIndicator color={COLORS.black} />
               ) : (
-                <Text style={styles.primaryButtonText}>CREATE MATCH</Text>
+                <Text style={styles.goldButtonText}>
+                  {phase === 'create' ? 'CREATE MATCH' : 'JOIN MATCH'}
+                </Text>
               )}
             </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.lobbyContent}>
-            <Ionicons name="people" size={48} color={COLORS.gold} style={{ alignSelf: 'center' }} />
-            <Text style={styles.lobbyTitle}>Join a Match</Text>
-            <Text style={styles.lobbyDesc}>
-              Got a code from someone? Punch it in and pull up.
-            </Text>
-            <TextInput
-              style={styles.codeInput}
-              value={joinCode}
-              onChangeText={setJoinCode}
-              placeholder="ABC123"
-              placeholderTextColor={COLORS.gray}
-              maxLength={6}
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleJoinMatch}
-              disabled={actionLoading}
-              activeOpacity={0.85}
-            >
-              {actionLoading ? (
-                <ActivityIndicator color={COLORS.black} />
-              ) : (
-                <Text style={styles.primaryButtonText}>JOIN MATCH</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+          </LinearGradient>
+        </View>
       </View>
     );
   }
 
-  // ─── Loading ───
   if (phase === 'loading' || loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+      <View style={styles.loadingScreen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <ActivityIndicator size="large" color={COLORS.goldLight} />
         <Text style={styles.loadingText}>Loading match...</Text>
       </View>
     );
   }
 
-  // ─── Waiting for opponent ───
   if (phase === 'waiting' && match) {
     return (
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={handleLeave}>
-            <Ionicons name="arrow-back" size={28} color={COLORS.white} />
-          </TouchableOpacity>
-          <Text style={styles.topTitle}>WAITING</Text>
-          <View style={{ width: 28 }} />
-        </View>
+      <View style={styles.screen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.joinFlash, { opacity: joinFlashAnim }]}
+        />
 
-        <View style={styles.waitingContent}>
-          <View style={styles.codeCard}>
-            <Text style={styles.codeLabel}>MATCH CODE</Text>
-            <Text style={styles.codeValue}>{match.invite_code || '------'}</Text>
+        <View style={styles.shell}>
+          <View style={styles.navBar}>
+            <TouchableOpacity onPress={handleLeave}>
+              <Ionicons name="arrow-back" size={26} color={COLORS.offWhite} />
+            </TouchableOpacity>
+            <Text style={styles.navTitle}>WAITING</Text>
+            <View style={{ width: 26 }} />
           </View>
 
-          <Text style={styles.waitingDesc}>
-            Send this code to your opponent. It's on when they join.
-          </Text>
+          <LinearGradient
+            colors={['rgba(19, 17, 19, 0.98)', 'rgba(8, 8, 8, 0.98)']}
+            style={styles.panel}
+          >
+            <Text style={styles.panelEyebrow}>Invite Code</Text>
+            <Text style={styles.codeHero}>{match.invite_code || '------'}</Text>
+            <Text style={styles.panelCopy}>
+              Share the code with your opponent. The room will light up the second they arrive.
+            </Text>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleCopyCode}>
-              <Ionicons name="copy-outline" size={18} color={COLORS.white} />
-              <Text style={styles.secondaryButtonText}>COPY</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleShareCode}>
-              <Ionicons name="share-outline" size={18} color={COLORS.white} />
-              <Text style={styles.secondaryButtonText}>SHARE</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={styles.waitingButtonRow}>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleCopyCode}>
+                <Ionicons name="copy-outline" size={16} color={COLORS.offWhite} />
+                <Text style={styles.secondaryButtonText}>Copy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleShareCode}>
+                <Ionicons name="share-social-outline" size={16} color={COLORS.offWhite} />
+                <Text style={styles.secondaryButtonText}>Share</Text>
+              </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancelMatch}>
-            <Text style={styles.cancelButtonText}>CANCEL MATCH</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.textButton} onPress={handleCancelMatch}>
+              <Text style={styles.textButtonText}>Cancel Match</Text>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
       </View>
     );
   }
 
-  // ─── Completed ───
   if (phase === 'completed' && match) {
     const isWinner = currentUserMatchId && match.winner?.id === currentUserMatchId;
     const winnerName = match.winner?.username || 'Winner';
     const loserName = match.loser?.username || 'Loser';
 
     return (
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <View style={{ width: 28 }} />
-          <Text style={styles.topTitle}>MATCH OVER</Text>
-          <View style={{ width: 28 }} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.completedContent}>
-          <Text style={[styles.resultLabel, { color: isWinner ? COLORS.gold : COLORS.red }]}>
-            {isWinner ? 'VICTORY' : 'DEFEAT'}
-          </Text>
-          <Text style={styles.resultHeadline}>
-            {isWinner
-              ? `You took ${loserName}'s black card.`
-              : `${winnerName} took ${loserName}'s black card.`}
-          </Text>
-
-          <View style={styles.finalScoreRow}>
-            <View style={[styles.finalScoreCard, match.player1_score > match.player2_score && styles.finalScoreWinner]}>
-              <Text style={styles.finalScoreLabel}>{match.player1?.username}</Text>
-              <Text style={styles.finalScoreValue}>{match.player1_score}</Text>
-            </View>
-            <Text style={styles.vsText}>VS</Text>
-            <View style={[styles.finalScoreCard, match.player2_score > match.player1_score && styles.finalScoreWinner]}>
-              <Text style={styles.finalScoreLabel}>{match.player2?.username}</Text>
-              <Text style={styles.finalScoreValue}>{match.player2_score}</Text>
-            </View>
+      <View style={styles.screen}>
+        <LinearGradient colors={['#040404', '#120d10', '#050505']} style={StyleSheet.absoluteFill} />
+        <View style={styles.shell}>
+          <View style={styles.navBar}>
+            <View style={{ width: 26 }} />
+            <Text style={styles.navTitle}>MATCH OVER</Text>
+            <View style={{ width: 26 }} />
           </View>
 
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleRematch}
-            disabled={actionLoading}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryButtonText}>REMATCH</Text>
-          </TouchableOpacity>
+          <ScrollView contentContainerStyle={styles.resultScroll}>
+            <Text style={[styles.resultTag, { color: isWinner ? COLORS.goldLight : '#D77A73' }]}>
+              {isWinner ? 'VICTORY' : 'DEFEAT'}
+            </Text>
+            <Text style={styles.resultHeadline}>
+              {isWinner
+                ? `You claimed ${loserName}'s Black Card.`
+                : `${winnerName} claimed the Black Card.`}
+            </Text>
+            <Text style={styles.resultCopy}>
+              {isWinner
+                ? 'The room is closed. The card is yours until somebody takes it back.'
+                : 'The challenge is over. Reset at the start screen when you want another shot.'}
+            </Text>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={handleLeave}>
-            <Text style={styles.cancelButtonText}>LEAVE ARENA</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            <LinearGradient
+              colors={['rgba(17, 17, 17, 0.96)', 'rgba(8, 8, 8, 0.98)']}
+              style={styles.resultCard}
+            >
+              <Image source={CARD_ART} style={styles.resultCardImage} resizeMode="contain" />
+              <View style={styles.resultNameplate}>
+                <Text style={styles.resultWinnerName}>{winnerName.toUpperCase()}</Text>
+              </View>
+            </LinearGradient>
+
+            <View style={styles.resultScoreRow}>
+              <ScoreMeter
+                name={match.player1?.username}
+                score={match.player1_score}
+                target={targetScore}
+              />
+              <ScoreMeter
+                name={match.player2?.username}
+                score={match.player2_score}
+                target={targetScore}
+                align="right"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.goldButton}
+              onPress={handleRematch}
+              disabled={actionLoading}
+              activeOpacity={0.88}
+            >
+              {actionLoading ? (
+                <ActivityIndicator color={COLORS.black} />
+              ) : (
+                <Text style={styles.goldButtonText}>REMATCH</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.textButton} onPress={leaveAndReturn}>
+              <Text style={styles.textButtonText}>Return to Start</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
       </View>
     );
   }
 
-  // ─── Live match ───
-  if (!match || !match.current_question) {
+  if (!match || !question) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+      <View style={styles.loadingScreen}>
+        <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
+        <ActivityIndicator size="large" color={COLORS.goldLight} />
         <Text style={styles.loadingText}>Loading question...</Text>
       </View>
     );
   }
 
-  const question = match.current_question;
-  const turnMessage = isBuzzer
-    ? 'You got the buzzer. Pick your answer.'
-    : match.current_buzzer
-      ? `${match.current_buzzer.username} buzzed. Waiting on their answer.`
-      : match.locked_out_player && currentUserMatchId && match.locked_out_player.id === currentUserMatchId
-        ? 'You missed. Opponent can steal.'
-        : match.locked_out_player
-          ? `${match.locked_out_player.username} missed. Steal it.`
-          : 'Buzz in first!';
+  const player1Leading = match.player1_score >= match.player2_score;
+  const player2Leading = match.player2_score >= match.player1_score;
+  const canSteal = Boolean(
+    match.locked_out_player &&
+      !match.current_buzzer &&
+      currentUserMatchId &&
+      match.locked_out_player.id !== currentUserMatchId
+  );
 
   return (
-    <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={handleLeave}>
-          <Ionicons name="arrow-back" size={28} color={COLORS.white} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>LIVE</Text>
-        <View style={[styles.timerBadge, { borderColor: getTimerColor() }]}>
-          <Text style={[styles.timerText, { color: getTimerColor() }]}>{timeLeft}s</Text>
-        </View>
-      </View>
+    <View style={styles.screen}>
+      <LinearGradient colors={['#040404', '#130d10', '#050505']} style={StyleSheet.absoluteFill} />
+      <Animated.View pointerEvents="none" style={[styles.joinFlash, { opacity: joinFlashAnim }]} />
 
-      {/* Score row */}
-      <View style={styles.scoreRow}>
-        <View style={[styles.scoreCard, match.player1_score > match.player2_score && styles.scoreCardLeading]}>
-          <Text style={styles.scoreName} numberOfLines={1}>{match.player1?.username}</Text>
-          <Text style={styles.scoreValue}>{match.player1_score}</Text>
-        </View>
-        <Text style={styles.vsSmall}>VS</Text>
-        <View style={[styles.scoreCard, match.player2_score > match.player1_score && styles.scoreCardLeading]}>
-          <Text style={styles.scoreName} numberOfLines={1}>{match.player2?.username}</Text>
-          <Text style={styles.scoreValue}>{match.player2_score}</Text>
-        </View>
-      </View>
-
-      {/* Category */}
-      <View style={styles.categoryRow}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>
-            {question.category.replace('_', ' ').toUpperCase()}
-          </Text>
-        </View>
-        <Text style={styles.turnText} numberOfLines={1}>{turnMessage}</Text>
-      </View>
-
-      {/* Question */}
-      <ScrollView style={styles.questionScroll} contentContainerStyle={styles.questionScrollContent}>
-        <Text style={styles.questionText}>{question.text}</Text>
-
-        {/* Buzz button */}
-        {!match.current_buzzer && !match.locked_out_player && (
-          <TouchableOpacity
-            style={[styles.buzzButton, !canBuzz && styles.buzzButtonDisabled]}
-            onPress={handleBuzz}
-            disabled={!canBuzz || actionLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buzzButtonText}>
-              {actionLoading ? 'BUZZING...' : 'BUZZ IN'}
-            </Text>
+      <View style={styles.shell}>
+        <View style={styles.liveHeader}>
+          <TouchableOpacity onPress={handleLeave}>
+            <Ionicons name="arrow-back" size={26} color={COLORS.offWhite} />
           </TouchableOpacity>
-        )}
+          <View style={styles.liveHeaderCenter}>
+            <Text style={styles.roundEyebrow}>{roundName}</Text>
+            <Text style={styles.navTitle}>LIVE MATCH</Text>
+          </View>
+          <Animated.View style={{ transform: [{ scale: timerScale }] }}>
+            <LinearGradient
+              colors={['rgba(17, 17, 17, 0.95)', 'rgba(32, 18, 18, 0.95)']}
+              style={[styles.timerOrb, { borderColor: `${timerColor}66` }]}
+            >
+              <Text style={[styles.timerOrbText, { color: timerColor }]}>{timeLeft}s</Text>
+            </LinearGradient>
+          </Animated.View>
+        </View>
 
-        {/* Steal buzz - when opponent missed, you can buzz to steal */}
-        {match.locked_out_player && !match.current_buzzer && isParticipant &&
-          currentUserMatchId && match.locked_out_player.id !== currentUserMatchId && (
-          <TouchableOpacity
-            style={styles.buzzButton}
-            onPress={handleBuzz}
-            disabled={actionLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buzzButtonText}>
-              {actionLoading ? 'BUZZING...' : 'STEAL IT'}
+        <LinearGradient
+          colors={['rgba(17, 17, 17, 0.94)', 'rgba(10, 10, 10, 0.98)']}
+          style={styles.arena}
+        >
+          <View style={styles.arenaTopline}>
+            <Text style={styles.targetText}>Race to {targetScore}</Text>
+            <Text style={styles.turnText} numberOfLines={1}>
+              {turnMessage}
             </Text>
-          </TouchableOpacity>
-        )}
+          </View>
 
-        {/* Answer choices */}
-        {question.choices && (
-          <View style={styles.choicesContainer}>
-            {question.choices.map((choice, index) => (
+          <View style={styles.progressArena}>
+            <View style={[styles.progressSide, player1Leading && styles.progressSideLeading]}>
+              <ScoreMeter name={match.player1?.username} score={match.player1_score} target={targetScore} />
+            </View>
+            <View style={[styles.progressSide, player2Leading && styles.progressSideLeading]}>
+              <ScoreMeter
+                name={match.player2?.username}
+                score={match.player2_score}
+                target={targetScore}
+                align="right"
+              />
+            </View>
+          </View>
+
+          <View style={styles.categoryRow}>
+            <View style={styles.categoryChip}>
+              <Text style={styles.categoryChipText}>
+                {question.category.replace('_', ' ').toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          <Animated.View
+            style={[
+              styles.questionPanel,
+              {
+                opacity: questionAnim,
+                transform: [
+                  {
+                    translateY: questionAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [18, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Text style={styles.questionText}>{question.text}</Text>
+          </Animated.View>
+
+          {feedback ? (
+            <Animated.View
+              style={[
+                styles.feedbackBanner,
+                feedback.type === 'wrong' ? styles.feedbackBannerWrong : styles.feedbackBannerCorrect,
+                {
+                  opacity: feedbackAnim,
+                  transform: [
+                    {
+                      translateY: feedbackAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [12, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.feedbackBannerText}>{feedback.text}</Text>
+            </Animated.View>
+          ) : null}
+
+          {!match.current_buzzer && !match.locked_out_player ? (
+            <TouchableOpacity
+              style={[styles.buzzButton, !canBuzz && styles.buzzButtonDisabled]}
+              onPress={handleBuzz}
+              disabled={!canBuzz || actionLoading}
+              activeOpacity={0.88}
+            >
+              <LinearGradient
+                colors={canBuzz ? ['#6A1420', '#2B090E'] : ['#272224', '#151314']}
+                style={styles.buzzButtonSurface}
+              >
+                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming...' : 'Buzz In'}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : null}
+
+          {canSteal ? (
+            <TouchableOpacity
+              style={styles.buzzButton}
+              onPress={handleBuzz}
+              disabled={actionLoading}
+              activeOpacity={0.88}
+            >
+              <LinearGradient colors={['#7A1526', '#2B090E']} style={styles.buzzButtonSurface}>
+                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming...' : 'Steal The Round'}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : null}
+
+          <Animated.View
+            style={[
+              styles.answersWrap,
+              {
+                opacity: answersAnim,
+                transform: [
+                  {
+                    translateY: answersAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [24, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            {question.choices?.map((choice, index) => (
               <TouchableOpacity
-                key={index}
-                style={[styles.choiceButton, canAnswer && styles.choiceButtonActive]}
+                key={`${question.id}-${choice}`}
+                style={[styles.answerCard, canAnswer && styles.answerCardActive]}
                 onPress={() => handleAnswer(choice)}
                 disabled={!canAnswer || actionLoading}
-                activeOpacity={0.8}
+                activeOpacity={0.88}
               >
-                <Text style={styles.choiceLetter}>
-                  {String.fromCharCode(65 + index)}
-                </Text>
-                <Text style={[styles.choiceText, canAnswer && styles.choiceTextActive]}>
-                  {choice}
-                </Text>
+                <Text style={styles.answerIndex}>{String.fromCharCode(65 + index)}</Text>
+                <Text style={[styles.answerText, canAnswer && styles.answerTextActive]}>{choice}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        )}
-      </ScrollView>
+          </Animated.View>
+        </LinearGradient>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.obsidian,
+  },
+  shell: {
+    flex: 1,
     paddingTop: 56,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.base,
-  },
-
-  // Top bar
-  topBar: {
+  navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  topTitle: {
+  navTitle: {
+    color: COLORS.offWhite,
     fontSize: SIZES.lg,
-    color: COLORS.white,
-    ...FONTS.bold,
     letterSpacing: 3,
+    ...FONTS.bold,
   },
-
-  // Tabs
+  modeTab: {
+    flex: 1,
+    minHeight: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(17, 15, 17, 0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.08)',
+  },
+  modeTabActive: {
+    borderColor: 'rgba(245, 166, 35, 0.28)',
+    backgroundColor: 'rgba(40, 18, 20, 0.82)',
+  },
+  modeTabText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    letterSpacing: 2,
+    ...FONTS.bold,
+  },
+  modeTabTextActive: {
+    color: COLORS.goldLight,
+  },
   tabRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 16,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    backgroundColor: COLORS.card,
-    alignItems: 'center',
+  panel: {
+    borderRadius: 26,
+    padding: 24,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(245, 166, 35, 0.16)',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
   },
-  tabActive: {
-    backgroundColor: COLORS.gold,
-    borderColor: COLORS.gold,
-  },
-  tabText: {
+  panelEyebrow: {
+    color: COLORS.goldSoft,
     fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    ...FONTS.bold,
-    letterSpacing: 1.5,
+    letterSpacing: 2.5,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    ...FONTS.medium,
   },
-  tabTextActive: {
-    color: COLORS.black,
-  },
-
-  // Lobby
-  lobbyContent: {
-    gap: 16,
-    paddingTop: 20,
-  },
-  lobbyTitle: {
+  panelTitle: {
+    color: COLORS.offWhite,
     fontSize: SIZES.xxl,
-    color: COLORS.white,
+    lineHeight: 34,
+    marginBottom: 10,
     ...FONTS.bold,
-    textAlign: 'center',
   },
-  lobbyDesc: {
-    fontSize: SIZES.md,
+  panelCopy: {
     color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 12,
+    fontSize: SIZES.base,
+    lineHeight: 24,
+  },
+  createHintRow: {
+    marginTop: 20,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  createHintText: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.base,
+    ...FONTS.medium,
   },
   codeInput: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.white,
-    fontSize: SIZES.xxl,
-    ...FONTS.bold,
-    textAlign: 'center',
-    letterSpacing: 8,
-    paddingVertical: 18,
-    marginTop: 8,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.gold,
-    borderRadius: SIZES.radius,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  primaryButtonText: {
-    color: COLORS.black,
-    fontSize: SIZES.lg,
-    ...FONTS.bold,
-    letterSpacing: 2,
-  },
-
-  // Waiting
-  waitingContent: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: 20,
-  },
-  codeCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radiusLg,
-    borderWidth: 1,
-    borderColor: COLORS.gold + '40',
-    padding: 28,
-    alignItems: 'center',
-  },
-  codeLabel: {
-    fontSize: SIZES.xs,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 3,
+    marginTop: 20,
     marginBottom: 8,
-  },
-  codeValue: {
-    fontSize: 42,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 10,
-  },
-  waitingDesc: {
-    fontSize: SIZES.md,
-    color: COLORS.textSecondary,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.16)',
+    backgroundColor: 'rgba(7, 7, 7, 0.94)',
+    paddingVertical: 18,
+    color: COLORS.offWhite,
+    fontSize: 32,
     textAlign: 'center',
-    lineHeight: 22,
+    letterSpacing: 10,
+    ...FONTS.bold,
   },
-  buttonRow: {
+  goldButton: {
+    marginTop: 22,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: COLORS.gold,
+    minHeight: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goldButtonText: {
+    color: COLORS.black,
+    fontSize: SIZES.base,
+    letterSpacing: 2,
+    ...FONTS.bold,
+  },
+  textButton: {
+    marginTop: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  textButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
+    letterSpacing: 1.4,
+    ...FONTS.medium,
+  },
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: COLORS.obsidian,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  loadingText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
+  },
+  waitingButtonRow: {
     flexDirection: 'row',
     gap: 12,
+    marginTop: 22,
   },
   secondaryButton: {
     flex: 1,
+    minHeight: 50,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.12)',
+    backgroundColor: 'rgba(16, 16, 16, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
+  },
+  secondaryButtonText: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.md,
+    ...FONTS.medium,
+  },
+  codeHero: {
+    color: COLORS.goldLight,
+    fontSize: 44,
+    letterSpacing: 10,
+    marginTop: 6,
+    ...FONTS.bold,
+  },
+  joinFlash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 200, 87, 0.08)',
+  },
+  liveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+  },
+  liveHeaderCenter: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  roundEyebrow: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.xs,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    ...FONTS.medium,
+  },
+  timerOrb: {
+    minWidth: 70,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryButtonText: {
-    color: COLORS.white,
-    fontSize: SIZES.sm,
+  timerOrbText: {
+    fontSize: SIZES.base,
     ...FONTS.bold,
-    letterSpacing: 1,
   },
-  cancelButton: {
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.sm,
-    ...FONTS.medium,
-    letterSpacing: 1,
-  },
-
-  // Scores
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  scoreCard: {
+  arena: {
     flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
+    borderRadius: 28,
+    padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 12,
-    alignItems: 'center',
+    borderColor: 'rgba(245, 166, 35, 0.14)',
   },
-  scoreCardLeading: {
-    borderColor: COLORS.gold + '60',
-    backgroundColor: COLORS.card + 'ee',
+  arenaTopline: {
+    marginBottom: 14,
+    gap: 6,
   },
-  scoreName: {
+  targetText: {
+    color: COLORS.goldSoft,
     fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    ...FONTS.medium,
-  },
-  scoreValue: {
-    fontSize: SIZES.xxl,
-    color: COLORS.white,
-    ...FONTS.bold,
-  },
-  vsSmall: {
-    fontSize: SIZES.xs,
-    color: COLORS.gold,
-    ...FONTS.bold,
     letterSpacing: 2,
-  },
-
-  // Category & turn
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  categoryBadge: {
-    backgroundColor: COLORS.card,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  categoryText: {
-    fontSize: SIZES.xs,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 1,
+    textTransform: 'uppercase',
+    ...FONTS.medium,
   },
   turnText: {
-    flex: 1,
-    fontSize: SIZES.sm,
     color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
     ...FONTS.medium,
   },
-
-  // Timer
-  timerBadge: {
-    borderWidth: 2,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-  },
-  timerText: {
-    fontSize: SIZES.md,
-    ...FONTS.bold,
-  },
-
-  // Question
-  questionScroll: {
-    flex: 1,
-  },
-  questionScrollContent: {
-    paddingBottom: 40,
-  },
-  questionText: {
-    fontSize: SIZES.xl,
-    color: COLORS.white,
-    ...FONTS.semiBold,
-    lineHeight: 30,
-    marginBottom: 20,
-  },
-
-  // Buzz
-  buzzButton: {
-    backgroundColor: COLORS.red,
-    borderRadius: 999,
-    paddingVertical: 22,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  buzzButtonDisabled: {
-    opacity: 0.4,
-  },
-  buzzButtonText: {
-    color: COLORS.white,
-    fontSize: SIZES.xl,
-    ...FONTS.bold,
-    letterSpacing: 3,
-  },
-
-  // Choices
-  choicesContainer: {
+  progressArena: {
+    flexDirection: 'row',
     gap: 10,
+    marginBottom: 14,
   },
-  choiceButton: {
+  progressSide: {
+    flex: 1,
+    borderRadius: 18,
+    padding: 12,
+    backgroundColor: 'rgba(11, 11, 11, 0.76)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.08)',
+  },
+  progressSideLeading: {
+    borderColor: 'rgba(245, 166, 35, 0.2)',
+    backgroundColor: 'rgba(26, 15, 15, 0.78)',
+  },
+  scoreMeter: {
+    gap: 8,
+  },
+  scoreMeterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: SIZES.radius,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    gap: 14,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    opacity: 0.4,
+    justifyContent: 'space-between',
+    gap: 10,
   },
-  choiceButtonActive: {
-    opacity: 1,
-    borderColor: COLORS.gold + '40',
+  scoreMeterHeaderRight: {
+    flexDirection: 'row-reverse',
   },
-  choiceLetter: {
-    fontSize: SIZES.md,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    width: 24,
-  },
-  choiceText: {
+  scoreMeterName: {
     flex: 1,
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
+    color: COLORS.offWhite,
+    fontSize: SIZES.md,
+    ...FONTS.semiBold,
   },
-  choiceTextActive: {
-    color: COLORS.white,
-  },
-
-  // Completed
-  completedContent: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 40,
-    gap: 16,
-  },
-  resultLabel: {
-    fontSize: SIZES.xxxl,
-    ...FONTS.bold,
-    letterSpacing: 6,
-  },
-  resultHeadline: {
+  scoreMeterValue: {
+    color: COLORS.goldLight,
     fontSize: SIZES.lg,
-    color: COLORS.white,
-    ...FONTS.medium,
-    textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 12,
+    ...FONTS.bold,
   },
-  finalScoreRow: {
+  scoreMeterTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  scoreMeterFill: {
+    height: '100%',
+    borderRadius: 999,
+  },
+  categoryRow: {
+    marginBottom: 12,
+  },
+  categoryChip: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.16)',
+    backgroundColor: 'rgba(15, 15, 15, 0.9)',
+  },
+  categoryChipText: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.xs,
+    letterSpacing: 1.5,
+    ...FONTS.medium,
+  },
+  questionPanel: {
+    borderRadius: 24,
+    padding: 22,
+    marginBottom: 14,
+    backgroundColor: 'rgba(10, 10, 10, 0.94)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.12)',
+  },
+  questionText: {
+    color: COLORS.offWhite,
+    fontSize: 28,
+    lineHeight: 38,
+    ...FONTS.bold,
+  },
+  feedbackBanner: {
+    marginBottom: 14,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+  },
+  feedbackBannerCorrect: {
+    backgroundColor: 'rgba(211, 165, 77, 0.12)',
+    borderColor: 'rgba(211, 165, 77, 0.28)',
+  },
+  feedbackBannerWrong: {
+    backgroundColor: 'rgba(122, 21, 38, 0.18)',
+    borderColor: 'rgba(122, 21, 38, 0.34)',
+  },
+  feedbackBannerText: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.sm,
+    letterSpacing: 1.2,
+    ...FONTS.medium,
+  },
+  buzzButton: {
+    borderRadius: 999,
+    overflow: 'hidden',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.18)',
+  },
+  buzzButtonDisabled: {
+    opacity: 0.5,
+  },
+  buzzButtonSurface: {
+    minHeight: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+  },
+  buzzButtonLabel: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.xl,
+    letterSpacing: 2,
+    ...FONTS.bold,
+  },
+  answersWrap: {
+    gap: 10,
+  },
+  answerCard: {
+    minHeight: 64,
+    borderRadius: 18,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  finalScoreCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radiusLg,
+    backgroundColor: 'rgba(10, 10, 10, 0.92)',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 20,
+    borderColor: 'rgba(255, 200, 87, 0.08)',
+  },
+  answerCardActive: {
+    borderColor: 'rgba(245, 166, 35, 0.2)',
+    backgroundColor: 'rgba(34, 18, 18, 0.84)',
+  },
+  answerIndex: {
+    color: COLORS.goldLight,
+    fontSize: SIZES.md,
+    width: 18,
+    ...FONTS.bold,
+  },
+  answerText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.base,
+    ...FONTS.medium,
+  },
+  answerTextActive: {
+    color: COLORS.offWhite,
+  },
+  resultScroll: {
+    paddingBottom: 24,
     alignItems: 'center',
   },
-  finalScoreWinner: {
-    borderColor: COLORS.gold,
-  },
-  finalScoreLabel: {
+  resultTag: {
+    marginTop: 8,
+    marginBottom: 10,
     fontSize: SIZES.sm,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    ...FONTS.bold,
+  },
+  resultHeadline: {
+    color: COLORS.offWhite,
+    fontSize: 30,
+    lineHeight: 38,
+    textAlign: 'center',
+    marginBottom: 10,
+    ...FONTS.bold,
+  },
+  resultCopy: {
     color: COLORS.textSecondary,
-    ...FONTS.medium,
-    marginBottom: 4,
+    fontSize: SIZES.base,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginBottom: 24,
+    maxWidth: 320,
   },
-  finalScoreValue: {
-    fontSize: SIZES.xxxl,
-    color: COLORS.white,
+  resultCard: {
+    width: '100%',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.16)',
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 22,
+  },
+  resultCardImage: {
+    width: '100%',
+    height: 220,
+  },
+  resultNameplate: {
+    marginTop: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 166, 35, 0.2)',
+    backgroundColor: 'rgba(14, 14, 14, 0.88)',
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  resultWinnerName: {
+    color: COLORS.goldLight,
+    fontSize: SIZES.base,
+    letterSpacing: 2.2,
     ...FONTS.bold,
   },
-  vsText: {
-    fontSize: SIZES.sm,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 2,
+  resultScoreRow: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 16,
   },
 });
 

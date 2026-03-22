@@ -64,7 +64,7 @@ const AppNavigator = () => {
   if (loading) return null;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="Start" screenOptions={{ headerShown: false }}>
       {user ? (
         <>
           <Stack.Screen name="Start" component={StartScreen} />
