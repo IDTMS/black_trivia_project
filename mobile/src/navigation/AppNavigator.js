@@ -11,6 +11,7 @@ import GameScreen from '../screens/GameScreen';
 import MatchScreen from '../screens/MatchScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import StartScreen from '../screens/StartScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -66,6 +67,7 @@ const AppNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
         <>
+          <Stack.Screen name="Start" component={StartScreen} />
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen
             name="Game"
