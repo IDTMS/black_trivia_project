@@ -79,6 +79,9 @@ export const submitMatchResult = (matchId, winnerId) =>
 export const cancelMatch = (matchId) =>
   api.delete(`${ENDPOINTS.matches}${matchId}/`);
 
+export const leaveMatch = (matchId) =>
+  api.post(ENDPOINTS.leaveMatch(matchId));
+
 // Leaderboard
 export const getLeaderboard = () => api.get(ENDPOINTS.leaderboard);
 

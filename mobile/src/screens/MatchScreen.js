@@ -21,6 +21,7 @@ import {
   buzz as buzzApi,
   submitAnswer as submitAnswerApi,
   cancelMatch,
+  leaveMatch,
 } from '../services/api';
 
 const POLL_INTERVAL = 2000;
@@ -224,6 +225,29 @@ const MatchScreen = ({ navigation, route }) => {
   };
 
   const handleLeave = () => {
+    if (match && match.player2 && !match.winner) {
+      Alert.alert(
+        'Leave Match?',
+        'You will forfeit the match and your opponent wins.',
+        [
+          { text: 'Stay', style: 'cancel' },
+          {
+            text: 'Leave',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await leaveMatch(match.id);
+              } catch {
+                // match may already be completed
+              }
+              stopPolling();
+              navigation.goBack();
+            },
+          },
+        ],
+      );
+      return;
+    }
     stopPolling();
     navigation.goBack();
   };

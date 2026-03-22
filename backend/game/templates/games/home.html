@@ -580,21 +580,26 @@
         }
 
         body.in-arena main {
-            width: min(100%, 560px);
-            gap: 18px;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+            gap: 0;
         }
 
         body.in-arena #matchCard {
-            min-height: calc(100vh - 120px);
-            min-height: calc(100dvh - 120px);
-            padding: 20px;
-            border-color: rgba(212, 175, 90, 0.28);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: calc(22px + env(safe-area-inset-top, 0px)) 20px calc(22px + env(safe-area-inset-bottom, 0px));
+            border: none;
+            border-radius: 0;
             background:
-                radial-gradient(circle at 18% 12%, rgba(165, 27, 47, 0.18), transparent 20%),
-                radial-gradient(circle at 84% 14%, rgba(212, 175, 90, 0.12), transparent 22%),
-                linear-gradient(180deg, rgba(10, 10, 12, 0.72), rgba(4, 4, 5, 0.86));
-            backdrop-filter: blur(28px) saturate(120%);
-            box-shadow: 0 42px 120px rgba(0, 0, 0, 0.68), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+                radial-gradient(circle at 14% 10%, rgba(165, 27, 47, 0.22), transparent 24%),
+                radial-gradient(circle at 86% 12%, rgba(212, 175, 90, 0.14), transparent 20%),
+                radial-gradient(circle at 50% 85%, rgba(165, 27, 47, 0.1), transparent 30%),
+                radial-gradient(circle at 80% 90%, rgba(212, 175, 90, 0.06), transparent 26%),
+                linear-gradient(180deg, #09090a 0%, #050506 48%, #030303 100%);
+            backdrop-filter: none;
+            box-shadow: none;
             animation: arenaRise 340ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
         }
 
@@ -603,8 +608,8 @@
             position: absolute;
             inset: -20%;
             background:
-                radial-gradient(circle at 50% 0%, rgba(212, 175, 90, 0.08), transparent 34%),
-                radial-gradient(circle at 50% 100%, rgba(165, 27, 47, 0.08), transparent 38%);
+                radial-gradient(circle at 50% 0%, rgba(212, 175, 90, 0.07), transparent 34%),
+                radial-gradient(circle at 50% 100%, rgba(165, 27, 47, 0.07), transparent 38%);
             animation: arenaBreath 9s ease-in-out infinite;
             pointer-events: none;
         }
@@ -612,6 +617,10 @@
         body.in-arena #matchCard > * {
             position: relative;
             z-index: 1;
+            width: 100%;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         #matchCard.is-join-flash {
@@ -1853,28 +1862,28 @@
         .category-picker {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
         }
 
         .cat-chip {
-            padding: 8px 14px;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.04);
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
             color: var(--text-soft);
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             min-height: auto;
+            line-height: 1;
         }
 
         .cat-chip.active {
-            border-color: rgba(212, 175, 90, 0.5);
-            background: rgba(212, 175, 90, 0.14);
+            border-color: rgba(212, 175, 90, 0.4);
+            background: rgba(212, 175, 90, 0.12);
             color: var(--gold);
-            box-shadow: 0 0 12px rgba(212, 175, 90, 0.1);
         }
 
         /* Round badge */
@@ -3712,8 +3721,8 @@
         setAnimatedVisibility(elements.scoreRow, matchStarted);
         setAnimatedVisibility(elements.questionCard, matchStarted);
 
-        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Back to Lobby';
-        elements.backToLobbyRow.classList.toggle('hidden', !(isWaiting || isCompleted));
+        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : isLive ? 'Leave Match' : 'Back to Lobby';
+        elements.backToLobbyRow.classList.toggle('hidden', !isWaiting && !isCompleted && !isLive);
         elements.rematchButton.classList.toggle('hidden', !isCompleted);
 
         // Round badge
@@ -4350,6 +4359,30 @@
                 renderVisibility();
                 renderMatch();
                 showStatus('Match canceled. Back in the lobby.', 'info');
+            } catch (error) {
+                showStatus(error.message, 'error');
+            } finally {
+                setButtonLoading(elements.backToLobbyButton, false);
+            }
+            return;
+        }
+
+        if (state.activeMatch.status === 'live') {
+            if (!confirm('Are you sure you want to leave? You will forfeit the match.')) {
+                return;
+            }
+            setButtonLoading(elements.backToLobbyButton, true, 'Leaving');
+            try {
+                await request(`/api/matches/${state.activeMatch.id}/leave/`, {method: 'POST'});
+                state.activeMatch = null;
+                setActiveMatchId('');
+                stopPolling();
+                resetArenaEffects();
+                prevP1Score = 0;
+                prevP2Score = 0;
+                renderVisibility();
+                renderMatch();
+                showStatus('You forfeited the match.', 'info');
             } catch (error) {
                 showStatus(error.message, 'error');
             } finally {
