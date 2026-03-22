@@ -131,12 +131,21 @@ const MatchScreen = ({ navigation, route }) => {
     }
   };
 
+  const showActiveMatchAlert = (matchData) => {
+    if (matchData?.result === 'active_match_exists' && matchData?.message) {
+      Alert.alert('Active Match', matchData.message);
+    }
+  };
+
   const handleCreateMatch = async () => {
     setActionLoading(true);
     try {
       const res = await startMatch();
       setMatch(res.data);
-      startPolling(res.data.id);
+      if (res.data?.id) {
+        startPolling(res.data.id);
+      }
+      showActiveMatchAlert(res.data);
     } catch (error) {
       const msg = error.response?.data?.detail || error.response?.data?.error || 'Could not create match.';
       Alert.alert('Error', msg);
@@ -155,7 +164,10 @@ const MatchScreen = ({ navigation, route }) => {
     try {
       const res = await joinMatchByCode(code);
       setMatch(res.data);
-      startPolling(res.data.id);
+      if (res.data?.id) {
+        startPolling(res.data.id);
+      }
+      showActiveMatchAlert(res.data);
     } catch (error) {
       const msg = error.response?.data?.detail || error.response?.data?.error || 'Could not join match.';
       Alert.alert('Error', msg);
