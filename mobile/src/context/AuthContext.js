@@ -1,8 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser, getCurrentUser } from '../services/api';
 
 const AuthContext = createContext({});
+const CURRENT_USER_KEY = 'currentUser';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -12,12 +13,36 @@ export const AuthProvider = ({ children }) => {
     loadStoredAuth();
   }, []);
 
+  const persistUser = async (nextUser) => {
+    await AsyncStorage.setItem('username', nextUser.username);
+    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(nextUser));
+  };
+
+  const hydrateCurrentUser = async (token, fallbackUsername = null) => {
+    try {
+      const res = await getCurrentUser();
+      await persistUser(res.data);
+      setUser({ ...res.data, token });
+    } catch {
+      const storedUser = await AsyncStorage.getItem(CURRENT_USER_KEY);
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser({ ...parsedUser, token });
+        return;
+      }
+
+      if (fallbackUsername) {
+        setUser({ username: fallbackUsername, token });
+      }
+    }
+  };
+
   const loadStoredAuth = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       const username = await AsyncStorage.getItem('username');
-      if (token && username) {
-        setUser({ username, token });
+      if (token) {
+        await hydrateCurrentUser(token, username);
       }
     } catch (e) {
       // silently fail
@@ -31,8 +56,7 @@ export const AuthProvider = ({ children }) => {
     const { access, refresh } = res.data;
     await AsyncStorage.setItem('accessToken', access);
     await AsyncStorage.setItem('refreshToken', refresh);
-    await AsyncStorage.setItem('username', username);
-    setUser({ username, token: access });
+    await hydrateCurrentUser(access, username);
   };
 
   const register = async (username, email, password) => {
@@ -40,7 +64,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'username']);
+    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'username', CURRENT_USER_KEY]);
     setUser(null);
   };
 

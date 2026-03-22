@@ -278,11 +278,13 @@ const MatchScreen = ({ navigation, route }) => {
     }
   };
 
-  // Helper: am I this player?
-  const isPlayer1 = user && match?.player1?.id === user.id;
-  const isPlayer2 = user && match?.player2?.id === user.id;
+  // Match responses tell us which side the current user is on.
+  const userRole = match?.user_role;
+  const isPlayer1 = userRole === 'player1';
+  const isPlayer2 = userRole === 'player2';
   const isParticipant = isPlayer1 || isPlayer2;
-  const isBuzzer = user && match?.current_buzzer?.id === user.id;
+  const currentUserMatchId = isPlayer1 ? match?.player1?.id : isPlayer2 ? match?.player2?.id : user?.id;
+  const isBuzzer = currentUserMatchId && match?.current_buzzer?.id === currentUserMatchId;
   const canBuzz = match?.status === 'live' && isParticipant && !match.current_buzzer;
   const canAnswer = match?.status === 'live' && isBuzzer;
 
@@ -431,7 +433,7 @@ const MatchScreen = ({ navigation, route }) => {
 
   // ─── Completed ───
   if (phase === 'completed' && match) {
-    const isWinner = user && match.winner?.id === user.id;
+    const isWinner = currentUserMatchId && match.winner?.id === currentUserMatchId;
     const winnerName = match.winner?.username || 'Winner';
     const loserName = match.loser?.username || 'Loser';
 
@@ -497,7 +499,7 @@ const MatchScreen = ({ navigation, route }) => {
     ? 'You got the buzzer. Pick your answer.'
     : match.current_buzzer
       ? `${match.current_buzzer.username} buzzed. Waiting on their answer.`
-      : match.locked_out_player && user && match.locked_out_player.id === user.id
+      : match.locked_out_player && currentUserMatchId && match.locked_out_player.id === currentUserMatchId
         ? 'You missed. Opponent can steal.'
         : match.locked_out_player
           ? `${match.locked_out_player.username} missed. Steal it.`
@@ -559,7 +561,7 @@ const MatchScreen = ({ navigation, route }) => {
 
         {/* Steal buzz - when opponent missed, you can buzz to steal */}
         {match.locked_out_player && !match.current_buzzer && isParticipant &&
-          user && match.locked_out_player.id !== user.id && (
+          currentUserMatchId && match.locked_out_player.id !== currentUserMatchId && (
           <TouchableOpacity
             style={styles.buzzButton}
             onPress={handleBuzz}

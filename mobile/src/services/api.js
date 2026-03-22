@@ -35,7 +35,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
-        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'username']);
+        await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'username', 'currentUser']);
       }
     }
     return Promise.reject(error);
@@ -48,6 +48,8 @@ export const registerUser = (username, email, password) =>
 
 export const loginUser = (username, password) =>
   api.post(ENDPOINTS.login, { username, password });
+
+export const getCurrentUser = () => api.get(ENDPOINTS.currentUser);
 
 // Questions
 export const getRandomQuestion = () => api.get(ENDPOINTS.randomQuestion);
