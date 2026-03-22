@@ -374,6 +374,15 @@ def get_match_for_user(pk, user):
     if not match:
         return None
 
+    # Auto-delete stale live matches with no activity for 2 hours
+    if (
+        not match.winner_id
+        and match.player2_id
+        and match.timestamp < timezone.now() - timedelta(hours=2)
+    ):
+        match.delete()
+        return None
+
     resolve_question_timeout(match)
     maybe_finalize_match(match)
 
@@ -404,6 +413,18 @@ def get_incomplete_match_for_user(user, exclude_match_id=None):
             player2__isnull=True,
             winner__isnull=True,
             timestamp__lt=stale_cutoff,
+        ).delete()
+    except Exception:
+        pass
+
+    # Auto-cancel stale live matches (no activity for 2 hours)
+    try:
+        live_stale_cutoff = timezone.now() - timedelta(hours=2)
+        Match.objects.filter(
+            models.Q(player1=user) | models.Q(player2=user),
+            player2__isnull=False,
+            winner__isnull=True,
+            timestamp__lt=live_stale_cutoff,
         ).delete()
     except Exception:
         pass
