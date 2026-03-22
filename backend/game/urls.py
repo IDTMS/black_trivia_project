@@ -16,6 +16,7 @@ from .views import (
     BuzzView,
     AnswerQuestionView,
     ChooseCategoryView,
+    LeaveMatchView,
     LeaderboardListView,
     UserStatusView,
     VapidKeyView,
@@ -45,6 +46,7 @@ urlpatterns = [
     path('matches/<int:pk>/buzz/', BuzzView.as_view(), name='buzz'),
     path('matches/<int:pk>/answer/', AnswerQuestionView.as_view(), name='answer-question'),
     path('matches/<int:pk>/choose-category/', ChooseCategoryView.as_view(), name='choose-category'),
+    path('matches/<int:pk>/leave/', LeaveMatchView.as_view(), name='leave-match'),
 
     # Leaderboard, Match History, and User Status
     path('leaderboard/', LeaderboardListView.as_view(), name='leaderboard'),

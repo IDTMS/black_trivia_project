@@ -1004,6 +1004,38 @@ class ChooseCategoryView(APIView):
         return serialize_match(request, match, message=f"New {category} question loaded.")
 
 
+class LeaveMatchView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        match = get_match_for_user(pk, request.user)
+        if not match:
+            return Response({"error": "Match not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if match.winner_id:
+            return Response({"error": "This match is already completed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not match.player2_id:
+            return Response(
+                {"error": "No opponent has joined yet. Cancel the match instead."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # The opponent of the leaving player wins by forfeit
+        if request.user.id == match.player1_id:
+            winner = match.player2
+        else:
+            winner = match.player1
+
+        finalize_match(match, winner)
+        return serialize_match(
+            request,
+            match,
+            message=f"{request.user.username} left the match. {winner.username} wins by forfeit.",
+            result='forfeit',
+        )
+
+
 class LeaderboardListView(generics.ListAPIView):
     queryset = Leaderboard.objects.all().order_by('-wins', '-points')
     serializer_class = LeaderboardSerializer

@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   buzz: (id) => `/matches/${id}/buzz/`,
   answer: (id) => `/matches/${id}/answer/`,
   chooseCategory: (id) => `/matches/${id}/choose-category/`,
+  leaveMatch: (id) => `/matches/${id}/leave/`,
   leaderboard: '/leaderboard/',
   userStatus: '/user/status/',
 };

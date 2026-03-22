@@ -3712,8 +3712,8 @@
         setAnimatedVisibility(elements.scoreRow, matchStarted);
         setAnimatedVisibility(elements.questionCard, matchStarted);
 
-        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : 'Back to Lobby';
-        elements.backToLobbyRow.classList.toggle('hidden', !(isWaiting || isCompleted));
+        elements.backToLobbyButton.textContent = isWaiting ? 'Cancel Match' : isLive ? 'Leave Match' : 'Back to Lobby';
+        elements.backToLobbyRow.classList.toggle('hidden', !isWaiting && !isCompleted && !isLive);
         elements.rematchButton.classList.toggle('hidden', !isCompleted);
 
         // Round badge
@@ -4350,6 +4350,30 @@
                 renderVisibility();
                 renderMatch();
                 showStatus('Match canceled. Back in the lobby.', 'info');
+            } catch (error) {
+                showStatus(error.message, 'error');
+            } finally {
+                setButtonLoading(elements.backToLobbyButton, false);
+            }
+            return;
+        }
+
+        if (state.activeMatch.status === 'live') {
+            if (!confirm('Are you sure you want to leave? You will forfeit the match.')) {
+                return;
+            }
+            setButtonLoading(elements.backToLobbyButton, true, 'Leaving');
+            try {
+                await request(`/api/matches/${state.activeMatch.id}/leave/`, {method: 'POST'});
+                state.activeMatch = null;
+                setActiveMatchId('');
+                stopPolling();
+                resetArenaEffects();
+                prevP1Score = 0;
+                prevP2Score = 0;
+                renderVisibility();
+                renderMatch();
+                showStatus('You forfeited the match.', 'info');
             } catch (error) {
                 showStatus(error.message, 'error');
             } finally {
