@@ -282,6 +282,19 @@
             color: rgba(244, 239, 229, 0.78);
         }
 
+        .hero-cta {
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+            max-width: 26rem;
+        }
+
+        .hero-cta-note {
+            font-size: 12px;
+            line-height: 1.45;
+            color: rgba(244, 239, 229, 0.68);
+        }
+
         .hero-stats {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2084,6 +2097,10 @@
         <p class="hero-copy">
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
+        <div class="hero-cta" id="heroSignInCta">
+            <button class="primary-button" id="heroGoogleButton" type="button">Sign In To Play</button>
+            <span class="hero-cta-note">New here? Sign in with Google and pick your player name before you enter the arena.</span>
+        </div>
         <div class="hero-stats">
             <div class="hero-stat">
                 <strong id="heroQuestionCount">{{ question_count }}</strong>
@@ -2170,6 +2187,13 @@
             </div>
             <button class="secondary-button" id="logoutButton" type="button">Logout</button>
         </div>
+        <form class="identity-row" id="updateUsernameForm" style="margin-top:12px; align-items:flex-end;">
+            <label class="field" style="flex:1; margin:0;">
+                <span>Change Username</span>
+                <input id="updateUsernameInput" type="text" placeholder="Enter a new username" autocomplete="username">
+            </label>
+            <button class="primary-button" id="updateUsernameButton" type="submit">Save Name</button>
+        </form>
         <div class="vault-panel">
             <div class="wallet-shell" id="walletShell">
                 <div class="wallet-topline">
@@ -2451,12 +2475,17 @@
         googleUsernameCard: document.getElementById('googleUsernameCard'),
         googleEmail: document.getElementById('googleEmail'),
         googleUsername: document.getElementById('googleUsername'),
+        updateUsernameForm: document.getElementById('updateUsernameForm'),
+        updateUsernameInput: document.getElementById('updateUsernameInput'),
+        updateUsernameButton: document.getElementById('updateUsernameButton'),
         googleAuthWrap: document.getElementById('googleAuthWrap'),
         googleAuthMessage: document.getElementById('googleAuthMessage'),
         googleFallbackButton: document.getElementById('googleFallbackButton'),
         googleRetryButton: document.getElementById('googleRetryButton'),
         googleButtonSlot: document.getElementById('googleButtonSlot'),
         googleButton: document.getElementById('googleButton'),
+        heroSignInCta: document.getElementById('heroSignInCta'),
+        heroGoogleButton: document.getElementById('heroGoogleButton'),
         logoutButton: document.getElementById('logoutButton'),
         createMatchButton: document.getElementById('createMatchButton'),
         joinForm: document.getElementById('joinForm'),
@@ -3405,6 +3434,9 @@
         document.body.classList.toggle('in-arena', inArena);
 
         setAnimatedVisibility(elements.authCard, !isAuthed);
+        if (elements.heroSignInCta) {
+            elements.heroSignInCta.classList.toggle('hidden', isAuthed);
+        }
 
         // Arena mode: hide everything except the match and victory sections
         setAnimatedVisibility(elements.heroSection, !inArena);
@@ -3450,6 +3482,9 @@
 
         elements.currentUsername.textContent = state.currentUser.username;
         elements.currentEmail.textContent = state.currentUser.email || 'No email on file';
+        if (elements.updateUsernameInput && document.activeElement !== elements.updateUsernameInput) {
+            elements.updateUsernameInput.value = state.currentUser.username;
+        }
         elements.walletCardOwner.textContent = state.currentUser.username.toUpperCase();
         fitCardName(elements.walletCardOwner);
         elements.walletShell.classList.toggle('is-captured', isCaptured);
@@ -3889,6 +3924,37 @@
             await completeGoogleSignIn(state.pendingGoogleCredential, username);
         } catch (error) {
             showStatus(error.message, 'error');
+        }
+    }
+
+    async function updateUsername(event) {
+        event.preventDefault();
+        if (!state.currentUser) {
+            showStatus('Sign in first.', 'error');
+            return;
+        }
+
+        const username = elements.updateUsernameInput.value.trim();
+        if (!username) {
+            showStatus('Enter a username first.', 'error');
+            return;
+        }
+
+        setButtonLoading(elements.updateUsernameButton, true, 'Saving');
+        try {
+            const user = await request('/api/me/', {
+                method: 'PATCH',
+                body: JSON.stringify({ username }),
+            });
+            state.currentUser = user;
+            renderUI();
+            await fetchLeaderboard();
+            await fetchHistory();
+            showStatus(`Name changed to ${user.username}.`, 'success');
+        } catch (error) {
+            showStatus(error.message, 'error');
+        } finally {
+            setButtonLoading(elements.updateUsernameButton, false);
         }
     }
 
@@ -4336,6 +4402,15 @@
     }
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
+    elements.updateUsernameForm.addEventListener('submit', updateUsername);
+    elements.heroGoogleButton.addEventListener('click', () => {
+        elements.authCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (!elements.googleButtonSlot.classList.contains('hidden')) {
+            elements.googleButton?.querySelector('div[role="button"]')?.click();
+            return;
+        }
+        elements.googleFallbackButton.click();
+    });
     elements.googleFallbackButton.addEventListener('click', () => loadGoogleScript(true));
     elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
     elements.logoutButton.addEventListener('click', logout);

@@ -641,6 +641,46 @@ class GoogleAuthTests(APITestCase):
         self.assertTrue(Leaderboard.objects.filter(user=user).exists())
 
 
+class CurrentUserProfileTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='name_lock_test',
+            email='name_lock_test@example.com',
+            password='StrongPass123!',
+        )
+        Leaderboard.objects.create(user=self.user)
+        BlackCard.objects.create(owner=self.user, current_holder=self.user)
+        self.client.force_authenticate(user=self.user)
+
+    def test_current_user_patch_allows_username_change(self):
+        response = self.client.patch(
+            '/api/me/',
+            {'username': 'renamed_player'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, 'renamed_player')
+        self.assertEqual(response.data['username'], 'renamed_player')
+
+    def test_current_user_patch_rejects_taken_username(self):
+        User.objects.create_user(
+            username='taken_name',
+            email='taken@example.com',
+            password='StrongPass123!',
+        )
+
+        response = self.client.patch(
+            '/api/me/',
+            {'username': 'taken_name'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['error'], 'That username is already taken.')
+
+
 class QuestionBankAuditTests(APITestCase):
     def test_bundled_question_bank_excludes_removed_prompts(self):
         question_texts = {question['question_text'] for question in bundled_questions}

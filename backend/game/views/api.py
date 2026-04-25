@@ -544,6 +544,24 @@ class CurrentUserView(APIView):
         serializer = CurrentUserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def patch(self, request):
+        user = request.user
+        requested_username = request.data.get('username')
+
+        try:
+            username = validate_requested_username(requested_username)
+        except ValidationError as exc:
+            return Response({'error': exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.username.lower() == username.lower():
+            serializer = CurrentUserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        user.username = username
+        user.save(update_fields=['username'])
+        serializer = CurrentUserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class QuestionListCreateView(generics.ListCreateAPIView):
     queryset = Question.objects.all()
