@@ -286,13 +286,7 @@
             display: grid;
             gap: 10px;
             margin-top: 18px;
-            max-width: 26rem;
-        }
-
-        .hero-cta-note {
-            font-size: 12px;
-            line-height: 1.45;
-            color: rgba(244, 239, 229, 0.68);
+            max-width: 22rem;
         }
 
         .hero-stats {
@@ -2098,8 +2092,7 @@
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
         <div class="hero-cta" id="heroSignInCta">
-            <button class="primary-button" id="heroGoogleButton" type="button">Sign In To Play</button>
-            <span class="hero-cta-note">New here? Sign in with Google and pick your player name before you enter the arena.</span>
+            <button class="primary-button" id="heroGoogleButton" type="button">Sign In</button>
         </div>
         <div class="hero-stats">
             <div class="hero-stat">
@@ -2113,27 +2106,6 @@
             <div class="hero-stat">
                 <strong id="heroLeaderboardCount">0</strong>
                 <span>On Board</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="card" id="authCard">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Get Started</span>
-                <h2>Sign In to Play</h2>
-            </div>
-        </div>
-        <div id="googleAuthWrap" class="auth-shell">
-            <p class="section-copy auth-copy">Use Google to verify your account, then choose your Black Card username before you step into the arena.</p>
-            <div class="auth-inline-status">
-                <span class="badge">Secure Entry</span>
-                <span class="subtle" id="googleAuthMessage">Loading Google sign-in…</span>
-            </div>
-            <button class="primary-button" id="googleFallbackButton" type="button">Loading Google Sign-In</button>
-            <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry Sign-In</button>
-            <div class="google-button-slot hidden" id="googleButtonSlot">
-                <div id="googleButton"></div>
             </div>
         </div>
     </section>
@@ -2168,6 +2140,14 @@
         </div>
         <div class="status-banner info is-visible" id="statusBanner">
             Sign in to create a match or join one with a code.
+        </div>
+        <div id="googleAuthWrap" class="auth-shell" style="margin-top:14px;">
+            <span class="subtle" id="googleAuthMessage">Loading Google sign-in…</span>
+            <button class="primary-button" id="googleFallbackButton" type="button">Sign In</button>
+            <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry Sign-In</button>
+            <div class="google-button-slot hidden" id="googleButtonSlot">
+                <div id="googleButton"></div>
+            </div>
         </div>
     </section>
 
@@ -2446,7 +2426,6 @@
     };
 
     const elements = {
-        authCard: document.getElementById('authCard'),
         profileCard: document.getElementById('profileCard'),
         lobbyCard: document.getElementById('lobbyCard'),
         matchCard: document.getElementById('matchCard'),
@@ -3433,7 +3412,6 @@
         const inArena = hasMatch && !isCompleted;
         document.body.classList.toggle('in-arena', inArena);
 
-        setAnimatedVisibility(elements.authCard, !isAuthed);
         if (elements.heroSignInCta) {
             elements.heroSignInCta.classList.toggle('hidden', isAuthed);
         }
@@ -4404,7 +4382,7 @@
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
     elements.updateUsernameForm.addEventListener('submit', updateUsername);
     elements.heroGoogleButton.addEventListener('click', () => {
-        elements.authCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        elements.statusCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
         if (!elements.googleButtonSlot.classList.contains('hidden')) {
             elements.googleButton?.querySelector('div[role="button"]')?.click();
             return;
