@@ -54,23 +54,19 @@ export const getCurrentUser = () => api.get(ENDPOINTS.currentUser);
 // Questions
 export const getRandomQuestion = () => api.get(ENDPOINTS.randomQuestion);
 
-export const getQuestionsByCategory = (category) =>
-  api.get(ENDPOINTS.questions, { params: { category } });
-
 // Matches
-export const startMatch = () => api.post(ENDPOINTS.matches);
+export const startMatch = (categories = null) =>
+  api.post(ENDPOINTS.matches, categories?.length ? { categories } : {});
 
 export const getMatch = (matchId) => api.get(`${ENDPOINTS.matches}${matchId}/`);
 
 export const joinMatchByCode = (inviteCode) =>
   api.post(`${ENDPOINTS.matches}join/`, { invite_code: inviteCode });
 
-export const joinMatch = (matchId) => api.post(ENDPOINTS.joinMatch(matchId));
-
 export const buzz = (matchId) => api.post(ENDPOINTS.buzz(matchId));
 
-export const submitAnswer = (matchId, questionId, answer) =>
-  api.post(ENDPOINTS.answer(matchId), { question_id: questionId, answer });
+export const submitAnswer = (matchId, answer) =>
+  api.post(ENDPOINTS.answer(matchId), { answer });
 
 export const chooseCategory = (matchId, category) =>
   api.post(ENDPOINTS.chooseCategory(matchId), { category });

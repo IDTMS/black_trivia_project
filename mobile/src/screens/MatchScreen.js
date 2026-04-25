@@ -27,6 +27,8 @@ import {
   startMatch,
   submitAnswer as submitAnswerApi,
 } from '../services/api';
+import StatusBanner from '../components/StatusBanner';
+import StateBlock from '../components/StateBlock';
 import {
   fadeOutAmbient,
   playConfirm,
@@ -96,6 +98,8 @@ const MatchScreen = ({ navigation, route }) => {
   const [phase, setPhase] = useState(initialMatchId ? 'loading' : initialMode);
   const [timeLeft, setTimeLeft] = useState(15);
   const [feedback, setFeedback] = useState(null);
+  const [screenMessage, setScreenMessage] = useState(null);
+  const [joinCodeError, setJoinCodeError] = useState('');
 
   const pollRef = useRef(null);
   const timerRef = useRef(null);
@@ -167,6 +171,14 @@ const MatchScreen = ({ navigation, route }) => {
     },
     [feedbackAnim]
   );
+
+  const showScreenMessage = useCallback((type, text) => {
+    setScreenMessage({ type, text });
+  }, []);
+
+  const clearScreenMessage = useCallback(() => {
+    setScreenMessage(null);
+  }, []);
 
   const flashJoinCue = useCallback(() => {
     joinFlashAnim.setValue(0);
@@ -358,10 +370,11 @@ const MatchScreen = ({ navigation, route }) => {
         const res = await getMatch(initialMatchId);
         if (!active) return;
         applyMatchState(res.data, 'load');
+        clearScreenMessage();
         startPolling(initialMatchId);
       } catch {
         if (active) {
-          Alert.alert('Error', 'Could not load match.');
+          showScreenMessage('error', 'Could not load match. Head back and try again.');
           navigation.goBack();
         }
       } finally {
@@ -383,11 +396,11 @@ const MatchScreen = ({ navigation, route }) => {
 
   const showActiveMatchAlert = useCallback((matchData) => {
     if (matchData?.result === 'active_match_exists' && matchData?.message) {
-      Alert.alert('Active Match', matchData.message);
+      showScreenMessage('info', matchData.message);
       return true;
     }
     return false;
-  }, []);
+  }, [showScreenMessage]);
 
   const resolveErrorMessage = (error, fallback) =>
     error.response?.data?.message ||
@@ -397,15 +410,18 @@ const MatchScreen = ({ navigation, route }) => {
 
   const handleCreateMatch = async () => {
     setActionLoading(true);
+    clearScreenMessage();
     try {
       const res = await startMatch();
       applyMatchState(res.data, 'create');
       if (res.data?.id) {
         startPolling(res.data.id);
       }
-      showActiveMatchAlert(res.data);
+      if (!showActiveMatchAlert(res.data)) {
+        showScreenMessage('success', res.data?.message || 'Match created. Share the code and run it up.');
+      }
     } catch (error) {
-      Alert.alert('Error', resolveErrorMessage(error, 'Could not create match.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not create match.'));
     } finally {
       setActionLoading(false);
     }
@@ -414,20 +430,24 @@ const MatchScreen = ({ navigation, route }) => {
   const handleJoinMatch = async () => {
     const inviteCode = joinCode.trim().toUpperCase();
     if (!inviteCode) {
-      Alert.alert('Enter a code', 'Type the 6-character match code.');
+      setJoinCodeError('Type the 6-character match code.');
       return;
     }
 
+    setJoinCodeError('');
     setActionLoading(true);
+    clearScreenMessage();
     try {
       const res = await joinMatchByCode(inviteCode);
       applyMatchState(res.data, 'join');
       if (res.data?.id) {
         startPolling(res.data.id);
       }
-      showActiveMatchAlert(res.data);
+      if (!showActiveMatchAlert(res.data)) {
+        showScreenMessage('success', res.data?.message || 'Match joined.');
+      }
     } catch (error) {
-      Alert.alert('Unable to Join', resolveErrorMessage(error, 'Could not join match.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not join match.'));
     } finally {
       setActionLoading(false);
     }
@@ -436,11 +456,12 @@ const MatchScreen = ({ navigation, route }) => {
   const handleBuzz = async () => {
     if (!match) return;
     setActionLoading(true);
+    clearScreenMessage();
     try {
       const res = await buzzApi(match.id);
       applyMatchState(res.data, 'buzz');
     } catch (error) {
-      Alert.alert('Buzz Failed', resolveErrorMessage(error, 'Could not claim the buzzer.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not claim the buzzer.'));
     } finally {
       setActionLoading(false);
     }
@@ -449,11 +470,15 @@ const MatchScreen = ({ navigation, route }) => {
   const handleAnswer = async (answer) => {
     if (!match) return;
     setActionLoading(true);
+    clearScreenMessage();
     try {
-      const res = await submitAnswerApi(match.id, null, answer);
+      const res = await submitAnswerApi(match.id, answer);
       applyMatchState(res.data, 'answer');
+      if (res.data?.message && res.data?.result !== 'correct' && res.data?.result !== 'match_finished') {
+        showScreenMessage('info', res.data.message);
+      }
     } catch (error) {
-      Alert.alert('Answer Failed', resolveErrorMessage(error, 'Could not submit answer.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not submit answer.'));
     } finally {
       setActionLoading(false);
     }
@@ -466,7 +491,7 @@ const MatchScreen = ({ navigation, route }) => {
       stopPolling();
       navigation.popToTop();
     } catch (error) {
-      Alert.alert('Error', resolveErrorMessage(error, 'Could not cancel match.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not cancel match.'));
     }
   };
 
@@ -474,9 +499,9 @@ const MatchScreen = ({ navigation, route }) => {
     if (!match?.invite_code) return;
     try {
       await Clipboard.setStringAsync(match.invite_code);
-      Alert.alert('Copied', `${match.invite_code} is ready to send.`);
+      showScreenMessage('success', `${match.invite_code} copied. Send it.`);
     } catch {
-      Alert.alert('Copy Failed', 'Could not copy the match code on this device.');
+      showScreenMessage('error', 'Could not copy the match code on this device.');
     }
   };
 
@@ -525,15 +550,18 @@ const MatchScreen = ({ navigation, route }) => {
 
   const handleRematch = async () => {
     setActionLoading(true);
+    clearScreenMessage();
     try {
       const res = await startMatch();
       applyMatchState(res.data, 'rematch');
       if (res.data?.id) {
         startPolling(res.data.id);
       }
-      showActiveMatchAlert(res.data);
+      if (!showActiveMatchAlert(res.data)) {
+        showScreenMessage('success', res.data?.message || 'Rematch ready.');
+      }
     } catch (error) {
-      Alert.alert('Error', resolveErrorMessage(error, 'Could not create rematch.'));
+      showScreenMessage('error', resolveErrorMessage(error, 'Could not create rematch.'));
     } finally {
       setActionLoading(false);
     }
@@ -548,13 +576,21 @@ const MatchScreen = ({ navigation, route }) => {
   const targetScore = match?.target_score || 50;
   const roundName = match?.round_name || 'Private Match';
   const timerColor = getTimerColor(timeLeft);
+  const player1Name = match?.player1?.username || 'Player 1';
+  const player2Name = match?.player2?.username || 'Player 2';
+  const opponentName = currentUserMatchId === match?.player1?.id ? player2Name : player1Name;
+  const waitingStatus = useMemo(() => {
+    if (!match) return '';
+    if (match.player2) return `${player2Name} joined. Match is live.`;
+    return 'Waiting for your opponent to join with the code below.';
+  }, [match, player2Name]);
   const turnMessage = useMemo(() => {
     if (!match) return '';
-    if (isBuzzer) return 'You have the buzzer. Lock it in.';
-    if (match.current_buzzer) return `${match.current_buzzer.username} has control.`;
-    if (match.locked_out_player?.id === currentUserMatchId) return 'You missed. Your opponent can steal.';
-    if (match.locked_out_player) return `${match.locked_out_player.username} missed. Take the steal.`;
-    return 'Buzz in first and control the round.';
+    if (isBuzzer) return 'You have control. Lock in the right answer.';
+    if (match.current_buzzer) return `${match.current_buzzer.username} has control. Get ready to steal.`;
+    if (match.locked_out_player?.id === currentUserMatchId) return 'You missed. Brace for the steal attempt.';
+    if (match.locked_out_player) return `${match.locked_out_player.username} missed. Steal this round.`;
+    return 'Buzz first and take control of the round.';
   }, [currentUserMatchId, isBuzzer, match]);
 
   if (phase === 'create' || phase === 'join') {
@@ -605,17 +641,25 @@ const MatchScreen = ({ navigation, route }) => {
                 : 'Enter the room code from the card holder and step into the arena.'}
             </Text>
 
+            <StatusBanner message={screenMessage?.text} type={screenMessage?.type} />
+
             {phase === 'join' ? (
-              <TextInput
-                style={styles.codeInput}
-                value={joinCode}
-                onChangeText={setJoinCode}
-                placeholder="ABC123"
-                placeholderTextColor={COLORS.gray}
-                maxLength={6}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
+              <>
+                <TextInput
+                  style={[styles.codeInput, joinCodeError && styles.codeInputError]}
+                  value={joinCode}
+                  onChangeText={(value) => {
+                    setJoinCode(value);
+                    if (joinCodeError) setJoinCodeError('');
+                  }}
+                  placeholder="ABC123"
+                  placeholderTextColor={COLORS.gray}
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                {joinCodeError ? <Text style={styles.inlineErrorText}>{joinCodeError}</Text> : null}
+              </>
             ) : (
               <View style={styles.createHintRow}>
                 <Ionicons name="sparkles-outline" size={18} color={COLORS.goldLight} />
@@ -647,8 +691,7 @@ const MatchScreen = ({ navigation, route }) => {
     return (
       <View style={styles.loadingScreen}>
         <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
-        <ActivityIndicator size="large" color={COLORS.goldLight} />
-        <Text style={styles.loadingText}>Loading match...</Text>
+        <StateBlock loading title="Loading match..." compact />
       </View>
     );
   }
@@ -675,11 +718,16 @@ const MatchScreen = ({ navigation, route }) => {
             colors={['rgba(19, 17, 19, 0.98)', 'rgba(8, 8, 8, 0.98)']}
             style={styles.panel}
           >
+            <StatusBanner message={screenMessage?.text} type={screenMessage?.type} />
             <Text style={styles.panelEyebrow}>Invite Code</Text>
             <Text style={styles.codeHero}>{match.invite_code || '------'}</Text>
             <Text style={styles.panelCopy}>
               Share the code with your opponent. The room will light up the second they arrive.
             </Text>
+            <View style={styles.waitingStatusRow}>
+              <View style={styles.waitingStatusDot} />
+              <Text style={styles.waitingStatusText}>{waitingStatus}</Text>
+            </View>
 
             <View style={styles.waitingButtonRow}>
               <TouchableOpacity style={styles.secondaryButton} onPress={handleCopyCode}>
@@ -781,8 +829,7 @@ const MatchScreen = ({ navigation, route }) => {
     return (
       <View style={styles.loadingScreen}>
         <LinearGradient colors={['#050505', '#110c0f', '#060606']} style={StyleSheet.absoluteFill} />
-        <ActivityIndicator size="large" color={COLORS.goldLight} />
-        <Text style={styles.loadingText}>Loading question...</Text>
+        <StateBlock loading title="Loading the next round..." compact />
       </View>
     );
   }
@@ -824,11 +871,26 @@ const MatchScreen = ({ navigation, route }) => {
           colors={['rgba(17, 17, 17, 0.94)', 'rgba(10, 10, 10, 0.98)']}
           style={styles.arena}
         >
+          <StatusBanner message={screenMessage?.text} type={screenMessage?.type} />
           <View style={styles.arenaTopline}>
             <Text style={styles.targetText}>Race to {targetScore}</Text>
-            <Text style={styles.turnText} numberOfLines={1}>
+            <Text style={styles.turnText} numberOfLines={2}>
               {turnMessage}
             </Text>
+          </View>
+
+          <View style={styles.liveStatusStrip}>
+            <View style={styles.liveStatusPill}>
+              <Text style={styles.liveStatusLabel}>YOU</Text>
+              <Text style={styles.liveStatusValue} numberOfLines={1}>
+                {currentUserMatchId === match.player1?.id ? player1Name : player2Name}
+              </Text>
+            </View>
+            <View style={styles.liveStatusDivider} />
+            <View style={styles.liveStatusPill}>
+              <Text style={styles.liveStatusLabel}>OPPONENT</Text>
+              <Text style={styles.liveStatusValue} numberOfLines={1}>{opponentName}</Text>
+            </View>
           </View>
 
           <View style={styles.progressArena}>
@@ -905,7 +967,7 @@ const MatchScreen = ({ navigation, route }) => {
                 colors={canBuzz ? ['#6A1420', '#2B090E'] : ['#272224', '#151314']}
                 style={styles.buzzButtonSurface}
               >
-                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming...' : 'Buzz In'}</Text>
+                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming Control...' : 'Buzz In First'}</Text>
               </LinearGradient>
             </TouchableOpacity>
           ) : null}
@@ -918,7 +980,7 @@ const MatchScreen = ({ navigation, route }) => {
               activeOpacity={0.88}
             >
               <LinearGradient colors={['#7A1526', '#2B090E']} style={styles.buzzButtonSurface}>
-                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming...' : 'Steal The Round'}</Text>
+                <Text style={styles.buzzButtonLabel}>{actionLoading ? 'Claiming Control...' : 'Steal The Round'}</Text>
               </LinearGradient>
             </TouchableOpacity>
           ) : null}
@@ -1065,6 +1127,15 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
     ...FONTS.bold,
   },
+  codeInputError: {
+    borderColor: 'rgba(215, 122, 115, 0.6)',
+  },
+  inlineErrorText: {
+    color: '#F3CAC6',
+    fontSize: SIZES.sm,
+    marginTop: 2,
+    ...FONTS.medium,
+  },
   goldButton: {
     marginTop: 22,
     borderRadius: 18,
@@ -1107,6 +1178,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 22,
+  },
+  waitingStatusRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  waitingStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.goldLight,
+  },
+  waitingStatusText: {
+    flex: 1,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    lineHeight: 20,
+    ...FONTS.medium,
   },
   secondaryButton: {
     flex: 1,
@@ -1176,6 +1266,37 @@ const styles = StyleSheet.create({
   arenaTopline: {
     marginBottom: 14,
     gap: 6,
+  },
+  liveStatusStrip: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 87, 0.12)',
+    backgroundColor: 'rgba(14, 14, 14, 0.9)',
+    overflow: 'hidden',
+  },
+  liveStatusPill: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  liveStatusDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255, 200, 87, 0.1)',
+  },
+  liveStatusLabel: {
+    color: COLORS.goldSoft,
+    fontSize: SIZES.xs,
+    letterSpacing: 1.8,
+    marginBottom: 4,
+    ...FONTS.medium,
+  },
+  liveStatusValue: {
+    color: COLORS.offWhite,
+    fontSize: SIZES.sm,
+    ...FONTS.bold,
   },
   targetText: {
     color: COLORS.goldSoft,

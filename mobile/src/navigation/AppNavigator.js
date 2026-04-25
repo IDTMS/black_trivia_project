@@ -12,6 +12,7 @@ import MatchScreen from '../screens/MatchScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import StartScreen from '../screens/StartScreen';
+import BootScreen from '../screens/BootScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Stack = createNativeStackNavigator();
@@ -61,7 +62,7 @@ const AuthStack = () => (
 const AppNavigator = () => {
   const { user, loading } = useAuth();
 
-  if (loading) return null;
+  if (loading) return <BootScreen />;
 
   return (
     <Stack.Navigator initialRouteName="Start" screenOptions={{ headerShown: false }}>

@@ -29,30 +29,35 @@ const MENU_ITEMS = [
   {
     key: 'quick-play',
     label: 'Quick Play',
+    description: 'Run a fast solo round and sharpen up.',
     icon: 'flash-outline',
     onSelect: (navigation) => navigation.navigate('Game', { mode: 'solo' }),
   },
   {
     key: 'create-match',
     label: 'Create Match',
+    description: 'Open a private room and put somebody on the spot.',
     icon: 'people-outline',
     onSelect: (navigation) => navigation.navigate('Match', { initialMode: 'create' }),
   },
   {
     key: 'join-match',
     label: 'Join Match',
+    description: 'Step into a live room with a code and take the card.',
     icon: 'keypad-outline',
     onSelect: (navigation) => navigation.navigate('Match', { initialMode: 'join' }),
   },
   {
     key: 'leaderboard',
     label: 'Leaderboard',
+    description: 'Check who is really carrying weight right now.',
     icon: 'trophy-outline',
     onSelect: (navigation) => navigation.navigate('MainTabs', { screen: 'Leaderboard' }),
   },
   {
     key: 'settings',
-    label: 'Settings',
+    label: 'Profile & Settings',
+    description: 'View your numbers, clean up, or log out.',
     icon: 'settings-outline',
     onSelect: (navigation) => navigation.navigate('MainTabs', { screen: 'Profile' }),
   },
@@ -323,7 +328,7 @@ const StartScreen = ({ navigation }) => {
           </Text>
 
           <Text style={styles.heroCopy}>
-            High-stakes culture trivia in a room built like a trophy case.
+            High-stakes culture trivia built for quick reps, private battles, and scoreboard talk.
           </Text>
         </Animated.View>
 
@@ -334,7 +339,7 @@ const StartScreen = ({ navigation }) => {
               { opacity: promptOpacity, transform: [{ scale: promptScale }] },
             ]}
           >
-            <Text style={styles.promptText}>Tap to Start</Text>
+            <Text style={styles.promptText}>Tap to Enter the Room</Text>
           </Animated.View>
         ) : null}
 
@@ -374,6 +379,9 @@ const StartScreen = ({ navigation }) => {
                 <View style={styles.menuLabelWrap}>
                   <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
                     {item.label}
+                  </Text>
+                  <Text style={[styles.menuDescription, isActive && styles.menuDescriptionActive]}>
+                    {item.description}
                   </Text>
                   <View style={[styles.menuUnderline, isActive && styles.menuUnderlineActive]} />
                 </View>
@@ -550,6 +558,16 @@ const styles = StyleSheet.create({
     color: COLORS.offWhite,
     fontSize: SIZES.lg,
     ...FONTS.medium,
+  },
+  menuDescription: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    lineHeight: 18,
+    marginTop: 4,
+    ...FONTS.regular,
+  },
+  menuDescriptionActive: {
+    color: '#E8D7B0',
   },
   menuLabelActive: {
     color: COLORS.goldLight,

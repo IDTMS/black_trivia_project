@@ -5,24 +5,27 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { getLeaderboard } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import StatusBanner from '../components/StatusBanner';
+import StateBlock from '../components/StateBlock';
 
 const LeaderboardScreen = () => {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await getLeaderboard();
       setLeaderboard(res.data);
+      setLoadError('');
     } catch (error) {
-      // silently fail
+      setLoadError('Could not load the leaderboard right now. Pull to try again.');
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,7 @@ const LeaderboardScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.gold} />
+        <StateBlock loading title="Loading the board..." compact />
       </View>
     );
   }
@@ -88,6 +91,8 @@ const LeaderboardScreen = () => {
         <Text style={styles.title}>LEADERBOARD</Text>
         <Text style={styles.subtitle}>{leaderboard.length} players</Text>
       </View>
+
+      <StatusBanner message={loadError} type="error" style={styles.bannerSpacing} />
 
       <FlatList
         data={leaderboard}
@@ -103,10 +108,10 @@ const LeaderboardScreen = () => {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No players on the board yet.</Text>
-            <Text style={styles.emptySubtext}>Play a game to get ranked!</Text>
-          </View>
+          <StateBlock
+            title="No players on the board yet."
+            message="Play a game to get ranked."
+          />
         }
       />
     </View>
@@ -144,6 +149,9 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 24,
     paddingBottom: 100,
+  },
+  bannerSpacing: {
+    marginHorizontal: 24,
   },
   row: {
     flexDirection: 'row',
@@ -207,15 +215,6 @@ const styles = StyleSheet.create({
     fontSize: SIZES.xs,
     color: COLORS.textSecondary,
     ...FONTS.regular,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    color: COLORS.white,
-    fontSize: SIZES.lg,
-    ...FONTS.semiBold,
   },
   emptySubtext: {
     color: COLORS.textSecondary,

@@ -4,14 +4,20 @@ import { loginUser, registerUser, getCurrentUser } from '../services/api';
 
 const AuthContext = createContext({});
 const CURRENT_USER_KEY = 'currentUser';
+const AUTH_KEYS = ['accessToken', 'refreshToken', 'username', CURRENT_USER_KEY];
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   useEffect(() => {
     loadStoredAuth();
   }, []);
+
+  const clearStoredAuth = async () => {
+    await AsyncStorage.multiRemove(AUTH_KEYS);
+  };
 
   const persistUser = async (nextUser) => {
     await AsyncStorage.setItem('username', nextUser.username);
@@ -23,17 +29,25 @@ export const AuthProvider = ({ children }) => {
       const res = await getCurrentUser();
       await persistUser(res.data);
       setUser({ ...res.data, token });
+      setAuthError('');
+      return true;
     } catch {
       const storedUser = await AsyncStorage.getItem(CURRENT_USER_KEY);
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser({ ...parsedUser, token });
-        return;
+        setAuthError('');
+        return true;
       }
 
+      await clearStoredAuth();
+      setUser(null);
       if (fallbackUsername) {
-        setUser({ username: fallbackUsername, token });
+        setAuthError(`Couldn't load ${fallbackUsername}'s account data. Please sign in again.`);
+      } else {
+        setAuthError('Session expired. Sign in again.');
       }
+      return false;
     }
   };
 
@@ -44,32 +58,40 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         await hydrateCurrentUser(token, username);
       }
-    } catch (e) {
-      // silently fail
+    } catch {
+      await clearStoredAuth();
+      setUser(null);
+      setAuthError('Could not restore your session. Sign in again.');
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (username, password) => {
+    setAuthError('');
     const res = await loginUser(username, password);
     const { access, refresh } = res.data;
     await AsyncStorage.setItem('accessToken', access);
     await AsyncStorage.setItem('refreshToken', refresh);
-    await hydrateCurrentUser(access, username);
+    const hydrated = await hydrateCurrentUser(access, username);
+    if (!hydrated) {
+      throw new Error('Could not load account after login.');
+    }
   };
 
   const register = async (username, email, password) => {
+    setAuthError('');
     await registerUser(username, email, password);
   };
 
   const logout = async () => {
-    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'username', CURRENT_USER_KEY]);
+    await clearStoredAuth();
     setUser(null);
+    setAuthError('');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, authError, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

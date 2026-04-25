@@ -11,18 +11,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { getLeaderboard } from '../services/api';
+import StatusBanner from '../components/StatusBanner';
+import StateBlock from '../components/StateBlock';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await getLeaderboard();
       setLeaderboard(res.data);
+      setLoadError('');
     } catch (error) {
-      // silently fail on leaderboard fetch
+      setLoadError('Could not load the leaderboard right now. Pull to try again.');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -84,6 +91,14 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </View>
 
+      <View style={styles.heroCard}>
+        <Text style={styles.heroEyebrow}>Tonight's table</Text>
+        <Text style={styles.heroTitle}>Pick your lane and make it count.</Text>
+        <Text style={styles.heroCopy}>
+          Quick Play is the fast solo rep. 1v1 Match is where names get tested.
+        </Text>
+      </View>
+
       {/* Play buttons */}
       <View style={styles.playSection}>
         <TouchableOpacity
@@ -114,29 +129,40 @@ const HomeScreen = ({ navigation }) => {
       {/* Leaderboard */}
       <View style={styles.leaderboardSection}>
         <View style={styles.leaderboardHeader}>
-          <Text style={styles.leaderboardTitle}>LEADERBOARD</Text>
+          <View>
+            <Text style={styles.leaderboardTitle}>LEADERBOARD</Text>
+            <Text style={styles.leaderboardSubhead}>See who's holding weight right now.</Text>
+          </View>
           <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
             <Text style={styles.seeAll}>See all</Text>
           </TouchableOpacity>
         </View>
-        <FlatList
-          data={leaderboard.slice(0, 10)}
-          renderItem={renderLeaderboardItem}
-          keyExtractor={(item, index) => `leader-${index}`}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={COLORS.gold}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No players yet. Be the first!</Text>
-            </View>
-          }
-        />
+
+        <StatusBanner message={loadError} type="error" />
+
+        {loading ? (
+          <StateBlock loading title="Loading the room..." compact />
+        ) : (
+          <FlatList
+            data={leaderboard.slice(0, 10)}
+            renderItem={renderLeaderboardItem}
+            keyExtractor={(item, index) => `leader-${index}`}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={COLORS.gold}
+              />
+            }
+            ListEmptyComponent={
+              <StateBlock
+                title="No leaderboard yet."
+                message="Run a few games and put a name on the board."
+              />
+            }
+          />
+        )}
       </View>
     </View>
   );
@@ -178,6 +204,35 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: COLORS.gold,
     ...FONTS.bold,
+  },
+  heroCard: {
+    marginHorizontal: 24,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: SIZES.radiusLg,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.gold + '22',
+  },
+  heroEyebrow: {
+    color: COLORS.gold,
+    fontSize: SIZES.xs,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    ...FONTS.medium,
+  },
+  heroTitle: {
+    color: COLORS.white,
+    fontSize: SIZES.xl,
+    marginBottom: 8,
+    ...FONTS.bold,
+  },
+  heroCopy: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    lineHeight: 20,
+    ...FONTS.regular,
   },
   playSection: {
     paddingHorizontal: 24,
@@ -248,6 +303,12 @@ const styles = StyleSheet.create({
     ...FONTS.bold,
     letterSpacing: 2,
   },
+  leaderboardSubhead: {
+    marginTop: 4,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.sm,
+    ...FONTS.regular,
+  },
   seeAll: {
     fontSize: SIZES.md,
     color: COLORS.gold,
@@ -301,13 +362,10 @@ const styles = StyleSheet.create({
   pointsTop: {
     color: COLORS.gold,
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
   emptyText: {
     color: COLORS.textSecondary,
     fontSize: SIZES.md,
+    textAlign: 'center',
   },
 });
 

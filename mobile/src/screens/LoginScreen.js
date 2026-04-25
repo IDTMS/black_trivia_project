@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,24 +12,40 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import StatusBanner from '../components/StatusBanner';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [inlineError, setInlineError] = useState('');
+  const { login, authError } = useAuth();
+
+  useEffect(() => {
+    if (authError) {
+      setInlineError(authError);
+    }
+  }, [authError]);
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Hold up', 'Enter your username and password.');
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername || !password.trim()) {
+      setInlineError('Enter your username and password.');
       return;
     }
+
+    setInlineError('');
     setLoading(true);
     try {
-      await login(username.trim(), password);
+      await login(trimmedUsername, password);
     } catch (error) {
-      const msg = error.response?.data?.detail || 'Login failed. Check your credentials.';
-      Alert.alert('Nah', msg);
+      const responseData = error.response?.data;
+      let msg = responseData?.detail || 'Login failed. Check your credentials.';
+      if (!responseData?.detail && responseData && typeof responseData === 'object') {
+        const firstError = Object.values(responseData)[0];
+        msg = Array.isArray(firstError) ? firstError[0] : String(firstError);
+      }
+      setInlineError(msg);
     } finally {
       setLoading(false);
     }
@@ -50,6 +66,7 @@ const LoginScreen = ({ navigation }) => {
 
         {/* Form */}
         <View style={styles.form}>
+          <StatusBanner message={inlineError} type="error" />
           <TextInput
             style={styles.input}
             placeholder="Username"

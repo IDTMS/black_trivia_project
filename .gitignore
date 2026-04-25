@@ -1,25 +1,39 @@
-#  Django-related
-*.pyc
+# Python
+*.py[cod]
 __pycache__/
-db.sqlite3
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
 
-# Environment-related
+# Environment and secrets
 .env
-.env.local
+.env.*
+!.env.example
 env/
 venv/
+.venv/
 
-# Logs
-*.log
-
-# IDE files
-.vscode/
-.idea/
-
-# OS files
-.DS_Store
+# Node / Expo
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.expo/
+.expo-shared/
 
 # Build outputs
 staticfiles/
-frontend/build/
-frontend/node_modules/.cache/
+backend/staticfiles/
+dist/
+build/
+coverage/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local app data
+backend/db.sqlite3
+BlackCardShowdown/
+response.json

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
+import StatusBanner from '../components/StatusBanner';
 
 const RegisterScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
@@ -19,25 +20,30 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState('');
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!username.trim() || !email.trim() || !password) {
-      Alert.alert('Hold up', 'Fill out all fields.');
+    const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedUsername || !trimmedEmail || !password) {
+      setInlineError('Fill out all fields.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Nah', "Passwords don't match.");
+      setInlineError("Passwords don't match.");
       return;
     }
     if (password.length < 8) {
-      Alert.alert('Too short', 'Password needs at least 8 characters.');
+      setInlineError('Password needs at least 8 characters.');
       return;
     }
 
+    setInlineError('');
     setLoading(true);
     try {
-      await register(username.trim(), email.trim(), password);
+      await register(trimmedUsername, trimmedEmail, password);
       Alert.alert('Welcome', 'Account created! Sign in to play.', [
         { text: "Let's go", onPress: () => navigation.navigate('Login') },
       ]);
@@ -48,7 +54,7 @@ const RegisterScreen = ({ navigation }) => {
         const firstError = Object.values(data)[0];
         msg = Array.isArray(firstError) ? firstError[0] : String(firstError);
       }
-      Alert.alert('Nah', msg);
+      setInlineError(msg);
     } finally {
       setLoading(false);
     }
@@ -66,6 +72,7 @@ const RegisterScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.form}>
+          <StatusBanner message={inlineError} type="error" />
           <TextInput
             style={styles.input}
             placeholder="Username"
