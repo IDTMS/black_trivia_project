@@ -83,6 +83,28 @@
             animation: ambientBreath 10s ease-in-out infinite 3s;
         }
 
+        .top-auth-bar {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .top-auth-button {
+            padding: 5px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-soft);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: all 0.15s ease;
+        }
+
+        .top-auth-button:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         main {
             width: min(100%, 600px);
             min-height: 100vh;
@@ -283,16 +305,16 @@
         }
 
         .hero-cta {
-            display: grid;
+            display: flex;
+            align-items: center;
             gap: 10px;
-            margin-top: 18px;
-            max-width: 26rem;
+            margin-top: 14px;
+            flex-wrap: wrap;
         }
 
-        .hero-cta-note {
-            font-size: 12px;
-            line-height: 1.45;
-            color: rgba(244, 239, 229, 0.68);
+        .hero-cta .ghost-button {
+            font-size: 11px;
+            padding: 6px 14px;
         }
 
         .hero-stats {
@@ -2084,6 +2106,10 @@
 </head>
 <body>
 <main>
+    <div class="top-auth-bar" id="topAuthBar">
+        <button class="top-auth-button" id="topSignInButton" type="button">Sign In</button>
+        <button class="top-auth-button hidden" id="topSignOutButton" type="button">Sign Out</button>
+    </div>
     <section class="hero">
         <div class="topline">
             <span class="badge badge-live">Live</span>
@@ -2097,10 +2123,11 @@
         <p class="hero-copy">
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
-        <div class="hero-cta" id="heroSignInCta">
-            <button class="primary-button" id="heroGoogleButton" type="button">Sign In To Play</button>
-            <span class="hero-cta-note">New here? Sign in with Google and pick your player name before you enter the arena.</span>
-        </div>
+        <div class="hero-cta hidden" id="heroSignInCta"></div>
+        <div class="google-button-slot hidden" id="googleButtonSlot"><div id="googleButton"></div></div>
+        <button class="ghost-button hidden" id="googleFallbackButton" type="button">Sign In with Google</button>
+        <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry</button>
+        <span class="hidden" id="googleAuthMessage"></span>
         <div class="hero-stats">
             <div class="hero-stat">
                 <strong id="heroQuestionCount">{{ question_count }}</strong>
@@ -2117,26 +2144,7 @@
         </div>
     </section>
 
-    <section class="card" id="authCard">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Get Started</span>
-                <h2>Sign In to Play</h2>
-            </div>
-        </div>
-        <div id="googleAuthWrap" class="auth-shell">
-            <p class="section-copy auth-copy">Use Google to verify your account, then choose your Black Card username before you step into the arena.</p>
-            <div class="auth-inline-status">
-                <span class="badge">Secure Entry</span>
-                <span class="subtle" id="googleAuthMessage">Loading Google sign-in…</span>
-            </div>
-            <button class="primary-button" id="googleFallbackButton" type="button">Loading Google Sign-In</button>
-            <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry Sign-In</button>
-            <div class="google-button-slot hidden" id="googleButtonSlot">
-                <div id="googleButton"></div>
-            </div>
-        </div>
-    </section>
+    <div id="googleAuthWrap"></div>
 
     <section class="card hidden" id="googleUsernameCard">
         <form id="googleUsernameForm">
@@ -2446,7 +2454,7 @@
     };
 
     const elements = {
-        authCard: document.getElementById('authCard'),
+        authCard: null,
         profileCard: document.getElementById('profileCard'),
         lobbyCard: document.getElementById('lobbyCard'),
         matchCard: document.getElementById('matchCard'),
@@ -2485,7 +2493,10 @@
         googleButtonSlot: document.getElementById('googleButtonSlot'),
         googleButton: document.getElementById('googleButton'),
         heroSignInCta: document.getElementById('heroSignInCta'),
-        heroGoogleButton: document.getElementById('heroGoogleButton'),
+        heroGoogleButton: null,
+        topSignInButton: document.getElementById('topSignInButton'),
+        topSignOutButton: document.getElementById('topSignOutButton'),
+        topAuthBar: document.getElementById('topAuthBar'),
         logoutButton: document.getElementById('logoutButton'),
         createMatchButton: document.getElementById('createMatchButton'),
         joinForm: document.getElementById('joinForm'),
@@ -3433,10 +3444,12 @@
         const inArena = hasMatch && !isCompleted;
         document.body.classList.toggle('in-arena', inArena);
 
-        setAnimatedVisibility(elements.authCard, !isAuthed);
         if (elements.heroSignInCta) {
             elements.heroSignInCta.classList.toggle('hidden', isAuthed);
         }
+        elements.topSignInButton.classList.toggle('hidden', isAuthed);
+        elements.topSignOutButton.classList.toggle('hidden', !isAuthed);
+        elements.topAuthBar.classList.toggle('hidden', inArena);
 
         // Arena mode: hide everything except the match and victory sections
         setAnimatedVisibility(elements.heroSection, !inArena);
@@ -4403,17 +4416,17 @@
 
     elements.googleUsernameForm.addEventListener('submit', handleGoogleUsername);
     elements.updateUsernameForm.addEventListener('submit', updateUsername);
-    elements.heroGoogleButton.addEventListener('click', () => {
-        elements.authCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    elements.googleFallbackButton.addEventListener('click', () => loadGoogleScript(true));
+    elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
+    elements.logoutButton.addEventListener('click', logout);
+    elements.topSignInButton.addEventListener('click', () => {
         if (!elements.googleButtonSlot.classList.contains('hidden')) {
             elements.googleButton?.querySelector('div[role="button"]')?.click();
             return;
         }
-        elements.googleFallbackButton.click();
+        loadGoogleScript(true);
     });
-    elements.googleFallbackButton.addEventListener('click', () => loadGoogleScript(true));
-    elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
-    elements.logoutButton.addEventListener('click', logout);
+    elements.topSignOutButton.addEventListener('click', logout);
     elements.createMatchButton.addEventListener('click', createMatch);
     elements.joinForm.addEventListener('submit', joinByCode);
     elements.buzzButton.addEventListener('click', buzzIn);
