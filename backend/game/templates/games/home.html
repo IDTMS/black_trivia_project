@@ -85,24 +85,24 @@
 
         .top-auth-bar {
             display: flex;
-            justify-content: flex-start;
+            justify-content: flex-end;
         }
 
         .top-auth-button {
-            padding: 5px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-soft);
+            padding: 6px 16px;
+            border-radius: 999px;
+            border: none;
+            background: #fff;
+            color: #1a1a1a;
             font-size: 11px;
             font-weight: 600;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
-            transition: all 0.15s ease;
+            transition: opacity 0.15s ease;
         }
 
         .top-auth-button:active {
-            background: rgba(255, 255, 255, 0.1);
+            opacity: 0.8;
         }
 
         main {
@@ -479,7 +479,7 @@
         }
 
         .google-button-slot {
-            min-height: 46px;
+            display: none;
         }
 
 
@@ -2124,7 +2124,6 @@
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
         <div class="hero-cta hidden" id="heroSignInCta"></div>
-        <div class="google-button-slot hidden" id="googleButtonSlot"><div id="googleButton"></div></div>
         <button class="ghost-button hidden" id="googleFallbackButton" type="button">Sign In with Google</button>
         <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry</button>
         <span class="hidden" id="googleAuthMessage"></span>
@@ -2425,6 +2424,7 @@
         <div class="leaderboard-list" id="leaderboardList"></div>
     </section>
 </main>
+<div id="googleButtonSlot" style="position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;"><div id="googleButton"></div></div>
 <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
 
 <script>
@@ -3005,7 +3005,7 @@
         };
 
         elements.googleAuthMessage.textContent = message || defaultMessages[mode] || '';
-        elements.googleButtonSlot.classList.toggle('hidden', mode !== 'ready');
+        elements.googleButtonSlot.classList.remove('hidden');
         elements.googleFallbackButton.classList.toggle('hidden', mode === 'ready');
         elements.googleRetryButton.classList.toggle('hidden', mode !== 'error');
         elements.googleFallbackButton.classList.remove('is-loading');
@@ -4420,8 +4420,8 @@
     elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
     elements.logoutButton.addEventListener('click', logout);
     elements.topSignInButton.addEventListener('click', () => {
-        if (!elements.googleButtonSlot.classList.contains('hidden')) {
-            elements.googleButton?.querySelector('div[role="button"]')?.click();
+        if (state.googleSignInReady && window.google?.accounts?.id) {
+            google.accounts.id.prompt();
             return;
         }
         loadGoogleScript(true);
