@@ -2179,28 +2179,11 @@
     </section>
 
     <section class="card hidden" id="profileCard">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Your Session</span>
-                <h2>Player Session</h2>
-            </div>
-        </div>
         <span class="hidden" id="playerRoleChip"></span>
-        <div class="identity-row">
-            <div class="identity-card">
-                <span class="label">Logged In As</span>
-                <strong id="currentUsername">-</strong>
-                <p class="subtle" id="currentEmail">-</p>
-            </div>
-            <button class="secondary-button" id="logoutButton" type="button">Logout</button>
-        </div>
-        <form class="identity-row" id="updateUsernameForm" style="margin-top:12px; align-items:flex-end;">
-            <label class="field" style="flex:1; margin:0;">
-                <span>Change Username</span>
-                <input id="updateUsernameInput" type="text" placeholder="Enter a new username" autocomplete="username">
-            </label>
-            <button class="primary-button" id="updateUsernameButton" type="submit">Save Name</button>
-        </form>
+        <span class="hidden" id="currentUsername"></span>
+        <span class="hidden" id="currentEmail"></span>
+        <button class="hidden" id="logoutButton" type="button">Logout</button>
+        <form class="hidden" id="updateUsernameForm"><input id="updateUsernameInput" type="hidden"><button id="updateUsernameButton" type="submit"></button></form>
         <div class="vault-panel">
             <div class="wallet-shell" id="walletShell">
                 <div class="wallet-topline">
