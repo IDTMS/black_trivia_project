@@ -85,7 +85,7 @@
 
         .top-auth-bar {
             display: flex;
-            justify-content: flex-start;
+            justify-content: flex-end;
         }
 
         .top-auth-button {
@@ -479,7 +479,11 @@
         }
 
         .google-button-slot {
-            min-height: 46px;
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
+            overflow: hidden;
         }
 
 
@@ -2124,7 +2128,7 @@
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
         <div class="hero-cta hidden" id="heroSignInCta"></div>
-        <div class="google-button-slot hidden" id="googleButtonSlot"><div id="googleButton"></div></div>
+        <div class="google-button-slot" id="googleButtonSlot"><div id="googleButton"></div></div>
         <button class="ghost-button hidden" id="googleFallbackButton" type="button">Sign In with Google</button>
         <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry</button>
         <span class="hidden" id="googleAuthMessage"></span>
@@ -3005,7 +3009,7 @@
         };
 
         elements.googleAuthMessage.textContent = message || defaultMessages[mode] || '';
-        elements.googleButtonSlot.classList.toggle('hidden', mode !== 'ready');
+        elements.googleButtonSlot.classList.remove('hidden');
         elements.googleFallbackButton.classList.toggle('hidden', mode === 'ready');
         elements.googleRetryButton.classList.toggle('hidden', mode !== 'error');
         elements.googleFallbackButton.classList.remove('is-loading');
@@ -4420,8 +4424,9 @@
     elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
     elements.logoutButton.addEventListener('click', logout);
     elements.topSignInButton.addEventListener('click', () => {
-        if (!elements.googleButtonSlot.classList.contains('hidden')) {
-            elements.googleButton?.querySelector('div[role="button"]')?.click();
+        const gBtn = elements.googleButton?.querySelector('div[role="button"]');
+        if (gBtn) {
+            gBtn.click();
             return;
         }
         loadGoogleScript(true);
