@@ -479,11 +479,7 @@
         }
 
         .google-button-slot {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-            height: 0;
-            overflow: hidden;
+            display: none;
         }
 
 
@@ -2128,7 +2124,6 @@
             Two Players. One Name on the Line. Prove your blackness or Lose your card.
         </p>
         <div class="hero-cta hidden" id="heroSignInCta"></div>
-        <div class="google-button-slot" id="googleButtonSlot"><div id="googleButton"></div></div>
         <button class="ghost-button hidden" id="googleFallbackButton" type="button">Sign In with Google</button>
         <button class="ghost-button hidden" id="googleRetryButton" type="button">Retry</button>
         <span class="hidden" id="googleAuthMessage"></span>
@@ -2429,6 +2424,7 @@
         <div class="leaderboard-list" id="leaderboardList"></div>
     </section>
 </main>
+<div id="googleButtonSlot" style="position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;"><div id="googleButton"></div></div>
 <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
 
 <script>
@@ -4424,9 +4420,8 @@
     elements.googleRetryButton.addEventListener('click', () => loadGoogleScript(true));
     elements.logoutButton.addEventListener('click', logout);
     elements.topSignInButton.addEventListener('click', () => {
-        const gBtn = elements.googleButton?.querySelector('div[role="button"]');
-        if (gBtn) {
-            gBtn.click();
+        if (state.googleSignInReady && window.google?.accounts?.id) {
+            google.accounts.id.prompt();
             return;
         }
         loadGoogleScript(true);
