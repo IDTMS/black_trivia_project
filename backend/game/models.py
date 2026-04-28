@@ -20,9 +20,11 @@ class Question(models.Model):
     CATEGORY_CHOICES = [
         ('history', 'History'),
         ('black_culture', 'Black Culture'),
-        ('hip_hop', 'Hip-Hop & Music'),
+        ('hip_hop', 'Hip-Hop'),
+        ('music', 'Music (R&B / Soul / Jazz)'),
         ('sports', 'Sports'),
         ('film_tv', 'Film & TV'),
+        ('comedy', 'Comedy'),
         ('science', 'Science & Innovation'),
         ('food_culture', 'Food & Culture'),
         ('literature', 'Literature & Art'),
