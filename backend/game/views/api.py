@@ -84,7 +84,7 @@ def ensure_black_card_for_user(user):
 
 def reset_expired_black_cards():
     expired_cards = BlackCard.objects.exclude(current_holder=models.F('owner')).filter(
-        captured_at__date__lt=timezone.localdate(),
+        captured_at__lt=timezone.now() - timedelta(hours=24),
     ).select_related('owner')
 
     for black_card in expired_cards:

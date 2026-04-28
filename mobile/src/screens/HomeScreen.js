@@ -10,9 +10,19 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
-import { getLeaderboard } from '../services/api';
+import { getLeaderboard, getCurrentUser } from '../services/api';
 import StatusBanner from '../components/StatusBanner';
 import StateBlock from '../components/StateBlock';
+
+const getCountdownText = (expiresAt) => {
+  if (!expiresAt) return null;
+  const diff = new Date(expiresAt) - new Date();
+  if (diff <= 0) return 'Returning soon';
+  const hrs = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (hrs > 0) return `Returns in ${hrs}h ${mins}m`;
+  return `Returns in ${mins}m`;
+};
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -20,28 +30,40 @@ const HomeScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [cardStatus, setCardStatus] = useState(null);
 
-  const fetchLeaderboard = useCallback(async () => {
-    try {
-      const res = await getLeaderboard();
-      setLeaderboard(res.data);
+  const fetchData = useCallback(async () => {
+    const results = await Promise.allSettled([
+      getLeaderboard(),
+      getCurrentUser(),
+    ]);
+    if (results[0].status === 'fulfilled') {
+      setLeaderboard(results[0].value.data);
       setLoadError('');
-    } catch (error) {
+    } else {
       setLoadError('Could not load the leaderboard right now. Pull to try again.');
-    } finally {
-      setLoading(false);
     }
+    if (results[1].status === 'fulfilled') {
+      setCardStatus(results[1].value.data);
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [fetchLeaderboard]);
+    fetchData();
+  }, [fetchData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchLeaderboard();
+    await fetchData();
     setRefreshing(false);
   };
+
+  const cardActive = cardStatus?.black_card_active !== false;
+  const cardHolder = cardStatus?.card_holder;
+  const cardExpiresAt = cardStatus?.card_expires_at;
+  const walletCards = cardStatus?.wallet_cards || [];
+  const vaultCount = walletCards.length;
 
   const handleQuickPlay = () => {
     navigation.navigate('Game', { mode: 'solo' });
@@ -98,6 +120,41 @@ const HomeScreen = ({ navigation }) => {
           Quick Play is the fast solo rep. 1v1 Match is where names get tested.
         </Text>
       </View>
+
+      {/* Black Card Vault */}
+      {cardStatus && (
+        <View style={styles.vaultCard}>
+          <View style={styles.vaultRow}>
+            <View style={styles.vaultLeft}>
+              <View style={[styles.vaultDot, cardActive ? styles.vaultDotActive : styles.vaultDotCaptured]} />
+              <View>
+                <Text style={styles.vaultLabel}>YOUR BLACK CARD</Text>
+                {cardActive ? (
+                  <Text style={styles.vaultStatus}>In your possession</Text>
+                ) : (
+                  <Text style={styles.vaultStatusCaptured}>
+                    Held by {cardHolder}{cardExpiresAt ? ` · ${getCountdownText(cardExpiresAt)}` : ''}
+                  </Text>
+                )}
+              </View>
+            </View>
+            {vaultCount > 0 && (
+              <View style={styles.vaultBadge}>
+                <Ionicons name="wallet-outline" size={14} color={COLORS.gold} />
+                <Text style={styles.vaultBadgeText}>{vaultCount}</Text>
+              </View>
+            )}
+          </View>
+          {vaultCount > 0 && (
+            <View style={styles.vaultCollected}>
+              <Text style={styles.vaultCollectedLabel}>VAULT</Text>
+              <Text style={styles.vaultCollectedNames}>
+                {walletCards.map((c) => c.owner).join(' · ')}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Play buttons */}
       <View style={styles.playSection}>
@@ -366,6 +423,90 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: SIZES.md,
     textAlign: 'center',
+  },
+  vaultCard: {
+    marginHorizontal: 24,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: SIZES.radius,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.gold + '28',
+  },
+  vaultRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  vaultLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  vaultDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  vaultDotActive: {
+    backgroundColor: COLORS.success,
+  },
+  vaultDotCaptured: {
+    backgroundColor: COLORS.red,
+  },
+  vaultLabel: {
+    fontSize: SIZES.xs,
+    color: COLORS.textSecondary,
+    letterSpacing: 1.5,
+    ...FONTS.bold,
+  },
+  vaultStatus: {
+    fontSize: SIZES.sm,
+    color: COLORS.success,
+    marginTop: 2,
+    ...FONTS.medium,
+  },
+  vaultStatusCaptured: {
+    fontSize: SIZES.sm,
+    color: COLORS.red,
+    marginTop: 2,
+    ...FONTS.medium,
+  },
+  vaultBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.gold + '18',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.gold + '30',
+  },
+  vaultBadgeText: {
+    fontSize: SIZES.sm,
+    color: COLORS.gold,
+    ...FONTS.bold,
+  },
+  vaultCollected: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border + '60',
+  },
+  vaultCollectedLabel: {
+    fontSize: 9,
+    color: COLORS.gold,
+    letterSpacing: 2,
+    marginBottom: 4,
+    ...FONTS.bold,
+  },
+  vaultCollectedNames: {
+    fontSize: SIZES.sm,
+    color: COLORS.textSecondary,
+    ...FONTS.regular,
+    lineHeight: 18,
   },
 });
 
