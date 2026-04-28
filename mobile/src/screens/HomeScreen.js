@@ -4,15 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
+  ScrollView,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
-import { getLeaderboard, getCurrentUser } from '../services/api';
-import StatusBanner from '../components/StatusBanner';
-import StateBlock from '../components/StateBlock';
+import { getCurrentUser } from '../services/api';
 
 const getCountdownText = (expiresAt) => {
   if (!expiresAt) return null;
@@ -26,36 +24,23 @@ const getCountdownText = (expiresAt) => {
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
-  const [leaderboard, setLeaderboard] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [cardStatus, setCardStatus] = useState(null);
 
-  const fetchData = useCallback(async () => {
-    const results = await Promise.allSettled([
-      getLeaderboard(),
-      getCurrentUser(),
-    ]);
-    if (results[0].status === 'fulfilled') {
-      setLeaderboard(results[0].value.data);
-      setLoadError('');
-    } else {
-      setLoadError('Could not load the leaderboard right now. Pull to try again.');
-    }
-    if (results[1].status === 'fulfilled') {
-      setCardStatus(results[1].value.data);
-    }
-    setLoading(false);
+  const fetchCardStatus = useCallback(async () => {
+    try {
+      const res = await getCurrentUser();
+      setCardStatus(res.data);
+    } catch {}
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchCardStatus();
+  }, [fetchCardStatus]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await fetchCardStatus();
     setRefreshing(false);
   };
 
@@ -73,34 +58,18 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate('Match', { initialMode: 'create' });
   };
 
-  const getRankEmoji = (index) => {
-    if (index === 0) return '👑';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return `${index + 1}`;
-  };
-
-  const renderLeaderboardItem = ({ item, index }) => (
-    <View style={[styles.leaderRow, index < 3 && styles.leaderRowTop]}>
-      <View style={styles.rankContainer}>
-        <Text style={[styles.rank, index < 3 && styles.rankTop]}>
-          {getRankEmoji(index)}
-        </Text>
-      </View>
-      <View style={styles.playerInfo}>
-        <Text style={styles.playerName}>{item.user}</Text>
-        <Text style={styles.playerStats}>
-          {item.wins} wins
-        </Text>
-      </View>
-      <Text style={[styles.points, index < 3 && styles.pointsTop]}>
-        {item.points} pts
-      </Text>
-    </View>
-  );
-
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+        />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -182,46 +151,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </View>
-
-      {/* Leaderboard */}
-      <View style={styles.leaderboardSection}>
-        <View style={styles.leaderboardHeader}>
-          <View>
-            <Text style={styles.leaderboardTitle}>LEADERBOARD</Text>
-            <Text style={styles.leaderboardSubhead}>See who's holding weight right now.</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')}>
-            <Text style={styles.seeAll}>See all</Text>
-          </TouchableOpacity>
-        </View>
-
-        <StatusBanner message={loadError} type="error" />
-
-        {loading ? (
-          <StateBlock loading title="Loading the room..." compact />
-        ) : (
-          <FlatList
-            data={leaderboard.slice(0, 10)}
-            renderItem={renderLeaderboardItem}
-            keyExtractor={(item, index) => `leader-${index}`}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={COLORS.gold}
-              />
-            }
-            ListEmptyComponent={
-              <StateBlock
-                title="No leaderboard yet."
-                message="Run a few games and put a name on the board."
-              />
-            }
-          />
-        )}
-      </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -229,7 +159,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  content: {
     paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -343,86 +276,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     ...FONTS.regular,
     marginTop: 2,
-  },
-  leaderboardSection: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  leaderboardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  leaderboardTitle: {
-    fontSize: SIZES.lg,
-    color: COLORS.white,
-    ...FONTS.bold,
-    letterSpacing: 2,
-  },
-  leaderboardSubhead: {
-    marginTop: 4,
-    color: COLORS.textSecondary,
-    fontSize: SIZES.sm,
-    ...FONTS.regular,
-  },
-  seeAll: {
-    fontSize: SIZES.md,
-    color: COLORS.gold,
-    ...FONTS.medium,
-  },
-  leaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radius,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  leaderRowTop: {
-    borderWidth: 1,
-    borderColor: COLORS.gold + '40',
-  },
-  rankContainer: {
-    width: 36,
-    alignItems: 'center',
-  },
-  rank: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    ...FONTS.bold,
-  },
-  rankTop: {
-    fontSize: SIZES.xl,
-  },
-  playerInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  playerName: {
-    fontSize: SIZES.base,
-    color: COLORS.white,
-    ...FONTS.semiBold,
-  },
-  playerStats: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    ...FONTS.regular,
-    marginTop: 2,
-  },
-  points: {
-    fontSize: SIZES.base,
-    color: COLORS.textSecondary,
-    ...FONTS.bold,
-  },
-  pointsTop: {
-    color: COLORS.gold,
-  },
-  emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.md,
-    textAlign: 'center',
   },
   vaultCard: {
     marginHorizontal: 24,
