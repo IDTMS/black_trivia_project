@@ -1575,4 +1575,362 @@ questions = [
         "answer_choices": ["Coachella", "Lollapalooza", "ESSENCE Festival", "Bonnaroo"],
         "correct_answer": "ESSENCE Festival"
     },
+
+    # ================================================================
+    # MUSIC — R&B / SOUL / JAZZ (25 questions)
+    # ================================================================
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "Which legendary singer is known as the 'Queen of Soul'?",
+        "answer_choices": ["Whitney Houston", "Aretha Franklin", "Diana Ross", "Tina Turner"],
+        "correct_answer": "Aretha Franklin"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "What Motown group featured Diana Ross before she went solo?",
+        "answer_choices": ["The Marvelettes", "The Supremes", "The Ronettes", "The Pointer Sisters"],
+        "correct_answer": "The Supremes"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "Which artist released the classic album 'Songs in the Key of Life'?",
+        "answer_choices": ["Marvin Gaye", "Prince", "Stevie Wonder", "Curtis Mayfield"],
+        "correct_answer": "Stevie Wonder"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "What city is Motown Records originally from?",
+        "answer_choices": ["Chicago", "Detroit", "Philadelphia", "Memphis"],
+        "correct_answer": "Detroit"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "Which singer is known as the 'King of Pop'?",
+        "answer_choices": ["Prince", "Michael Jackson", "James Brown", "Stevie Wonder"],
+        "correct_answer": "Michael Jackson"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "Which R&B group sang 'No Scrubs'?",
+        "answer_choices": ["Destiny's Child", "TLC", "En Vogue", "SWV"],
+        "correct_answer": "TLC"
+    },
+    {
+        "category": "music",
+        "difficulty": "easy",
+        "question_text": "What instrument is Louis Armstrong most famous for playing?",
+        "answer_choices": ["Saxophone", "Piano", "Trumpet", "Trombone"],
+        "correct_answer": "Trumpet"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which singer's debut album 'Baduizm' helped define the neo-soul movement?",
+        "answer_choices": ["Jill Scott", "Erykah Badu", "Lauryn Hill", "India.Arie"],
+        "correct_answer": "Erykah Badu"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "What was the name of the Jackson 5's first #1 hit?",
+        "answer_choices": ["ABC", "I Want You Back", "I'll Be There", "Never Can Say Goodbye"],
+        "correct_answer": "I Want You Back"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which jazz musician was known as 'Bird'?",
+        "answer_choices": ["Miles Davis", "John Coltrane", "Charlie Parker", "Dizzy Gillespie"],
+        "correct_answer": "Charlie Parker"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Marvin Gaye's 'What's Going On' was released on which record label?",
+        "answer_choices": ["Atlantic Records", "Motown", "Stax Records", "Columbia Records"],
+        "correct_answer": "Motown"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which artist is known for hits like 'Kiss' and 'Purple Rain'?",
+        "answer_choices": ["Rick James", "Prince", "George Clinton", "Lenny Kravitz"],
+        "correct_answer": "Prince"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "What gospel song, often called the Black National Anthem, was written by James Weldon Johnson?",
+        "answer_choices": ["Amazing Grace", "Lift Every Voice and Sing", "Oh Happy Day", "Total Praise"],
+        "correct_answer": "Lift Every Voice and Sing"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which Memphis record label was home to Otis Redding, Isaac Hayes, and Booker T. & the M.G.'s?",
+        "answer_choices": ["Sun Records", "Motown", "Stax Records", "Chess Records"],
+        "correct_answer": "Stax Records"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "SZA's breakthrough album 'Ctrl' was released in what year?",
+        "answer_choices": ["2015", "2017", "2019", "2016"],
+        "correct_answer": "2017"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which Destiny's Child member released the solo hit 'Work It Out' and starred in 'Austin Powers in Goldmember'?",
+        "answer_choices": ["Beyoncé", "Kelly Rowland", "LeToya Luckett", "Michelle Williams"],
+        "correct_answer": "Beyoncé"
+    },
+    {
+        "category": "music",
+        "difficulty": "medium",
+        "question_text": "Which funk band is known for 'Flashlight' and 'One Nation Under a Groove'?",
+        "answer_choices": ["Earth, Wind & Fire", "Parliament-Funkadelic", "Kool & the Gang", "The Ohio Players"],
+        "correct_answer": "Parliament-Funkadelic"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "Which jazz pianist composed 'Round Midnight' and was known for his quirky stage presence and flat-brimmed hats?",
+        "answer_choices": ["Thelonious Monk", "Duke Ellington", "Art Tatum", "Oscar Peterson"],
+        "correct_answer": "Thelonious Monk"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "Nina Simone's version of 'I Put a Spell on You' was originally recorded by which artist?",
+        "answer_choices": ["Screamin' Jay Hawkins", "Muddy Waters", "Howlin' Wolf", "Little Richard"],
+        "correct_answer": "Screamin' Jay Hawkins"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "What was the first album released on Berry Gordy's Motown label?",
+        "answer_choices": ["My Girl by The Temptations", "Hi, We're the Miracles by The Miracles", "Please Mr. Postman by The Marvelettes", "Heat Wave by Martha and the Vandellas"],
+        "correct_answer": "Hi, We're the Miracles by The Miracles"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "Which R&B singer wrote and produced 'No Diggity' for Blackstreet?",
+        "answer_choices": ["R. Kelly", "Teddy Riley", "Babyface", "Timbaland"],
+        "correct_answer": "Teddy Riley"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "John Coltrane's album 'A Love Supreme' is divided into how many parts?",
+        "answer_choices": ["Three", "Four", "Five", "Six"],
+        "correct_answer": "Four"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "Which singer recorded the original version of 'Respect' before Aretha Franklin made it iconic?",
+        "answer_choices": ["Sam Cooke", "Otis Redding", "Ray Charles", "Wilson Pickett"],
+        "correct_answer": "Otis Redding"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "D'Angelo's album 'Voodoo' won the Grammy for Best R&B Album in what year?",
+        "answer_choices": ["1999", "2001", "2003", "2000"],
+        "correct_answer": "2001"
+    },
+    {
+        "category": "music",
+        "difficulty": "hard",
+        "question_text": "Which Philadelphia soul duo wrote hits for The Spinners, The O'Jays, and Harold Melvin & the Blue Notes?",
+        "answer_choices": ["Ashford & Simpson", "Gamble and Huff", "Holland-Dozier-Holland", "Leiber and Stoller"],
+        "correct_answer": "Gamble and Huff"
+    },
+
+    # ================================================================
+    # COMEDY (25 questions)
+    # ================================================================
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Which comedian created and starred in 'The Cosby Show' and 'Fat Albert'?",
+        "answer_choices": ["Eddie Murphy", "Bill Cosby", "Richard Pryor", "Sinbad"],
+        "correct_answer": "Bill Cosby"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Who played the title character in the sitcom 'Martin'?",
+        "answer_choices": ["Martin Lawrence", "Jamie Foxx", "Eddie Murphy", "Chris Tucker"],
+        "correct_answer": "Martin Lawrence"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Which comedian is famous for the movie 'Friday' and the TV show 'Are We There Yet?'",
+        "answer_choices": ["Chris Tucker", "Ice Cube", "Kevin Hart", "Mike Epps"],
+        "correct_answer": "Ice Cube"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "What sketch comedy show launched the careers of Jim Carrey, Jamie Foxx, and the Wayans brothers?",
+        "answer_choices": ["Saturday Night Live", "MADtv", "In Living Color", "Chappelle's Show"],
+        "correct_answer": "In Living Color"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Which comedian hosted 'Def Comedy Jam' on HBO?",
+        "answer_choices": ["Martin Lawrence", "Russell Simmons", "Cedric the Entertainer", "Steve Harvey"],
+        "correct_answer": "Martin Lawrence"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Who played the Fresh Prince of Bel-Air?",
+        "answer_choices": ["Will Smith", "Alfonso Ribeiro", "DJ Jazzy Jeff", "Jaleel White"],
+        "correct_answer": "Will Smith"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "easy",
+        "question_text": "Which comedian starred in 'Coming to America' and 'Beverly Hills Cop'?",
+        "answer_choices": ["Chris Rock", "Eddie Murphy", "Martin Lawrence", "Richard Pryor"],
+        "correct_answer": "Eddie Murphy"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "What was the name of Dave Chappelle's iconic sketch comedy show on Comedy Central?",
+        "answer_choices": ["The Dave Chappelle Hour", "Chappelle's Show", "Chappelle After Dark", "Half Baked Live"],
+        "correct_answer": "Chappelle's Show"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which comedy tour featured Steve Harvey, Cedric the Entertainer, D.L. Hughley, and Bernie Mac?",
+        "answer_choices": ["Kings of Comedy", "Laugh Out Loud Tour", "The Original Kings of Comedy", "Comedy Jam Live"],
+        "correct_answer": "The Original Kings of Comedy"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which actress and comedian created and stars in 'Insecure' on HBO?",
+        "answer_choices": ["Issa Rae", "Tiffany Haddish", "Wanda Sykes", "Quinta Brunson"],
+        "correct_answer": "Issa Rae"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "What sitcom featured Tisha Campbell and Martin Lawrence as a couple?",
+        "answer_choices": ["Living Single", "Martin", "The Jamie Foxx Show", "My Wife and Kids"],
+        "correct_answer": "Martin"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Richard Pryor's concert film 'Live on the Sunset Strip' was released in what year?",
+        "answer_choices": ["1979", "1982", "1985", "1977"],
+        "correct_answer": "1982"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which comedian plays Janine Teagues on 'Abbott Elementary'?",
+        "answer_choices": ["Issa Rae", "Quinta Brunson", "Sheryl Lee Ralph", "Tiffany Haddish"],
+        "correct_answer": "Quinta Brunson"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which 1990s sitcom starred Queen Latifah, Kim Fields, Erika Alexander, and Kim Coles as roommates in Brooklyn?",
+        "answer_choices": ["Girlfriends", "Living Single", "A Different World", "Half & Half"],
+        "correct_answer": "Living Single"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Who is the comedian known for the 'Yo Mama' segment on his MTV show?",
+        "answer_choices": ["Nick Cannon", "Wilmer Valderrama", "Kevin Hart", "Lil Duval"],
+        "correct_answer": "Wilmer Valderrama"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which comedian's standup special 'Killin' Them Softly' is considered one of the greatest of all time?",
+        "answer_choices": ["Kevin Hart", "Chris Rock", "Dave Chappelle", "Cedric the Entertainer"],
+        "correct_answer": "Dave Chappelle"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "medium",
+        "question_text": "Which Wayans brother directed 'Scary Movie'?",
+        "answer_choices": ["Damon Wayans", "Marlon Wayans", "Keenen Ivory Wayans", "Shawn Wayans"],
+        "correct_answer": "Keenen Ivory Wayans"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Which comedian was the first Black woman to have a stand-up special on HBO?",
+        "answer_choices": ["Whoopi Goldberg", "Mo'Nique", "Wanda Sykes", "Sommore"],
+        "correct_answer": "Whoopi Goldberg"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Redd Foxx's character Fred Sanford lived in which city on the show 'Sanford and Son'?",
+        "answer_choices": ["Chicago", "Los Angeles", "Detroit", "St. Louis"],
+        "correct_answer": "Los Angeles"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Which comedian wrote the book 'Rock This!' and hosted the Oscars multiple times?",
+        "answer_choices": ["Kevin Hart", "Chris Rock", "Cedric the Entertainer", "Steve Harvey"],
+        "correct_answer": "Chris Rock"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Which Black comedian became the first to appear on 'The Tonight Show with Johnny Carson' in 1965?",
+        "answer_choices": ["Dick Gregory", "Richard Pryor", "Bill Cosby", "Flip Wilson"],
+        "correct_answer": "Bill Cosby"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "What sitcom spinoff of 'The Cosby Show' was set at a fictional HBCU called Hillman College?",
+        "answer_choices": ["The Parkers", "A Different World", "Sister, Sister", "Smart Guy"],
+        "correct_answer": "A Different World"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Flip Wilson's variety show was one of the first to feature a Black host. What was his most famous character?",
+        "answer_choices": ["Mudbone", "Homey the Clown", "Geraldine Jones", "Jerome"],
+        "correct_answer": "Geraldine Jones"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Which stand-up comedian's act was so influential that Richard Pryor cited him as his biggest inspiration?",
+        "answer_choices": ["Redd Foxx", "Dick Gregory", "Moms Mabley", "Slappy White"],
+        "correct_answer": "Redd Foxx"
+    },
+    {
+        "category": "comedy",
+        "difficulty": "hard",
+        "question_text": "Which actress and comedian became the first Black woman to win an Emmy for Outstanding Lead Actress in a Comedy Series for 'Abbott Elementary'?",
+        "answer_choices": ["Issa Rae", "Tracee Ellis Ross", "Quinta Brunson", "Wanda Sykes"],
+        "correct_answer": "Quinta Brunson"
+    },
 ]
