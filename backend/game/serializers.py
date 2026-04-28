@@ -49,11 +49,12 @@ class WalletCardSerializer(serializers.ModelSerializer):
 
 class CurrentUserSerializer(serializers.ModelSerializer):
     card_holder = serializers.SerializerMethodField()
+    card_expires_at = serializers.SerializerMethodField()
     wallet_cards = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'black_card_active', 'card_holder', 'wallet_cards')
+        fields = ('id', 'username', 'email', 'black_card_active', 'card_holder', 'card_expires_at', 'wallet_cards')
         read_only_fields = fields
 
     def get_card_holder(self, obj):
@@ -61,6 +62,12 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         if not black_card or black_card.current_holder_id == obj.id:
             return None
         return black_card.current_holder.username
+
+    def get_card_expires_at(self, obj):
+        black_card = getattr(obj, 'owned_black_card', None)
+        if not black_card or black_card.current_holder_id == obj.id or not black_card.captured_at:
+            return None
+        return (black_card.captured_at + timedelta(hours=24)).isoformat()
 
     def get_wallet_cards(self, obj):
         cards = obj.wallet_black_cards.exclude(owner=obj).order_by('owner__username')
