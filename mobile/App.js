@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
+import { Analytics } from '@vercel/analytics/react';
 
 const navTheme = {
   dark: true,
@@ -23,6 +24,7 @@ export default function App() {
       <NavigationContainer theme={navTheme}>
         <StatusBar style="light" />
         <AppNavigator />
+        <Analytics />
       </NavigationContainer>
     </AuthProvider>
   );
