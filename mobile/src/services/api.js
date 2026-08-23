@@ -65,6 +65,18 @@ export const getMatchHistory = () => api.get(ENDPOINTS.matchHistory);
 export const getMatchRecap = (matchId) =>
   api.post(ENDPOINTS.matchRecap, { match_id: matchId });
 
+export const createMatchShareArt = (matchId) =>
+  api.post(ENDPOINTS.matchShareArt, { match_id: matchId });
+
+export const getMatchShareArtStatus = ({ matchId, jobId, mediaToken }) =>
+  api.get(ENDPOINTS.matchShareArtStatus, {
+    params: {
+      match_id: matchId,
+      job_id: jobId,
+      media_token: mediaToken,
+    },
+  });
+
 export const joinMatchByCode = (inviteCode) =>
   api.post(`${ENDPOINTS.matches}join/`, { invite_code: inviteCode });
 
