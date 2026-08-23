@@ -4,6 +4,7 @@ from .views import (
     CurrentUserView,
     GoogleAuthView,
     MatchHistoryView,
+    MatchRecapView,
     PushSubscribeView,
     RegisterView,
     QuestionListCreateView,
@@ -47,6 +48,9 @@ urlpatterns = [
     path('matches/<int:pk>/answer/', AnswerQuestionView.as_view(), name='answer-question'),
     path('matches/<int:pk>/choose-category/', ChooseCategoryView.as_view(), name='choose-category'),
     path('matches/<int:pk>/leave/', LeaveMatchView.as_view(), name='leave-match'),
+
+    # AI / recap surfaces. Match authority stays in normal match endpoints.
+    path('ai/match-recap/', MatchRecapView.as_view(), name='match-recap'),
 
     # Leaderboard, Match History, and User Status
     path('leaderboard/', LeaderboardListView.as_view(), name='leaderboard'),
