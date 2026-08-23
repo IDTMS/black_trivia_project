@@ -11,7 +11,7 @@ const StateBlock = ({
   style,
 }) => (
   <View style={[styles.base, centered && styles.centered, compact && styles.compact, style]}>
-    {loading ? <ActivityIndicator color={COLORS.gold} /> : null}
+    {loading ? <ActivityIndicator color={COLORS.goldLight} /> : null}
     {title ? <Text style={styles.title}>{title}</Text> : null}
     {message ? <Text style={styles.message}>{message}</Text> : null}
   </View>
@@ -19,7 +19,12 @@ const StateBlock = ({
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 40,
+    paddingVertical: 34,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.borderPremium,
+    backgroundColor: 'rgba(18, 14, 16, 0.88)',
   },
   centered: {
     alignItems: 'center',
@@ -27,17 +32,19 @@ const styles = StyleSheet.create({
   },
   compact: {
     paddingVertical: 20,
+    paddingHorizontal: 22,
   },
   title: {
-    color: COLORS.white,
+    color: COLORS.ivory,
     fontSize: SIZES.md,
     marginTop: 10,
     marginBottom: 6,
     textAlign: 'center',
+    letterSpacing: 0.4,
     ...FONTS.semiBold,
   },
   message: {
-    color: COLORS.textSecondary,
+    color: COLORS.textMuted,
     fontSize: SIZES.sm,
     lineHeight: 20,
     textAlign: 'center',
