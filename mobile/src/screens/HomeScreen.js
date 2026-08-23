@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, EFFECTS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
-import { getCurrentUser, getMatchHistory, getMatchRecap } from '../services/api';
+import {
+  createMatchShareArt,
+  getCurrentUser,
+  getMatchHistory,
+  getMatchRecap,
+  getMatchShareArtStatus,
+} from '../services/api';
 import ClubSurface from '../components/ClubSurface';
 import MatchRecapCard from '../components/MatchRecapCard';
 
@@ -26,12 +32,67 @@ const getCountdownText = (expiresAt) => {
   return `Returns in ${mins}m`;
 };
 
+const FINAL_MEDIA_STATES = new Set(['completed', 'failed', 'cancelled']);
+
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [cardStatus, setCardStatus] = useState(null);
   const [lastRecap, setLastRecap] = useState(null);
   const [recapLoading, setRecapLoading] = useState(false);
+  const [shareArt, setShareArt] = useState(null);
+  const [shareArtLoading, setShareArtLoading] = useState(false);
+  const [shareArtError, setShareArtError] = useState('');
+  const mediaPollRef = useRef(null);
+
+  const stopMediaPolling = useCallback(() => {
+    if (mediaPollRef.current) {
+      clearTimeout(mediaPollRef.current);
+      mediaPollRef.current = null;
+    }
+  }, []);
+
+  const pollShareArt = useCallback(
+    async ({ matchId, jobId, mediaToken }, attempt = 0) => {
+      stopMediaPolling();
+      if (attempt > 90) {
+        setShareArtLoading(false);
+        setShareArtError('The HavnAI render is taking longer than expected. Try again shortly.');
+        return;
+      }
+
+      try {
+        const response = await getMatchShareArtStatus({ matchId, jobId, mediaToken });
+        const next = response.data;
+        setShareArt(next);
+
+        if (next?.status === 'completed' && next?.image_url) {
+          setShareArtLoading(false);
+          setShareArtError('');
+          return;
+        }
+
+        if (FINAL_MEDIA_STATES.has(next?.status)) {
+          setShareArtLoading(false);
+          setShareArtError('HavnAI could not finish this rivalry card. You can try another render.');
+          return;
+        }
+
+        mediaPollRef.current = setTimeout(
+          () => pollShareArt({ matchId, jobId, mediaToken }, attempt + 1),
+          2000,
+        );
+      } catch (error) {
+        setShareArtLoading(false);
+        setShareArtError(
+          error.response?.data?.message ||
+            error.response?.data?.error ||
+            'Could not read the HavnAI render status.',
+        );
+      }
+    },
+    [stopMediaPolling],
+  );
 
   const fetchHomeData = useCallback(async () => {
     try {
@@ -49,6 +110,7 @@ const HomeScreen = ({ navigation }) => {
       if (!latestMatch?.id) {
         setLastRecap(null);
         setRecapLoading(false);
+        setShareArt(null);
         return;
       }
 
@@ -70,7 +132,8 @@ const HomeScreen = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchHomeData();
-    }, [fetchHomeData])
+      return () => stopMediaPolling();
+    }, [fetchHomeData, stopMediaPolling])
   );
 
   const onRefresh = async () => {
@@ -78,6 +141,33 @@ const HomeScreen = ({ navigation }) => {
     await fetchHomeData();
     setRefreshing(false);
   };
+
+  const handleGenerateShareArt = useCallback(async () => {
+    if (!lastRecap?.match_id || shareArtLoading) return;
+
+    stopMediaPolling();
+    setShareArtLoading(true);
+    setShareArtError('');
+    setShareArt(null);
+
+    try {
+      const response = await createMatchShareArt(lastRecap.match_id);
+      const queued = response.data;
+      setShareArt(queued);
+      await pollShareArt({
+        matchId: queued.match_id,
+        jobId: queued.job_id,
+        mediaToken: queued.media_token,
+      });
+    } catch (error) {
+      setShareArtLoading(false);
+      setShareArtError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          'Could not queue the HavnAI rivalry card.',
+      );
+    }
+  }, [lastRecap?.match_id, pollShareArt, shareArtLoading, stopMediaPolling]);
 
   const cardActive = cardStatus?.black_card_active !== false;
   const cardHolder = cardStatus?.card_holder;
@@ -163,7 +253,14 @@ const HomeScreen = ({ navigation }) => {
         </ClubSurface>
       )}
 
-      <MatchRecapCard recap={lastRecap} loading={recapLoading} />
+      <MatchRecapCard
+        recap={lastRecap}
+        loading={recapLoading}
+        media={shareArt}
+        mediaLoading={shareArtLoading}
+        mediaError={shareArtError}
+        onGenerateMedia={handleGenerateShareArt}
+      />
 
       <View style={styles.playSection}>
         <TouchableOpacity
