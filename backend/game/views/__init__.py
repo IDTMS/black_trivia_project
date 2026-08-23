@@ -1,3 +1,4 @@
+from .ai import MatchRecapView
 from .api import (
     AnswerQuestionView,
     BuzzView,
