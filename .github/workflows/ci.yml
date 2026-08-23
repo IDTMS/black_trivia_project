@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Django tests
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_DEBUG: "true"
+      DATABASE_URL: "sqlite:///:memory:"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Django checks
+        run: python backend/manage.py check
+
+      - name: Run game tests
+        run: python backend/manage.py test game
+
+  mobile:
+    name: Expo web smoke build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Export Expo web app
+        working-directory: mobile
+        env:
+          EXPO_PUBLIC_API_BASE_URL: "http://127.0.0.1:8000/api"
+        run: npx expo export --platform web --output-dir dist
