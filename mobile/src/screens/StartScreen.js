@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
+  Image,
   Platform,
   Pressable,
   StatusBar,
@@ -13,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, FONTS, SIZES } from '../constants/theme';
+import { COLORS, EFFECTS, FONTS, SIZES } from '../constants/theme';
 import {
   fadeOutAmbient,
   initializeSoundEngine,
@@ -25,40 +26,42 @@ import {
   toggleMute,
 } from '../utils/soundEngine';
 
+const CARD_ART = require('../../assets/blackcard.png');
+
 const MENU_ITEMS = [
   {
-    key: 'quick-play',
-    label: 'Quick Play',
-    description: 'Run a fast solo round and sharpen up.',
-    icon: 'flash-outline',
-    onSelect: (navigation) => navigation.navigate('Game', { mode: 'solo' }),
-  },
-  {
     key: 'create-match',
-    label: 'Create Match',
-    description: 'Open a private room and put somebody on the spot.',
+    label: 'Put The Card Up',
+    description: 'Open a private 1v1. First to the target takes ownership.',
     icon: 'people-outline',
     onSelect: (navigation) => navigation.navigate('Match', { initialMode: 'create' }),
   },
   {
     key: 'join-match',
-    label: 'Join Match',
-    description: 'Step into a live room with a code and take the card.',
+    label: 'Take The Seat',
+    description: 'Enter a live room code and answer the challenge.',
     icon: 'keypad-outline',
     onSelect: (navigation) => navigation.navigate('Match', { initialMode: 'join' }),
   },
   {
+    key: 'quick-play',
+    label: 'Quick Play',
+    description: 'Run a solo rep before somebody puts your name on the line.',
+    icon: 'flash-outline',
+    onSelect: (navigation) => navigation.navigate('Game', { mode: 'solo' }),
+  },
+  {
     key: 'leaderboard',
     label: 'Leaderboard',
-    description: 'Check who is really carrying weight right now.',
+    description: 'See who is carrying wins, points, and bragging rights.',
     icon: 'trophy-outline',
     onSelect: (navigation) => navigation.navigate('MainTabs', { screen: 'Leaderboard' }),
   },
   {
     key: 'settings',
-    label: 'Profile & Settings',
-    description: 'View your numbers, clean up, or log out.',
-    icon: 'settings-outline',
+    label: 'Profile & Vault',
+    description: 'Check your record, your card, and the names in your vault.',
+    icon: 'person-circle-outline',
     onSelect: (navigation) => navigation.navigate('MainTabs', { screen: 'Profile' }),
   },
 ];
@@ -74,21 +77,22 @@ const StartScreen = ({ navigation }) => {
   const titleScale = useRef(new Animated.Value(1)).current;
   const menuOpacity = useRef(new Animated.Value(0)).current;
   const menuShift = useRef(new Animated.Value(36)).current;
+  const cardFloat = useRef(new Animated.Value(0)).current;
 
   const textureLines = useMemo(
     () =>
-      Array.from({ length: 16 }, (_, index) => ({
+      Array.from({ length: 12 }, (_, index) => ({
         key: `texture-${index}`,
-        top: `${-12 + index * 8}%`,
+        top: `${-8 + index * 9}%`,
         left: `${(index % 4) * 24 - 8}%`,
-        rotate: `${-18 + (index % 5) * 6}deg`,
-        opacity: index % 2 === 0 ? 0.08 : 0.04,
+        rotate: `${-16 + (index % 5) * 5}deg`,
+        opacity: index % 2 === 0 ? 0.055 : 0.025,
       })),
     []
   );
 
   useEffect(() => {
-    const loop = Animated.loop(
+    const promptLoop = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(promptOpacity, {
@@ -121,9 +125,30 @@ const StartScreen = ({ navigation }) => {
       ])
     );
 
-    loop.start();
-    return () => loop.stop();
-  }, [promptOpacity, promptScale]);
+    const cardLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(cardFloat, {
+          toValue: -5,
+          duration: 1800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(cardFloat, {
+          toValue: 4,
+          duration: 1800,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    promptLoop.start();
+    cardLoop.start();
+    return () => {
+      promptLoop.stop();
+      cardLoop.stop();
+    };
+  }, [cardFloat, promptOpacity, promptScale]);
 
   useEffect(() => {
     const unsubscribe = subscribeMute(setMutedState);
@@ -135,12 +160,7 @@ const StartScreen = ({ navigation }) => {
     useCallback(() => {
       let active = true;
       initializeSoundEngine()
-        .then(() => {
-          if (active) {
-            return playAmbient({ fadeInMs: 850 });
-          }
-          return null;
-        })
+        .then(() => (active ? playAmbient({ fadeInMs: 850 }) : null))
         .catch(() => {});
 
       return () => {
@@ -157,13 +177,13 @@ const StartScreen = ({ navigation }) => {
 
     Animated.parallel([
       Animated.timing(titleShift, {
-        toValue: -120,
+        toValue: -118,
         duration: 500,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(titleScale, {
-        toValue: 0.93,
+        toValue: 0.9,
         duration: 500,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
@@ -171,14 +191,14 @@ const StartScreen = ({ navigation }) => {
       Animated.timing(menuOpacity, {
         toValue: 1,
         duration: 420,
-        delay: 120,
+        delay: 110,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(menuShift, {
         toValue: 0,
         duration: 420,
-        delay: 120,
+        delay: 110,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -216,18 +236,14 @@ const StartScreen = ({ navigation }) => {
         event.preventDefault();
         setSelectedIndex((current) => {
           const next = (current + 1) % MENU_ITEMS.length;
-          if (next !== current) {
-            playCursor().catch(() => {});
-          }
+          if (next !== current) playCursor().catch(() => {});
           return next;
         });
       } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         setSelectedIndex((current) => {
           const next = (current - 1 + MENU_ITEMS.length) % MENU_ITEMS.length;
-          if (next !== current) {
-            playCursor().catch(() => {});
-          }
+          if (next !== current) playCursor().catch(() => {});
           return next;
         });
       } else if (['Enter', ' ', 'Spacebar'].includes(event.key)) {
@@ -244,9 +260,7 @@ const StartScreen = ({ navigation }) => {
     event?.stopPropagation?.();
     const nextMuted = await toggleMute().catch(() => muted);
     setMutedState(nextMuted);
-    if (!nextMuted) {
-      playAmbient({ fadeInMs: 320 }).catch(() => {});
-    }
+    if (!nextMuted) playAmbient({ fadeInMs: 320 }).catch(() => {});
   };
 
   const onMenuFocus = (index) => {
@@ -260,14 +274,13 @@ const StartScreen = ({ navigation }) => {
       <StatusBar barStyle="light-content" />
 
       <LinearGradient
-        colors={['#040404', '#120d10', '#050505']}
+        colors={[COLORS.backgroundDeep, COLORS.inkLift, COLORS.backgroundDeep]}
         start={{ x: 0.08, y: 0 }}
         end={{ x: 0.92, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-
       <LinearGradient
-        colors={['rgba(122, 21, 38, 0.16)', 'transparent', 'rgba(245, 166, 35, 0.12)']}
+        colors={[COLORS.crimsonWash, 'transparent', COLORS.goldWash]}
         start={{ x: 0.1, y: 0.08 }}
         end={{ x: 0.9, y: 0.92 }}
         style={styles.surfaceGlow}
@@ -293,11 +306,7 @@ const StartScreen = ({ navigation }) => {
         />
       ))}
 
-      <TouchableOpacity
-        style={styles.muteButton}
-        onPress={handleMuteToggle}
-        activeOpacity={0.82}
-      >
+      <TouchableOpacity style={styles.muteButton} onPress={handleMuteToggle} activeOpacity={0.82}>
         <Ionicons
           name={muted ? 'volume-mute-outline' : 'volume-high-outline'}
           size={18}
@@ -309,13 +318,12 @@ const StartScreen = ({ navigation }) => {
         <Animated.View
           style={[
             styles.hero,
-            {
-              transform: [{ translateY: titleShift }, { scale: titleScale }],
-            },
+            { transform: [{ translateY: titleShift }, { scale: titleScale }] },
           ]}
         >
           <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>PRIVATE TABLE</Text>
+            <View style={styles.badgeDot} />
+            <Text style={styles.heroBadgeText}>MEMBERS ONLY · TABLE OPEN</Text>
           </View>
 
           <Text style={styles.heroTitle}>
@@ -323,12 +331,14 @@ const StartScreen = ({ navigation }) => {
             <Text style={styles.heroTitleGold}>CARD</Text>
           </Text>
 
-          <Text style={styles.heroTagline}>
-            Two Players. One Card. One Name on the Line.
-          </Text>
+          <Animated.View style={[styles.cardStage, { transform: [{ translateY: cardFloat }] }]}>
+            <View style={styles.cardGlow} />
+            <Image source={CARD_ART} style={styles.cardArt} resizeMode="contain" />
+          </Animated.View>
 
+          <Text style={styles.heroTagline}>Your name. Your card. Somebody has to leave with both.</Text>
           <Text style={styles.heroCopy}>
-            High-stakes culture trivia built for quick reps, private battles, and scoreboard talk.
+            Head-to-head Black culture trivia built around one simple stake: win the table and take the card.
           </Text>
         </Animated.View>
 
@@ -347,44 +357,42 @@ const StartScreen = ({ navigation }) => {
           pointerEvents={phase === 'menu' ? 'auto' : 'none'}
           style={[
             styles.menuWrap,
-            {
-              opacity: menuOpacity,
-              transform: [{ translateY: menuShift }],
-            },
+            { opacity: menuOpacity, transform: [{ translateY: menuShift }] },
           ]}
         >
           {MENU_ITEMS.map((item, index) => {
             const isActive = selectedIndex === index;
+            const isPrimary = item.key === 'create-match';
             return (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.menuItem, isActive && styles.menuItemActive]}
+                style={[
+                  styles.menuItem,
+                  isPrimary && styles.menuItemPrimary,
+                  isActive && styles.menuItemActive,
+                ]}
                 onPressIn={() => onMenuFocus(index)}
                 onPress={() => handleSelect(item, index)}
                 activeOpacity={0.88}
               >
-                <View style={styles.menuArrowWrap}>
-                  {isActive ? (
-                    <Ionicons name="play" size={14} color={COLORS.goldLight} />
-                  ) : (
-                    <View style={styles.menuArrowPlaceholder} />
-                  )}
+                <View style={[styles.menuIconWrap, isActive && styles.menuIconWrapActive]}>
+                  <Ionicons
+                    name={item.icon}
+                    size={18}
+                    color={isActive ? COLORS.goldLight : COLORS.textMuted}
+                  />
                 </View>
-                <Ionicons
-                  name={item.icon}
-                  size={18}
-                  color={isActive ? COLORS.goldLight : COLORS.textSecondary}
-                  style={styles.menuIcon}
-                />
                 <View style={styles.menuLabelWrap}>
-                  <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
-                    {item.label}
-                  </Text>
+                  <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>{item.label}</Text>
                   <Text style={[styles.menuDescription, isActive && styles.menuDescriptionActive]}>
                     {item.description}
                   </Text>
-                  <View style={[styles.menuUnderline, isActive && styles.menuUnderlineActive]} />
                 </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={19}
+                  color={isActive ? COLORS.goldLight : COLORS.smoke}
+                />
               </TouchableOpacity>
             );
           })}
@@ -395,21 +403,16 @@ const StartScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.obsidian,
-  },
+  container: { flex: 1, backgroundColor: COLORS.backgroundDeep },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 28,
-    paddingTop: 56,
-    paddingBottom: 32,
+    paddingTop: 52,
+    paddingBottom: 30,
   },
-  surfaceGlow: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  surfaceGlow: { ...StyleSheet.absoluteFillObject },
   edgeFrame: {
     position: 'absolute',
     top: 18,
@@ -418,11 +421,8 @@ const styles = StyleSheet.create({
     right: 16,
     borderRadius: 28,
     borderWidth: 1,
-    borderColor: 'rgba(245, 166, 35, 0.28)',
-    shadowColor: '#000',
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+    borderColor: COLORS.borderPremium,
+    ...EFFECTS.premiumShadow,
   },
   innerFrame: {
     position: 'absolute',
@@ -432,17 +432,14 @@ const styles = StyleSheet.create({
     right: 28,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 200, 87, 0.06)',
+    borderColor: 'rgba(255, 200, 87, 0.05)',
   },
-  shadowVeil: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.16)',
-  },
+  shadowVeil: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.12)' },
   textureLine: {
     position: 'absolute',
     width: '60%',
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.38)',
   },
   muteButton: {
     position: 'absolute',
@@ -455,133 +452,114 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(245, 166, 35, 0.2)',
-    backgroundColor: 'rgba(8, 8, 8, 0.7)',
+    borderColor: COLORS.borderPremium,
+    backgroundColor: 'rgba(8, 8, 8, 0.74)',
   },
-  hero: {
-    alignItems: 'center',
-    maxWidth: 340,
-  },
+  hero: { alignItems: 'center', maxWidth: 350 },
   heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(245, 166, 35, 0.22)',
-    paddingHorizontal: 16,
+    borderColor: COLORS.borderPremium,
+    paddingHorizontal: 14,
     paddingVertical: 7,
-    backgroundColor: 'rgba(24, 14, 14, 0.7)',
-    marginBottom: 22,
+    backgroundColor: 'rgba(24, 14, 14, 0.72)',
+    marginBottom: 16,
   },
-  heroBadgeText: {
-    color: COLORS.goldLight,
-    fontSize: SIZES.xs,
-    letterSpacing: 3,
-    ...FONTS.medium,
-  },
+  badgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.goldLight },
+  heroBadgeText: { color: COLORS.goldLight, fontSize: 9, letterSpacing: 2.1, ...FONTS.bold },
   heroTitle: {
-    fontSize: 48,
-    lineHeight: 52,
+    fontSize: 47,
+    lineHeight: 50,
     letterSpacing: 4,
     textAlign: 'center',
-    marginBottom: 14,
+    marginBottom: 8,
     ...FONTS.bold,
   },
-  heroTitleWhite: {
-    color: COLORS.offWhite,
+  heroTitleWhite: { color: COLORS.ivory },
+  heroTitleGold: { color: COLORS.goldLight },
+  cardStage: {
+    width: 220,
+    height: 112,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 7,
   },
-  heroTitleGold: {
-    color: COLORS.goldLight,
+  cardGlow: {
+    position: 'absolute',
+    width: 170,
+    height: 70,
+    borderRadius: 40,
+    backgroundColor: 'rgba(245, 166, 35, 0.10)',
+    transform: [{ scaleX: 1.3 }],
   },
+  cardArt: { width: 190, height: 105 },
   heroTagline: {
-    color: COLORS.goldSoft,
-    fontSize: SIZES.lg,
-    lineHeight: 28,
+    color: COLORS.champagne,
+    fontSize: SIZES.base,
+    lineHeight: 23,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+    maxWidth: 320,
     ...FONTS.semiBold,
   },
   heroCopy: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.base,
-    lineHeight: 24,
+    color: COLORS.textMuted,
+    fontSize: SIZES.sm,
+    lineHeight: 20,
     textAlign: 'center',
-    maxWidth: 300,
+    maxWidth: 310,
   },
-  promptWrap: {
-    position: 'absolute',
-    bottom: 110,
-    alignItems: 'center',
-  },
+  promptWrap: { position: 'absolute', bottom: 92, alignItems: 'center' },
   promptText: {
     color: COLORS.goldLight,
-    fontSize: SIZES.base,
+    fontSize: SIZES.sm,
     letterSpacing: 2.2,
     textTransform: 'uppercase',
-    ...FONTS.medium,
+    ...FONTS.bold,
   },
-  menuWrap: {
-    width: '100%',
-    maxWidth: 320,
-    marginTop: 56,
-    gap: 12,
-  },
+  menuWrap: { width: '100%', maxWidth: 340, marginTop: 34, gap: 9 },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: 64,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(17, 15, 17, 0.82)',
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(17, 15, 17, 0.84)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 200, 87, 0.08)',
+    borderColor: 'rgba(255, 200, 87, 0.07)',
   },
+  menuItemPrimary: { borderColor: 'rgba(245, 166, 35, 0.18)' },
   menuItemActive: {
-    borderColor: 'rgba(245, 166, 35, 0.3)',
-    backgroundColor: 'rgba(40, 18, 20, 0.78)',
+    borderColor: 'rgba(245, 166, 35, 0.38)',
+    backgroundColor: 'rgba(40, 18, 20, 0.82)',
   },
-  menuArrowWrap: {
-    width: 18,
+  menuIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(0,0,0,0.18)',
   },
-  menuArrowPlaceholder: {
-    width: 10,
-    height: 10,
-  },
-  menuIcon: {
-    marginRight: 12,
-  },
-  menuLabelWrap: {
-    flex: 1,
-  },
-  menuLabel: {
-    color: COLORS.offWhite,
-    fontSize: SIZES.lg,
-    ...FONTS.medium,
-  },
+  menuIconWrapActive: { borderColor: COLORS.borderPremium, backgroundColor: COLORS.goldWash },
+  menuLabelWrap: { flex: 1, paddingVertical: 10 },
+  menuLabel: { color: COLORS.offWhite, fontSize: SIZES.base, ...FONTS.semiBold },
+  menuLabelActive: { color: COLORS.goldLight },
   menuDescription: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.sm,
-    lineHeight: 18,
-    marginTop: 4,
+    color: COLORS.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 3,
+    paddingRight: 6,
     ...FONTS.regular,
   },
-  menuDescriptionActive: {
-    color: '#E8D7B0',
-  },
-  menuLabelActive: {
-    color: COLORS.goldLight,
-  },
-  menuUnderline: {
-    width: 0,
-    height: 2,
-    marginTop: 8,
-    backgroundColor: 'transparent',
-  },
-  menuUnderlineActive: {
-    width: 44,
-    backgroundColor: COLORS.crimsonGlow,
-  },
+  menuDescriptionActive: { color: '#D9C8A6' },
 });
 
 export default StartScreen;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, EFFECTS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
-import { getCurrentUser } from '../services/api';
+import { getCurrentUser, getMatchHistory, getMatchRecap } from '../services/api';
 import ClubSurface from '../components/ClubSurface';
+import MatchRecapCard from '../components/MatchRecapCard';
 
 const getCountdownText = (expiresAt) => {
   if (!expiresAt) return null;
@@ -28,21 +30,52 @@ const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [cardStatus, setCardStatus] = useState(null);
+  const [lastRecap, setLastRecap] = useState(null);
+  const [recapLoading, setRecapLoading] = useState(false);
 
-  const fetchCardStatus = useCallback(async () => {
+  const fetchHomeData = useCallback(async () => {
     try {
       const res = await getCurrentUser();
       setCardStatus(res.data);
     } catch {}
+
+    try {
+      const historyResponse = await getMatchHistory();
+      const history = Array.isArray(historyResponse.data)
+        ? historyResponse.data
+        : historyResponse.data?.results || [];
+      const latestMatch = history[0];
+
+      if (!latestMatch?.id) {
+        setLastRecap(null);
+        setRecapLoading(false);
+        return;
+      }
+
+      setRecapLoading(true);
+      try {
+        const recapResponse = await getMatchRecap(latestMatch.id);
+        setLastRecap(recapResponse.data);
+      } catch {
+        setLastRecap(null);
+      } finally {
+        setRecapLoading(false);
+      }
+    } catch {
+      setLastRecap(null);
+      setRecapLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    fetchCardStatus();
-  }, [fetchCardStatus]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchHomeData();
+    }, [fetchHomeData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchCardStatus();
+    await fetchHomeData();
     setRefreshing(false);
   };
 
@@ -129,6 +162,8 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </ClubSurface>
       )}
+
+      <MatchRecapCard recap={lastRecap} loading={recapLoading} />
 
       <View style={styles.playSection}>
         <TouchableOpacity
