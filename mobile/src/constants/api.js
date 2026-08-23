@@ -12,6 +12,8 @@ export const ENDPOINTS = {
   matches: '/matches/',
   matchHistory: '/matches/history/',
   matchRecap: '/ai/match-recap/',
+  matchShareArt: '/ai/match-share-art/',
+  matchShareArtStatus: '/ai/match-share-art/status/',
   buzz: (id) => `/matches/${id}/buzz/`,
   answer: (id) => `/matches/${id}/answer/`,
   chooseCategory: (id) => `/matches/${id}/choose-category/`,

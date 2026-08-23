@@ -35,9 +35,18 @@ class MatchRecapApiTests(APITestCase):
         self.assertEqual(response.data["viewer_result"], "win")
         self.assertEqual(response.data["telemetry"]["winner"], "nova")
         self.assertEqual(response.data["telemetry"]["loser"], "rex")
+        self.assertEqual(response.data["telemetry"]["winner_score"], 50)
+        self.assertEqual(response.data["telemetry"]["loser_score"], 35)
         self.assertEqual(response.data["telemetry"]["margin"], 15)
         self.assertTrue(response.data["telemetry"]["card_captured"])
-        self.assertIn("50-35", response.data["share_art_prompt"])
+
+        # Generated media is a background plate only. Authoritative names,
+        # score and ownership stay in telemetry and are overlaid by the app.
+        prompt = response.data["share_art_prompt"]
+        self.assertIn("no visible text", prompt)
+        self.assertNotIn("50-35", prompt)
+        self.assertNotIn("nova", prompt.lower())
+        self.assertNotIn("rex", prompt.lower())
 
     def test_loser_gets_loss_perspective(self):
         self.client.force_authenticate(self.player2)

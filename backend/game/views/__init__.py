@@ -1,7 +1,7 @@
 import sys
 
 from . import api as _api
-from .ai import MatchRecapView
+from .ai import MatchRecapView, MatchShareArtStatusView, MatchShareArtView
 from .api import (
     AnswerQuestionView,
     BuzzView,
