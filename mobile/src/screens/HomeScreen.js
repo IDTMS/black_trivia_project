@@ -7,10 +7,12 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONTS, SIZES } from '../constants/theme';
+import { COLORS, EFFECTS, FONTS, SIZES } from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentUser } from '../services/api';
+import ClubSurface from '../components/ClubSurface';
 
 const getCountdownText = (expiresAt) => {
   if (!expiresAt) return null;
@@ -50,105 +52,119 @@ const HomeScreen = ({ navigation }) => {
   const walletCards = cardStatus?.wallet_cards || [];
   const vaultCount = walletCards.length;
 
-  const handleQuickPlay = () => {
-    navigation.navigate('Game', { mode: 'solo' });
-  };
-
-  const handleStartMatch = () => {
-    navigation.navigate('Match', { initialMode: 'create' });
-  };
-
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={COLORS.gold}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.gold} />
       }
     >
-      {/* Header */}
+      <LinearGradient
+        colors={[COLORS.backgroundDeep, COLORS.inkLift, COLORS.backgroundDeep]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>What's good,</Text>
+          <Text style={styles.greeting}>MEMBER ACCESS</Text>
           <Text style={styles.username}>{user?.username || 'Player'}</Text>
         </View>
-        <View style={styles.logoSmall}>
-          <Text style={styles.logoB}>B</Text>
-          <Text style={styles.logoC}>C</Text>
+        <View style={styles.monogram}>
+          <Text style={styles.monogramWhite}>B</Text>
+          <Text style={styles.monogramGold}>C</Text>
         </View>
       </View>
 
-      <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Tonight's table</Text>
-        <Text style={styles.heroTitle}>Pick your lane and make it count.</Text>
+      <ClubSurface style={styles.heroCard} contentStyle={styles.heroContent}>
+        <View style={styles.heroBadge}>
+          <View style={styles.liveDot} />
+          <Text style={styles.heroEyebrow}>THE TABLE IS OPEN</Text>
+        </View>
+        <Text style={styles.heroTitle}>Know it. Call it. Take the card.</Text>
         <Text style={styles.heroCopy}>
-          Quick Play is the fast solo rep. 1v1 Match is where names get tested.
+          Warm up solo, then put your name and your Black Card on the table in a head-to-head match.
         </Text>
-      </View>
+      </ClubSurface>
 
-      {/* Black Card Vault */}
       {cardStatus && (
-        <View style={styles.vaultCard}>
-          <View style={styles.vaultRow}>
-            <View style={styles.vaultLeft}>
-              <View style={[styles.vaultDot, cardActive ? styles.vaultDotActive : styles.vaultDotCaptured]} />
-              <View>
-                <Text style={styles.vaultLabel}>YOUR BLACK CARD</Text>
-                {cardActive ? (
-                  <Text style={styles.vaultStatus}>In your possession</Text>
-                ) : (
-                  <Text style={styles.vaultStatusCaptured}>
-                    Held by {cardHolder}{cardExpiresAt ? ` · ${getCountdownText(cardExpiresAt)}` : ''}
-                  </Text>
-                )}
-              </View>
+        <ClubSurface style={styles.vaultCard} contentStyle={styles.vaultContent}>
+          <View style={styles.vaultHeader}>
+            <View>
+              <Text style={styles.sectionKicker}>BLACK CARD STATUS</Text>
+              <Text style={styles.vaultTitle}>{cardActive ? 'Protected' : 'Captured'}</Text>
             </View>
-            {vaultCount > 0 && (
-              <View style={styles.vaultBadge}>
-                <Ionicons name="wallet-outline" size={14} color={COLORS.gold} />
-                <Text style={styles.vaultBadgeText}>{vaultCount}</Text>
-              </View>
-            )}
+            <View style={[styles.statusSeal, cardActive ? styles.statusSealSafe : styles.statusSealCaptured]}>
+              <Ionicons
+                name={cardActive ? 'shield-checkmark-outline' : 'lock-closed-outline'}
+                size={16}
+                color={cardActive ? COLORS.success : COLORS.red}
+              />
+            </View>
           </View>
-          {vaultCount > 0 && (
-            <View style={styles.vaultCollected}>
-              <Text style={styles.vaultCollectedLabel}>VAULT</Text>
-              <Text style={styles.vaultCollectedNames}>
-                {walletCards.map((c) => c.owner).join(' · ')}
+
+          <View style={styles.cardStatePanel}>
+            <View style={[styles.vaultDot, cardActive ? styles.vaultDotActive : styles.vaultDotCaptured]} />
+            <View style={styles.cardStateCopy}>
+              <Text style={styles.cardStateLabel}>YOUR CARD</Text>
+              <Text style={cardActive ? styles.vaultStatus : styles.vaultStatusCaptured}>
+                {cardActive
+                  ? 'In your possession'
+                  : `Held by ${cardHolder || 'another player'}${
+                      cardExpiresAt ? ` · ${getCountdownText(cardExpiresAt)}` : ''
+                    }`}
               </Text>
             </View>
-          )}
-        </View>
+            <View style={styles.vaultBadge}>
+              <Ionicons name="albums-outline" size={14} color={COLORS.champagne} />
+              <Text style={styles.vaultBadgeText}>{vaultCount}</Text>
+            </View>
+          </View>
+
+          <View style={styles.vaultCollected}>
+            <Text style={styles.vaultCollectedLabel}>CAPTURE VAULT</Text>
+            <Text style={styles.vaultCollectedNames}>
+              {vaultCount > 0 ? walletCards.map((c) => c.owner).join(' · ') : 'No captured cards yet. Win one.'}
+            </Text>
+          </View>
+        </ClubSurface>
       )}
 
-      {/* Play buttons */}
       <View style={styles.playSection}>
         <TouchableOpacity
-          style={styles.playButton}
-          onPress={handleQuickPlay}
-          activeOpacity={0.85}
+          style={styles.primaryAction}
+          onPress={() => navigation.navigate('Match', { initialMode: 'create' })}
+          activeOpacity={0.88}
         >
-          <Ionicons name="flash" size={28} color={COLORS.black} />
-          <View style={styles.playButtonText}>
-            <Text style={styles.playTitle}>QUICK PLAY</Text>
-            <Text style={styles.playDesc}>Solo trivia — test your knowledge</Text>
+          <LinearGradient
+            colors={[COLORS.goldLight, COLORS.gold, COLORS.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.actionIconDark}>
+            <Ionicons name="people" size={24} color={COLORS.black} />
           </View>
+          <View style={styles.playButtonText}>
+            <Text style={styles.playTitle}>PUT THE CARD UP</Text>
+            <Text style={styles.playDesc}>Create a private 1v1 and play for ownership</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={COLORS.black} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.matchButton}
-          onPress={handleStartMatch}
-          activeOpacity={0.85}
+          style={styles.secondaryAction}
+          onPress={() => navigation.navigate('Game', { mode: 'solo' })}
+          activeOpacity={0.88}
         >
-          <Ionicons name="people" size={28} color={COLORS.gold} />
-          <View style={styles.playButtonText}>
-            <Text style={styles.matchTitle}>1v1 MATCH</Text>
-            <Text style={styles.matchDesc}>Challenge a player head-to-head</Text>
+          <View style={styles.actionIconGold}>
+            <Ionicons name="flash-outline" size={22} color={COLORS.goldLight} />
           </View>
+          <View style={styles.playButtonText}>
+            <Text style={styles.matchTitle}>QUICK PLAY</Text>
+            <Text style={styles.matchDesc}>Sharpen up before somebody calls your name</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={22} color={COLORS.goldSoft} />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -156,14 +172,8 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
+  container: { flex: 1, backgroundColor: COLORS.backgroundDeep },
+  content: { paddingTop: 60, paddingBottom: 44, minHeight: '100%' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -172,195 +182,131 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   greeting: {
-    fontSize: SIZES.md,
-    color: COLORS.textSecondary,
-    ...FONTS.regular,
-  },
-  username: {
-    fontSize: SIZES.xxl,
-    color: COLORS.white,
+    fontSize: 9,
+    color: COLORS.goldSoft,
+    letterSpacing: 2.8,
+    marginBottom: 5,
     ...FONTS.bold,
   },
-  logoSmall: {
+  username: { fontSize: SIZES.xxl, color: COLORS.ivory, ...FONTS.bold },
+  monogram: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  logoB: {
-    fontSize: 32,
-    color: COLORS.white,
-    ...FONTS.bold,
-  },
-  logoC: {
-    fontSize: 32,
-    color: COLORS.gold,
-    ...FONTS.bold,
-  },
-  heroCard: {
-    marginHorizontal: 24,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: SIZES.radiusLg,
-    backgroundColor: COLORS.card,
+    paddingHorizontal: 12,
+    height: 42,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.gold + '22',
+    borderColor: COLORS.borderPremium,
+    backgroundColor: COLORS.panelPremium,
   },
-  heroEyebrow: {
-    color: COLORS.gold,
-    fontSize: SIZES.xs,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    ...FONTS.medium,
-  },
+  monogramWhite: { fontSize: 23, color: COLORS.ivory, ...FONTS.bold },
+  monogramGold: { fontSize: 23, color: COLORS.goldLight, ...FONTS.bold },
+  heroCard: { marginHorizontal: 24, marginBottom: 18, ...EFFECTS.premiumShadow },
+  heroContent: { padding: 22 },
+  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.goldLight },
+  heroEyebrow: { color: COLORS.goldLight, fontSize: 9, letterSpacing: 2.4, ...FONTS.bold },
   heroTitle: {
-    color: COLORS.white,
-    fontSize: SIZES.xl,
-    marginBottom: 8,
+    color: COLORS.ivory,
+    fontSize: 27,
+    lineHeight: 32,
+    marginBottom: 10,
+    maxWidth: 320,
     ...FONTS.bold,
   },
-  heroCopy: {
-    color: COLORS.textSecondary,
-    fontSize: SIZES.sm,
-    lineHeight: 20,
-    ...FONTS.regular,
-  },
-  playSection: {
-    paddingHorizontal: 24,
-    gap: 12,
-    marginBottom: 28,
-  },
-  playButton: {
-    backgroundColor: COLORS.gold,
-    borderRadius: SIZES.radiusLg,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    flexDirection: 'row',
+  heroCopy: { color: COLORS.textMuted, fontSize: SIZES.sm, lineHeight: 20, ...FONTS.regular },
+  vaultCard: { marginHorizontal: 24, marginBottom: 18, ...EFFECTS.softShadow },
+  vaultContent: { padding: 18 },
+  vaultHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  sectionKicker: { color: COLORS.goldSoft, fontSize: 9, letterSpacing: 2.2, ...FONTS.bold },
+  vaultTitle: { color: COLORS.ivory, fontSize: SIZES.xl, marginTop: 4, ...FONTS.bold },
+  statusSeal: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
-    gap: 16,
-  },
-  playButtonText: {
-    flex: 1,
-  },
-  playTitle: {
-    fontSize: SIZES.xl,
-    color: COLORS.black,
-    ...FONTS.bold,
-    letterSpacing: 2,
-  },
-  playDesc: {
-    fontSize: SIZES.sm,
-    color: COLORS.black,
-    ...FONTS.regular,
-    opacity: 0.7,
-    marginTop: 2,
-  },
-  matchButton: {
-    backgroundColor: COLORS.card,
-    borderRadius: SIZES.radiusLg,
-    paddingVertical: 20,
-    paddingHorizontal: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.gold,
   },
-  matchTitle: {
-    fontSize: SIZES.xl,
-    color: COLORS.gold,
-    ...FONTS.bold,
-    letterSpacing: 2,
-  },
-  matchDesc: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    ...FONTS.regular,
-    marginTop: 2,
-  },
-  vaultCard: {
-    marginHorizontal: 24,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: SIZES.radius,
-    backgroundColor: COLORS.card,
+  statusSealSafe: { borderColor: 'rgba(46,204,113,0.35)', backgroundColor: 'rgba(46,204,113,0.08)' },
+  statusSealCaptured: { borderColor: 'rgba(231,76,60,0.38)', backgroundColor: 'rgba(90,16,27,0.28)' },
+  cardStatePanel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.gold + '28',
+    borderColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
-  vaultRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  vaultLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  vaultDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  vaultDotActive: {
-    backgroundColor: COLORS.success,
-  },
-  vaultDotCaptured: {
-    backgroundColor: COLORS.red,
-  },
-  vaultLabel: {
-    fontSize: SIZES.xs,
-    color: COLORS.textSecondary,
-    letterSpacing: 1.5,
-    ...FONTS.bold,
-  },
-  vaultStatus: {
-    fontSize: SIZES.sm,
-    color: COLORS.success,
-    marginTop: 2,
-    ...FONTS.medium,
-  },
-  vaultStatusCaptured: {
-    fontSize: SIZES.sm,
-    color: COLORS.red,
-    marginTop: 2,
-    ...FONTS.medium,
-  },
+  vaultDot: { width: 9, height: 9, borderRadius: 5, marginRight: 12 },
+  vaultDotActive: { backgroundColor: COLORS.success },
+  vaultDotCaptured: { backgroundColor: COLORS.red },
+  cardStateCopy: { flex: 1 },
+  cardStateLabel: { color: COLORS.textMuted, fontSize: 9, letterSpacing: 1.8, ...FONTS.bold },
+  vaultStatus: { fontSize: SIZES.sm, color: COLORS.success, marginTop: 3, ...FONTS.semiBold },
+  vaultStatusCaptured: { fontSize: SIZES.sm, color: COLORS.red, marginTop: 3, ...FONTS.semiBold },
   vaultBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: COLORS.gold + '18',
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.gold + '30',
+    borderColor: COLORS.borderPremium,
+    backgroundColor: COLORS.goldWash,
   },
-  vaultBadgeText: {
-    fontSize: SIZES.sm,
-    color: COLORS.gold,
-    ...FONTS.bold,
+  vaultBadgeText: { fontSize: SIZES.sm, color: COLORS.champagne, ...FONTS.bold },
+  vaultCollected: { marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  vaultCollectedLabel: { fontSize: 9, color: COLORS.goldSoft, letterSpacing: 2, marginBottom: 5, ...FONTS.bold },
+  vaultCollectedNames: { fontSize: SIZES.sm, color: COLORS.textMuted, lineHeight: 18, ...FONTS.regular },
+  playSection: { paddingHorizontal: 24, gap: 12, marginBottom: 28 },
+  primaryAction: {
+    overflow: 'hidden',
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    ...EFFECTS.premiumShadow,
   },
-  vaultCollected: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border + '60',
+  secondaryAction: {
+    borderRadius: 20,
+    paddingVertical: 17,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1,
+    borderColor: COLORS.borderPremium,
+    backgroundColor: COLORS.panelPremium,
   },
-  vaultCollectedLabel: {
-    fontSize: 9,
-    color: COLORS.gold,
-    letterSpacing: 2,
-    marginBottom: 4,
-    ...FONTS.bold,
+  actionIconDark: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.12)',
   },
-  vaultCollectedNames: {
-    fontSize: SIZES.sm,
-    color: COLORS.textSecondary,
-    ...FONTS.regular,
-    lineHeight: 18,
+  actionIconGold: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderPremium,
+    backgroundColor: COLORS.goldWash,
   },
+  playButtonText: { flex: 1 },
+  playTitle: { fontSize: SIZES.lg, color: COLORS.black, letterSpacing: 1.5, ...FONTS.bold },
+  playDesc: { fontSize: SIZES.xs, color: COLORS.black, opacity: 0.68, marginTop: 3, ...FONTS.medium },
+  matchTitle: { fontSize: SIZES.lg, color: COLORS.ivory, letterSpacing: 1.4, ...FONTS.bold },
+  matchDesc: { fontSize: SIZES.xs, color: COLORS.textMuted, marginTop: 3, ...FONTS.medium },
 });
 
 export default HomeScreen;
