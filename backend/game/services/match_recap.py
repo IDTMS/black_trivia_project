@@ -63,12 +63,16 @@ def build_match_recap(match, viewer):
         else "Card ownership is still syncing with the match result."
     )
 
+    # HavnAI creates the cinematic background plate only. Names, score and
+    # other facts are overlaid by the app so generated typography can never
+    # contradict the authoritative match record.
     share_art_prompt = (
-        "Premium Black Card rivalry poster, private members club atmosphere, "
+        "Premium Black Card rivalry poster background, private members club atmosphere, "
         "obsidian black lacquer, restrained brushed gold, deep crimson edge light, "
-        f"winner {match.winner.username}, loser {match.loser.username}, final score "
-        f"{winner_score}-{loser_score}, physical black membership card as the hero object, "
-        "cinematic editorial sports-poster composition, no fake logos, no extra statistics"
+        "physical black membership card as the hero object between two opposing player silhouettes, "
+        "cinematic editorial sports-poster composition, dramatic table lighting, luxurious depth, "
+        "Black cultural game-night energy without stereotypes, no visible text, no letters, no numbers, "
+        "no logos, no scoreboard, no watermark"
     )
 
     return {
