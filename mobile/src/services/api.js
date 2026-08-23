@@ -60,6 +60,11 @@ export const startMatch = (categories = null) =>
 
 export const getMatch = (matchId) => api.get(`${ENDPOINTS.matches}${matchId}/`);
 
+export const getMatchHistory = () => api.get(ENDPOINTS.matchHistory);
+
+export const getMatchRecap = (matchId) =>
+  api.post(ENDPOINTS.matchRecap, { match_id: matchId });
+
 export const joinMatchByCode = (inviteCode) =>
   api.post(`${ENDPOINTS.matches}join/`, { invite_code: inviteCode });
 
