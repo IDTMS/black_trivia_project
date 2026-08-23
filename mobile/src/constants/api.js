@@ -10,6 +10,8 @@ export const ENDPOINTS = {
   tokenRefresh: '/token/refresh/',
   randomQuestion: '/questions/random/',
   matches: '/matches/',
+  matchHistory: '/matches/history/',
+  matchRecap: '/ai/match-recap/',
   buzz: (id) => `/matches/${id}/buzz/`,
   answer: (id) => `/matches/${id}/answer/`,
   chooseCategory: (id) => `/matches/${id}/choose-category/`,
